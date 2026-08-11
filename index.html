@@ -3,269 +3,85 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Cadê o Par?</title>
+<meta name="robots" content="noindex, nofollow">
+<title>Jogos dos Pôneis</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
 <style>
-/* ===================================================================
-   PALETA
-   =================================================================== */
 :root{
-  --lilas:      #EFE3FF;
-  --rosa-claro: #FFE4F2;
-  --roxo:       #6B3FBF;
-  --roxo-escuro:#4A2A87;
-  --rosa:       #FF6FB0;
-  --turquesa:   #35CFC9;
-  --amarelo:    #FFD34A;
-  --texto:      #40276E;
-  --carta-raio: 18px;
-  --gap: 10px;
+  --lilas:#EFE3FF; --rosa-claro:#FFE4F2;
+  --roxo:#6B3FBF; --roxo-escuro:#4A2A87;
+  --rosa:#FF6FB0; --turquesa:#35CFC9; --amarelo:#FFD34A;
+  --texto:#40276E;
 }
-
 *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
-
-html,body{ height:100%; overflow:hidden; }
-
+html,body{ min-height:100%; }
 body{
-  font-family:'Baloo 2', 'Segoe UI Rounded', 'SF Pro Rounded', system-ui, sans-serif;
+  font-family:'Baloo 2','Segoe UI Rounded','SF Pro Rounded',system-ui,sans-serif;
   color:var(--texto);
   background:
     radial-gradient(1200px 600px at 20% -10%, #FFF6C9 0%, transparent 55%),
     linear-gradient(160deg, var(--lilas) 0%, var(--rosa-claro) 100%);
-  display:flex; flex-direction:column;
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  display:flex; flex-direction:column; align-items:center;
+  padding:calc(14px + env(safe-area-inset-top)) 14px calc(20px + env(safe-area-inset-bottom));
   user-select:none;
 }
 
-.tela{ display:none; flex:1; flex-direction:column; min-height:0; padding:14px; }
-.tela.ativa{ display:flex; }
-
-/* ===================================================================
-   TELA INICIAL
-   =================================================================== */
-#tela-inicio{ align-items:center; justify-content:center; text-align:center; gap:6px; }
-
 .titulo{
-  font-size:clamp(38px, 13vw, 62px);
-  font-weight:800;
-  line-height:.95;
-  color:var(--roxo);
-  text-shadow: 0 3px 0 #fff, 0 6px 14px rgba(107,63,191,.25);
+  font-size:clamp(32px,10vw,52px); font-weight:800; line-height:.95;
+  color:var(--roxo); text-align:center; margin-top:26px;
+  text-shadow:0 3px 0 #fff, 0 6px 14px rgba(107,63,191,.25);
 }
-.subtitulo{ font-size:17px; font-weight:600; color:#8A6FBF; margin-bottom:22px; }
+.subtitulo{ font-size:16px; font-weight:600; color:#8A6FBF; margin:6px 0 24px; text-align:center; }
 
-.opcoes{ display:flex; flex-direction:column; gap:12px; width:100%; max-width:300px; }
+.jogos{ display:flex; flex-direction:column; gap:16px; width:100%; max-width:340px; }
 
-.botao{
-  font-family:inherit; font-weight:800; font-size:21px;
-  color:#fff; border:none; cursor:pointer;
-  padding:16px 20px; border-radius:22px;
-  background:linear-gradient(180deg, var(--rosa) 0%, #E3488F 100%);
-  box-shadow:0 5px 0 #C43A79, 0 10px 18px rgba(196,58,121,.3);
+.jogo{
+  display:flex; align-items:center; gap:14px;
+  width:100%; padding:12px 16px 12px 12px; border:none; border-radius:26px;
+  cursor:pointer; font-family:inherit; text-align:left;
+  background:linear-gradient(180deg,#FFFFFF 0%,#F8F0FF 100%);
+  box-shadow:0 6px 0 #D9C6F2, 0 12px 22px rgba(107,63,191,.2);
   transition:transform .1s ease, box-shadow .1s ease;
 }
-.botao:active{ transform:translateY(4px); box-shadow:0 1px 0 #C43A79; }
-.botao.turquesa{ background:linear-gradient(180deg, var(--turquesa) 0%, #23AFAA 100%); box-shadow:0 5px 0 #1B918D, 0 10px 18px rgba(27,145,141,.3); }
-.botao.turquesa:active{ box-shadow:0 1px 0 #1B918D; }
-.botao.roxo{ background:linear-gradient(180deg, #8B5CE0 0%, var(--roxo) 100%); box-shadow:0 5px 0 var(--roxo-escuro), 0 10px 18px rgba(74,42,135,.3); }
-.botao.roxo:active{ box-shadow:0 1px 0 var(--roxo-escuro); }
-.botao.pequeno{ font-size:15px; padding:11px 16px; border-radius:16px; }
+.jogo:active{ transform:translateY(5px); box-shadow:0 1px 0 #D9C6F2; }
 
-/* ===================================================================
-   BARRA DO JOGO
-   =================================================================== */
-.barra{
-  display:flex; align-items:center; justify-content:space-between;
-  gap:10px; margin-bottom:10px; flex:0 0 auto;
+.retrato{
+  flex:0 0 auto; width:82px; height:82px; border-radius:20px;
+  display:flex; align-items:center; justify-content:center; overflow:hidden;
+  border:3px solid var(--amarelo); background:#FFF6C9;
 }
-.placar{ display:flex; gap:8px; }
-.marcador{
-  background:rgba(255,255,255,.75);
-  border-radius:14px; padding:6px 14px;
-  font-weight:800; font-size:17px; color:var(--roxo);
-  box-shadow:0 2px 6px rgba(107,63,191,.14);
-  min-width:70px; text-align:center;
-}
-.marcador span{ display:block; font-size:10px; font-weight:600; color:#9A83C4; letter-spacing:.08em; text-transform:uppercase; }
-.voltar{
-  border:none; background:rgba(255,255,255,.75); color:var(--roxo);
-  font-family:inherit; font-weight:800; font-size:22px;
-  width:44px; height:44px; border-radius:14px; cursor:pointer;
-  box-shadow:0 2px 6px rgba(107,63,191,.14);
-}
+.retrato img{ width:100%; height:100%; object-fit:contain; padding:4px; }
+.retrato .fallback{ font-size:38px; }
 
-/* ===================================================================
-   TABULEIRO
-   =================================================================== */
-#tabuleiro{
-  flex:1; min-height:0;
-  display:grid;
-  justify-content:center;
-  align-content:center;
-  /* as colunas, a altura da linha e o gap vem do JS (ajustaTabuleiro) */
-}
+.jogo .texto{ flex:1; min-width:0; }
+.jogo .nome{ display:block; font-size:23px; font-weight:800; color:var(--roxo); line-height:1.05; }
+.jogo .como{ display:block; font-size:13px; font-weight:600; color:#9A83C4; margin-top:3px; }
+.jogo .seta{ font-size:26px; color:var(--rosa); flex:0 0 auto; }
 
-.carta{
-  position:relative;
-  width:100%; height:100%;
-  perspective:900px;
-  cursor:pointer;
-  background:none; border:none; padding:0;
-}
+.jogo[data-cor="rosa"] .retrato{ border-color:var(--rosa); background:#FFE4F2; }
+.jogo[data-cor="turq"] .retrato{ border-color:var(--turquesa); background:#D8F7F0; }
 
-.carta-interna{
-  position:relative; width:100%; height:100%;
-  transform-style:preserve-3d;
-  transition:transform .45s cubic-bezier(.4,1.4,.5,1);
-}
-.carta.virada .carta-interna{ transform:rotateY(180deg); }
-
-.face{
-  position:absolute; inset:0;
-  backface-visibility:hidden; -webkit-backface-visibility:hidden;
-  border-radius:var(--carta-raio);
-  display:flex; align-items:center; justify-content:center;
-  overflow:hidden;
-}
-
-/* verso: a "cutie mark" — assinatura visual do jogo */
-.verso{
-  background:
-    radial-gradient(circle at 30% 25%, rgba(255,255,255,.35) 0%, transparent 45%),
-    linear-gradient(150deg, #8B5CE0 0%, var(--roxo) 55%, var(--roxo-escuro) 100%);
-  box-shadow:0 4px 0 rgba(74,42,135,.55), 0 6px 14px rgba(74,42,135,.28);
-  border:3px solid rgba(255,255,255,.55);
-}
-.verso svg{ width:56%; height:56%; opacity:.95; }
-
-.frente{
-  transform:rotateY(180deg);
-  background:#fff;
-  border:3px solid var(--amarelo);
-  box-shadow:0 4px 0 rgba(200,150,20,.35), 0 6px 14px rgba(107,63,191,.2);
-  flex-direction:column;
-}
-.frente img{
-  width:100%; height:100%;
-  object-fit:contain;
-  padding:6px 6px 0;
-}
-.frente .nome{
-  flex:0 0 auto;
-  width:100%;
-  font-size:var(--nome-fs, 11px);
-  font-weight:800;
-  text-align:center;
-  padding:3px 2px 4px;
-  color:var(--roxo);
-  background:#FFF6C9;
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-}
-.frente .quebrado{
-  font-size:11px; font-weight:600; color:#C0392B;
-  padding:8px; text-align:center; line-height:1.3;
-}
-
-.carta.achou .carta-interna{ animation:pulo .5s ease; }
-.carta.achou .frente{ border-color:var(--turquesa); box-shadow:0 0 0 4px rgba(53,207,201,.35); }
-.carta.achou{ pointer-events:none; }
-@keyframes pulo{
-  0%{ transform:rotateY(180deg) scale(1); }
-  40%{ transform:rotateY(180deg) scale(1.14); }
-  100%{ transform:rotateY(180deg) scale(1); }
-}
-
-/* ===================================================================
-   FIM DE JOGO
-   =================================================================== */
-#tela-fim{ align-items:center; justify-content:center; text-align:center; gap:8px; }
-#tela-fim .titulo{ font-size:clamp(34px, 11vw, 54px); }
-.estrela-cai{ position:fixed; top:-40px; font-size:26px; pointer-events:none; animation:cair linear forwards; }
-@keyframes cair{ to{ transform:translateY(110vh) rotate(360deg); opacity:.2; } }
-
-/* ===================================================================
-   PAINEL DE ERROS  (aparece na tela, sem precisar de console)
-   =================================================================== */
-#erros{
-  display:none;
-  position:fixed; left:8px; right:8px; bottom:8px; z-index:50;
-  background:#3B1220; color:#FFD9E4;
-  border:2px solid #FF6FB0; border-radius:14px;
-  padding:10px 12px; font-size:12px; line-height:1.45;
-  max-height:44vh; overflow:auto;
-  font-family:ui-monospace, Menlo, Consolas, monospace;
-  box-shadow:0 8px 24px rgba(0,0,0,.35);
-}
-#erros.visivel{ display:block; }
-#erros h3{ font-family:inherit; font-size:13px; color:#fff; margin-bottom:6px; }
-#erros ul{ padding-left:16px; }
-#erros li{ margin-bottom:4px; word-break:break-all; }
-#erros .fechar{
-  position:absolute; top:6px; right:8px;
-  background:none; border:none; color:#FFD9E4; font-size:18px; cursor:pointer;
-}
-
-#resultado-teste{
-  margin-top:14px; font-size:14px; font-weight:600; color:var(--roxo); min-height:20px;
-}
-
-/* ===================================================================
-   VOZ: status e recado  (ela não lê, mas o pai precisa ver o que houve)
-   =================================================================== */
-#btnStatus{
-  position:fixed; top:calc(8px + env(safe-area-inset-top)); right:8px; z-index:40;
+/* voz */
+#btnStatus, #btnTrocaVoz{
+  position:fixed; top:calc(8px + env(safe-area-inset-top)); z-index:40;
   border:none; border-radius:12px; cursor:pointer;
-  font-family:inherit; font-weight:800; font-size:12px;
-  padding:6px 10px;
+  font-family:inherit; font-weight:800; font-size:12px; padding:6px 10px;
   background:rgba(255,255,255,.8); color:#8A6FBF;
   box-shadow:0 2px 6px rgba(107,63,191,.14);
 }
-#btnTrocaVoz{
-  position:fixed; top:calc(8px + env(safe-area-inset-top)); right:104px; z-index:40;
-  border:none; border-radius:12px; cursor:pointer;
-  font-family:inherit; font-weight:800; font-size:12px;
-  padding:6px 10px;
-  background:rgba(255,255,255,.8); color:#8A6FBF;
-  box-shadow:0 2px 6px rgba(107,63,191,.14);
-}
-#btnTrocaVoz.escondida{ display:none; }
+#btnStatus{ right:8px; }
+#btnTrocaVoz{ right:104px; }
 #btnStatus[data-ok="sim"]{ background:#D8F7F0; color:#12786F; }
 #btnStatus[data-ok="nao"]{ background:#FFDDE6; color:#B02A4A; }
-
 #recado{
   position:fixed; left:8px; right:8px; top:calc(46px + env(safe-area-inset-top)); z-index:45;
-  background:#3B1220; color:#FFE6EE;
-  border:2px solid var(--rosa); border-radius:14px;
+  background:#3B1220; color:#FFE6EE; border:2px solid var(--rosa); border-radius:14px;
   padding:10px 12px; font-size:13px; line-height:1.45; cursor:pointer;
   box-shadow:0 8px 24px rgba(0,0,0,.3);
 }
 #recado.escondida{ display:none; }
-
-/* ===================================================================
-   DIFICULDADE SEM TEXTO — a quantidade de cartinhas é a informação
-   =================================================================== */
-.nivel{
-  display:flex; align-items:center; gap:14px;
-  width:100%; padding:14px 18px; border:none; border-radius:24px;
-  cursor:pointer; font-family:inherit;
-  background:linear-gradient(180deg,#FFFFFF 0%, #F6EEFF 100%);
-  box-shadow:0 5px 0 #D9C6F2, 0 10px 18px rgba(107,63,191,.18);
-  transition:transform .1s ease, box-shadow .1s ease;
-}
-.nivel:active{ transform:translateY(4px); box-shadow:0 1px 0 #D9C6F2; }
-.nivel .miniaturas{ display:grid; gap:3px; flex:0 0 auto; }
-.nivel .mini{ width:12px; height:16px; border-radius:3px; background:linear-gradient(150deg,#8B5CE0,#4A2A87); }
-.nivel .rotulo{ font-size:26px; font-weight:800; color:var(--roxo); line-height:1; }
-.nivel .rotulo small{ display:block; font-size:12px; font-weight:600; color:#9A83C4; letter-spacing:.06em; text-transform:uppercase; }
-.nivel .poneizinho{ margin-left:auto; font-size:30px; }
-
-.nivel .miniaturas{ grid-template-columns:repeat(4, 12px); }
-.nivel[data-pares="6"] .miniaturas{ grid-template-columns:repeat(6, 11px); }
-.nivel[data-pares="6"] .mini{ width:11px; height:15px; }
-.nivel[data-pares="8"] .miniaturas{ grid-template-columns:repeat(8, 10px); }
-.nivel[data-pares="8"] .mini{ width:10px; height:14px; }
 
 @media (prefers-reduced-motion: reduce){
   *{ animation-duration:.01ms !important; transition-duration:.01ms !important; }
@@ -278,716 +94,65 @@ body{
 <button id="btnTrocaVoz">trocar voz</button>
 <div id="recado" class="escondida"></div>
 
-<!-- ================= TELA INICIAL ================= -->
-<section id="tela-inicio" class="tela ativa">
-  <h1 class="titulo">Cadê o Par?</h1>
-  <p class="subtitulo">Ache os dois pôneis iguais</p>
+<h1 class="titulo">Jogos dos Pôneis</h1>
+<p class="subtitulo">Escolha uma brincadeira</p>
 
-  <div class="opcoes">
-    <button class="nivel" data-pares="4">
-      <span class="miniaturas" aria-hidden="true"></span>
-      <span class="rotulo">4<small>pares</small></span>
-      <span class="poneizinho" aria-hidden="true">🦄</span>
-    </button>
-    <button class="nivel" data-pares="6">
-      <span class="miniaturas" aria-hidden="true"></span>
-      <span class="rotulo">6<small>pares</small></span>
-      <span class="poneizinho" aria-hidden="true">🦄🦄</span>
-    </button>
-    <button class="nivel" data-pares="8">
-      <span class="miniaturas" aria-hidden="true"></span>
-      <span class="rotulo">8<small>pares</small></span>
-      <span class="poneizinho" aria-hidden="true">🦄🦄🦄</span>
-    </button>
-  </div>
+<div class="jogos">
 
-  <div id="resultado-teste"></div>
-  <button class="botao pequeno roxo" id="btn-testar" style="margin-top:6px; max-width:300px; width:100%;">Testar imagens</button>
-</section>
+  <button class="jogo" data-cor="roxo" data-pagina="memoria.html"
+          data-fala="Jogo da memória! Ache os dois pôneis iguais.">
+    <span class="retrato"><img src="imagens/Rarity.png" alt=""></span>
+    <span class="texto">
+      <span class="nome">Jogo da Memória</span>
+      <span class="como">Ache os dois iguais</span>
+    </span>
+    <span class="seta" aria-hidden="true">▶</span>
+  </button>
 
-<!-- ================= TELA DO JOGO ================= -->
-<section id="tela-jogo" class="tela">
-  <div class="barra">
-    <button class="voltar" id="btn-voltar" aria-label="Voltar">←</button>
-    <div class="placar">
-      <div class="marcador"><span>Pares</span><b id="m-pares">0/0</b></div>
-      <div class="marcador"><span>Jogadas</span><b id="m-jogadas">0</b></div>
-    </div>
-  </div>
-  <div id="tabuleiro"></div>
-</section>
+  <button class="jogo" data-cor="rosa" data-pagina="poneis.html"
+          data-fala="Cadê o pônei? Eu falo o nome e você acha!">
+    <span class="retrato"><img src="imagens/Trixie.png" alt=""></span>
+    <span class="texto">
+      <span class="nome">Cadê o Pônei?</span>
+      <span class="como">Eu falo, você acha</span>
+    </span>
+    <span class="seta" aria-hidden="true">▶</span>
+  </button>
 
-<!-- ================= TELA FINAL ================= -->
-<section id="tela-fim" class="tela">
-  <h1 class="titulo">Você achou todos!</h1>
-  <p class="subtitulo" id="fim-detalhe"></p>
-  <div class="opcoes">
-    <button class="botao" id="btn-denovo">Jogar de novo</button>
-    <button class="botao roxo" id="btn-inicio">Escolher outro</button>
-  </div>
-</section>
+  <button class="jogo" data-cor="turq" data-pagina="poneis.html"
+          data-fala="Quem sumiu? Olha bem e descubra qual pônei foi embora.">
+    <span class="retrato"><img src="imagens/Princesa Celestia.png" alt=""></span>
+    <span class="texto">
+      <span class="nome">Quem Sumiu?</span>
+      <span class="como">Descubra quem foi embora</span>
+    </span>
+    <span class="seta" aria-hidden="true">▶</span>
+  </button>
 
-<!-- ================= PAINEL DE ERROS ================= -->
-<div id="erros">
-  <button class="fechar" onclick="document.getElementById('erros').classList.remove('visivel')">×</button>
-  <h3>Problemas encontrados</h3>
-  <ul id="erros-lista"></ul>
 </div>
 
+<script src="js/voz.js"></script>
 <script>
-/* ===================================================================
-   1. LISTA DE PÔNEIS  ←←← É SÓ AQUI QUE VOCÊ MEXE
-   -------------------------------------------------------------------
-   BASE  = caminho até a pasta das imagens no GitHub.
-           Troque "main" por "master" se for o nome do seu branch.
-           Se as imagens estiverem numa subpasta, inclua ela no final.
-           Ex.: ".../myponeis/main/imagens/"
-
-   PONEIS = um item por pônei: nome que aparece na carta + nome do arquivo.
-   =================================================================== */
-
-const BASE = "imagens/";
-
-const PONEIS = [
-  { nome:"Amber Waves",            arquivo:"Amber Waves.png" },
-  { nome:"Amethyst Maresbury",     arquivo:"Amethyst Maresbury.png" },
-  { nome:"Amethyst Star",          arquivo:"Amethyst Star.png" },
-  { nome:"Apple Bloom",            arquivo:"Apple Bloom.png" },
-  { nome:"Apple Brown Betty",      arquivo:"Apple Brown Betty.png" },
-  { nome:"Apple Bumpkin",          arquivo:"Apple Bumpkin.png" },
-  { nome:"Apple Cinnamon",         arquivo:"Apple Cinnamon.png" },
-  { nome:"Apple Cobbler",          arquivo:"Apple Cobbler.png" },
-  { nome:"Apple Fritter",          arquivo:"Apple Fritter.png" },
-  { nome:"Apple Honey",            arquivo:"Apple Honey.png" },
-  { nome:"Apple Rose",             arquivo:"Apple Rose.png" },
-  { nome:"Apple Strudel",          arquivo:"Apple Strudel.png" },
-  { nome:"Asno Azedo Simplório",   arquivo:"Asno Azedo Simplório.png" },
-  { nome:"Babs Seed",              arquivo:"Babs Seed.png" },
-  { nome:"Big McIntosh",           arquivo:"Big McIntosh.png" },
-  { nome:"Blaze",                  arquivo:"Blaze.png" },
-  { nome:"Blossomforth",           arquivo:"Blossomforth.png" },
-  { nome:"Bright Smile",           arquivo:"Bright Smile.png" },
-  { nome:"Bulk Biceps",            arquivo:"Bulk Biceps.png" },
-  { nome:"Candy Mane",             arquivo:"Candy Mane.png" },
-  { nome:"Capitã Selena",          arquivo:"Capitã Selena.png" },
-  { nome:"Caramel Apple",          arquivo:"Caramel Apple.png" },
-  { nome:"Charm",                  arquivo:"Charm.png" },
-  { nome:"Cheerilee",              arquivo:"Cheerilee.png" },
-  { nome:"Cheese Sandwich",        arquivo:"Cheese Sandwich.png" },
-  { nome:"Cherry Berry",           arquivo:"Cherry Berry.png" },
-  { nome:"Cherry Fizzy",           arquivo:"Cherry Fizzy.png" },
-  { nome:"Cherry Jubilee",         arquivo:"Cherry Jubilee.png" },
-  { nome:"Claude",                 arquivo:"Claude.png" },
-  { nome:"Cloud Kicker",           arquivo:"Cloud Kicker.png" },
-  { nome:"Coco Crusoe",            arquivo:"Coco Crusoe.png" },
-  { nome:"Coco Pommel",            arquivo:"Coco Pommel.png" },
-  { nome:"Comet Tail",             arquivo:"Comet Tail.png" },
-  { nome:"Compass Star",           arquivo:"Compass Star.png" },
-  { nome:"Crescent Moon",          arquivo:"Crescent Moon.png" },
-  { nome:"Crystal Arrow",          arquivo:"Crystal Arrow.png" },
-  { nome:"DJ Pon-3",               arquivo:"DJ Pon-3.png" },
-  { nome:"Daisy",                  arquivo:"Daisy.png" },
-  { nome:"Daring Do (personagem)", arquivo:"Daring Do (personagem).png" },
-  { nome:"Dark Moon",              arquivo:"Dark Moon.png" },
-  { nome:"Davenport",              arquivo:"Davenport.png" },
-  { nome:"Diamond Mint",           arquivo:"Diamond Mint.png" },
-  { nome:"Diamond Tiara",          arquivo:"Diamond Tiara.png" },
-  { nome:"Discórdia",              arquivo:"Discórdia.png" },
-  { nome:"Double Diamond",         arquivo:"Double Diamond.png" },
-  { nome:"Doutor Horse",           arquivo:"Doutor Horse.png" },
-  { nome:"Dr. Caballeron",         arquivo:"Dr. Caballeron.png" },
-  { nome:"Dr. Hooves",             arquivo:"Dr. Hooves.png" },
-  { nome:"Eclair Crème",           arquivo:"Eclair Crème.png" },
-  { nome:"Elbow Grease",           arquivo:"Elbow Grease.png" },
-  { nome:"Emerald Green",          arquivo:"Emerald Green.png" },
-  { nome:"Enfermeira Redheart",    arquivo:"Enfermeira Redheart.png" },
-  { nome:"Fancy Pants",            arquivo:"Fancy Pants.png" },
-  { nome:"Filthy Rich",            arquivo:"Filthy Rich.png" },
-  { nome:"Fine Line",              arquivo:"Fine Line.png" },
-  { nome:"Fleetfoot",              arquivo:"Fleetfoot.png" },
-  { nome:"Fleur Dis Lee",          arquivo:"Fleur Dis Lee.png" },
-  { nome:"Fleur de Verre",         arquivo:"Fleur de Verre.png" },
-  { nome:"Flurry Heart",           arquivo:"Flurry Heart.png" },
-  { nome:"Gala Appleby",           arquivo:"Gala Appleby.png" },
-  { nome:"Gallant True",           arquivo:"Gallant True.png" },
-  { nome:"Gilda",                  arquivo:"Gilda.png" },
-  { nome:"Gizmo",                  arquivo:"Gizmo.png" },
-  { nome:"Golden Delicious",       arquivo:"Golden Delicious.png" },
-  { nome:"Golden Harvest",         arquivo:"Golden Harvest.png" },
-  { nome:"Goldengrape",            arquivo:"Goldengrape.png" },
-  { nome:"Hayseed Turnip Truck",   arquivo:"Hayseed Turnip Truck.png" },
-  { nome:"Helia",                  arquivo:"Helia.png" },
-  { nome:"Holly Dash",             arquivo:"Holly Dash.png" },
-  { nome:"Hoofbeard",              arquivo:"Hoofbeard.png" },
-  { nome:"Inkwell",                arquivo:"Inkwell.jpg" },
-  { nome:"Iron Will",              arquivo:"Iron Will.png" },
-  { nome:"Ivory",                  arquivo:"Ivory.png" },
-  { nome:"Jeff Letrotski",         arquivo:"Jeff Letrotski.png" },
-  { nome:"Joe",                    arquivo:"Joe.png" },
-  { nome:"Junebug",                arquivo:"Junebug.png" },
-  { nome:"Larry",                  arquivo:"Larry.png" },
-  { nome:"Lemon Hearts",           arquivo:"Lemon Hearts.png" },
-  { nome:"Lemony Gem",             arquivo:"Lemony Gem.png" },
-  { nome:"Lightning Dust",         arquivo:"Lightning Dust.png" },
-  { nome:"Lily Valley",            arquivo:"Lily Valley.png" },
-  { nome:"Liza Doolots",           arquivo:"Liza Doolots.png" },
-  { nome:"Lorde Tirek",            arquivo:"Lorde Tirek.png" },
-  { nome:"Luckette",               arquivo:"Luckette.png" },
-  { nome:"Lucky Clover",           arquivo:"Lucky Clover.png" },
-  { nome:"Lyra Heartstrings",      arquivo:"Lyra Heartstrings.png" },
-  { nome:"Lyrica Lilac",           arquivo:"Lyrica Lilac.png" },
-  { nome:"Masquerade",             arquivo:"Masquerade.png" },
-  { nome:"Matilda",                arquivo:"Matilda.png" },
-  { nome:"Maybelle",               arquivo:"Maybelle.png" },
-  { nome:"Meadow Flower",          arquivo:"Meadow Flower.jpg" },
-  { nome:"Meadow Song",            arquivo:"Meadow Song.png" },
-  { nome:"Merry May",              arquivo:"Merry May.png" },
-  { nome:"Minuette",               arquivo:"Minuette.png" },
-  { nome:"Misty Fly",              arquivo:"Misty Fly.png" },
-  { nome:"Mjölna",                 arquivo:"Mjölna.png" },
-  { nome:"Moon Dancer",            arquivo:"Moon Dancer.png" },
-  { nome:"Múlia Mansa",            arquivo:"Múlia Mansa.png" },
-  { nome:"Neon Lights",            arquivo:"Neon Lights.png" },
-  { nome:"Night Glider",           arquivo:"Night Glider.png" },
-  { nome:"Night Knight",           arquivo:"Night Knight.png" },
-  { nome:"Noteworthy",             arquivo:"Noteworthy.png" },
-  { nome:"Octavia Melody",         arquivo:"Octavia Melody.png" },
-  { nome:"Orange Swirl",           arquivo:"Orange Swirl.png" },
-  { nome:"Owlowiscious",           arquivo:"Owlowiscious.png" },
-  { nome:"Parasol",                arquivo:"Parasol.png" },
-  { nome:"Parish Nandermane",      arquivo:"Parish Nandermane.png" },
-  { nome:"Party Favor",            arquivo:"Party Favor.png" },
-  { nome:"Peachy Pitt",            arquivo:"Peachy Pitt.png" },
-  { nome:"Peachy Sweet",           arquivo:"Peachy Sweet.png" },
-  { nome:"Perfect Pace",           arquivo:"Perfect Pace.png" },
-  { nome:"Pipsqueak",              arquivo:"Pipsqueak.png" },
-  { nome:"Piña Colada",            arquivo:"Piña Colada.png" },
-  { nome:"Ponet",                  arquivo:"Ponet.png" },
-  { nome:"Prim Hemline",           arquivo:"Prim Hemline.png" },
-  { nome:"Prim Posy",              arquivo:"Prim Posy.png" },
-  { nome:"Princesa Amore",         arquivo:"Princesa Amore.png" },
-  { nome:"Princesa Cadance",       arquivo:"Princesa Cadance.png" },
-  { nome:"Princesa Celestia",      arquivo:"Princesa Celestia.png" },
-  { nome:"Princesa Ember",         arquivo:"Princesa Ember.png" },
-  { nome:"Princesa Erroria",       arquivo:"Princesa Erroria.png" },
-  { nome:"Princesa Skystar",       arquivo:"Princesa Skystar.png" },
-  { nome:"Príncipe Blueblood",     arquivo:"Príncipe Blueblood.png" },
-  { nome:"Radiant Hope",           arquivo:"Radiant Hope.jpg" },
-  { nome:"Rainbow Swoop",          arquivo:"Rainbow Swoop.png" },
-  { nome:"Rainbowshine",           arquivo:"Rainbowshine.png" },
-  { nome:"Rainha Chrysalis",       arquivo:"Rainha Chrysalis.png" },
-  { nome:"Rainha Ivona",           arquivo:"Rainha Ivona.png" },
-  { nome:"Randolph",               arquivo:"Randolph.png" },
-  { nome:"Rare Find",              arquivo:"Rare Find.png" },
-  { nome:"Rarity",                 arquivo:"Rarity.png" },
-  { nome:"Red Gala",               arquivo:"Red Gala.png" },
-  { nome:"Rei Leo",                arquivo:"Rei Leo.png" },
-  { nome:"Rei Longhorn",           arquivo:"Rei Longhorn.jpg" },
-  { nome:"Rei Sombra",             arquivo:"Rei Sombra.png" },
-  { nome:"Rei Storm",              arquivo:"Rei Storm.png" },
-  { nome:"Rose",                   arquivo:"Rose.png" },
-  { nome:"Royal Pin",              arquivo:"Royal Pin.png" },
-  { nome:"Royal Riff",             arquivo:"Royal Riff.png" },
-  { nome:"Rubinstein",             arquivo:"Rubinstein.png" },
-  { nome:"Rumble",                 arquivo:"Rumble.png" },
-  { nome:"Sapphire Shores",        arquivo:"Sapphire Shores.png" },
-  { nome:"Sassaflash",             arquivo:"Sassaflash.png" },
-  { nome:"Sassy Saddles",          arquivo:"Sassy Saddles.png" },
-  { nome:"Scootaloo",              arquivo:"Scootaloo.png" },
-  { nome:"Scorpan",                arquivo:"Scorpan.png" },
-  { nome:"Screwy",                 arquivo:"Screwy.png" },
-  { nome:"Sea Swirl",              arquivo:"Sea Swirl.png" },
-  { nome:"Sealed Scroll",          arquivo:"Sealed Scroll.png" },
-  { nome:"Shady Daze",             arquivo:"Shady Daze.png" },
-  { nome:"Shining Armor",          arquivo:"Shining Armor.png" },
-  { nome:"Shoeshine",              arquivo:"Shoeshine.png" },
-  { nome:"Shooting Star",          arquivo:"Shooting Star.png" },
-  { nome:"Silver Spanner",         arquivo:"Silver Spanner.png" },
-  { nome:"Silver Spoon",           arquivo:"Silver Spoon.png" },
-  { nome:"Sir Pony Moore",         arquivo:"Sir Pony Moore.png" },
-  { nome:"Sky Stinger",            arquivo:"Sky Stinger.png" },
-  { nome:"Smolder",                arquivo:"Smolder.png" },
-  { nome:"Snips",                  arquivo:"Snips.png" },
-  { nome:"Soarin",                 arquivo:"Soarin.png" },
-  { nome:"Songbird Serenade",      arquivo:"Songbird Serenade.png" },
-  { nome:"Spitfire",               arquivo:"Spitfire.png" },
-  { nome:"Spoiled Rich",           arquivo:"Spoiled Rich.png" },
-  { nome:"Sprinkle Medley",        arquivo:"Sprinkle Medley.png" },
-  { nome:"Sr. Greenhooves",        arquivo:"Sr. Greenhooves.png" },
-  { nome:"Sr. Waddle",             arquivo:"Sr. Waddle.png" },
-  { nome:"Sra. Harshwhinny",       arquivo:"Sra. Harshwhinny.png" },
-  { nome:"Sra. Peachbottom",       arquivo:"Sra. Peachbottom.png" },
-  { nome:"Star Gazer",             arquivo:"Star Gazer.png" },
-  { nome:"Star Hunter",            arquivo:"Star Hunter.png" },
-  { nome:"Star Swirl, o Barbudo",  arquivo:"Star Swirl, o Barbudo.png" },
-  { nome:"Starry Eyes",            arquivo:"Starry Eyes.png" },
-  { nome:"Stellar Eclipse",        arquivo:"Stellar Eclipse.png" },
-  { nome:"Steven Magnet",          arquivo:"Steven Magnet.png" },
-  { nome:"Strawberry Sunrise",     arquivo:"Strawberry Sunrise.png" },
-  { nome:"Stygian",                arquivo:"Stygian.png" },
-  { nome:"Sugar Belle",            arquivo:"Sugar Belle.png" },
-  { nome:"Sunburst",               arquivo:"Sunburst.png" },
-  { nome:"Sunny Rays",             arquivo:"Sunny Rays.png" },
-  { nome:"Sunshower Raindrops",    arquivo:"Sunshower Raindrops.png" },
-  { nome:"Suri Polomare",          arquivo:"Suri Polomare.png" },
-  { nome:"Surprise",               arquivo:"Surprise.png" },
-  { nome:"Svengallop",             arquivo:"Svengallop.png" },
-  { nome:"Sweetie Belle",          arquivo:"Sweetie Belle.png" },
-  { nome:"Sweetie Drops",          arquivo:"Sweetie Drops.png" },
-  { nome:"Tank",                   arquivo:"Tank.png" },
-  { nome:"Teddie Safari",          arquivo:"Teddie Safari.png" },
-  { nome:"Tempest Shadow",         arquivo:"Tempest Shadow.png" },
-  { nome:"Tender Taps",            arquivo:"Tender Taps.png" },
-  { nome:"Terramar",               arquivo:"Terramar.png" },
-  { nome:"Thorax",                 arquivo:"Thorax.png" },
-  { nome:"Thunderlane",            arquivo:"Thunderlane.png" },
-  { nome:"Tia Applesauce",         arquivo:"Tia Applesauce.png" },
-  { nome:"Tree Hugger",            arquivo:"Tree Hugger.png" },
-  { nome:"Trenderhoof",            arquivo:"Trenderhoof.png" },
-  { nome:"Trixie",                 arquivo:"Trixie.png" },
-  { nome:"Trouble Shoes",          arquivo:"Trouble Shoes.png" },
-  { nome:"Twilight Sky",           arquivo:"Twilight Sky.png" },
-  { nome:"Twinkleshine",           arquivo:"Twinkleshine.png" },
-  { nome:"Twist",                  arquivo:"Twist.png" },
-  { nome:"Vapor Trail",            arquivo:"Vapor Trail.png" },
-  { nome:"Warm Front",             arquivo:"Warm Front.png" },
-  { nome:"Wensley",                arquivo:"Wensley.png" },
-  { nome:"White Lightning",        arquivo:"White Lightning.png" },
-  { nome:"Wind Rider",             arquivo:"Wind Rider.png" },
-  { nome:"Winona",                 arquivo:"Winona.png" },
-  { nome:"Written Script",         arquivo:"Written Script.png" },
-  { nome:"Xerife Silverstar",      arquivo:"Xerife Silverstar.png" },
-  { nome:"Zephyr Breeze",          arquivo:"Zephyr Breeze.png" },
-  { nome:"Zipporwhill",            arquivo:"Zipporwhill.png" },
-];
-
-/* ===================================================================
-   2. MOTOR DO JOGO
-   =================================================================== */
-
-const $ = (id) => document.getElementById(id);
-
-// --- relatório de erros na própria tela (sem precisar de dev tools) ---
-function reportarErro(texto){
-  const painel = $("erros");
-  const lista  = $("erros-lista");
-  const item   = document.createElement("li");
-  item.textContent = texto;
-  lista.appendChild(item);
-  painel.classList.add("visivel");
-}
-window.addEventListener("error", (e) => {
-  reportarErro("Erro no código: " + e.message + "  (linha " + e.lineno + ")");
-});
-
-// os arquivos têm espaço e acento no nome, então precisam ser codificados
-function urlDoPonei(p){ return BASE + encodeURIComponent(p.arquivo); }
-
-/* ===================================================================
-   VOZ  — trazida do js/jogo.js do "Cadê o Pônei?", com o diagnóstico
-   na tela. Ela não sabe ler, então a voz é a interface de verdade.
-   =================================================================== */
-const TEM_VOZ = ('speechSynthesis' in window);
-let vozBR = null, jaFalou = false, vozConfirmadaFeminina = false;
-let vozesPt = [], vozEscolhidaAMao = false;
-
-/* nomes de voz feminina em pt que aparecem nos aparelhos mais comuns.
-   Android costuma expor "...#female_1-local", iOS usa Luciana, Windows Maria/Francisca. */
-const FEMININA = /(luciana|joana|fernanda|camila|francisca|maria|thalita|brenda|helena|in[eê]s|catarina|vit[oó]ria|female|feminin|mulher|woman)/i;
-const MASCULINA = /(felipe|daniel|ricardo|jo[aã]o|male|masculin|homem|eddy|reed|rocko|grandpa)/i;
-
-function marcaFeminina(){
-  vozConfirmadaFeminina = !!vozBR &&
-    FEMININA.test((vozBR.name + ' ' + (vozBR.voiceURI || '')).toLowerCase());
-}
-
-/* troca para a próxima voz em português do aparelho */
-function trocaVoz(){
-  if(vozesPt.length < 2) return false;
-  const i = vozesPt.indexOf(vozBR);
-  vozBR = vozesPt[(i + 1) % vozesPt.length];
-  vozEscolhidaAMao = true;
-  marcaFeminina();
-  return true;
-}
-
-function pontuaVoz(v){
-  const lang = (v.lang || '').replace('_','-').toLowerCase();
-  let p;
-  if(lang === 'pt-br')          p = 100;   // português do Brasil primeiro
-  else if(lang.startsWith('pt')) p = 60;   // português de Portugal serve de reserva
-  else return -1;
-
-  const rotulo = (v.name + ' ' + (v.voiceURI || '')).toLowerCase();
-  if(FEMININA.test(rotulo))  p += 50;
-  if(MASCULINA.test(rotulo)) p -= 70;
-  if(v.localService)         p += 5;       // voz local não depende de internet
-  return p;
-}
-
-function escolheVoz(){
-  if(!TEM_VOZ) return;
-  const candidatas = speechSynthesis.getVoices()
-    .map(v => ({ v, p: pontuaVoz(v) }))
-    .filter(x => x.p >= 0)
-    .sort((a, b) => b.p - a.p);
-
-  vozesPt = candidatas.map(x => x.v);
-  if(vozEscolhidaAMao && vozBR) return;   // respeita a troca feita pelo pai
-  vozBR = vozesPt.length ? vozesPt[0] : null;
-  marcaFeminina();
-}
-if(TEM_VOZ){ escolheVoz(); speechSynthesis.onvoiceschanged = escolheVoz; }
-
-function marcaStatus(txt, ok){
-  const b = $("btnStatus");
-  b.textContent = txt;
-  b.dataset.ok = ok;
-}
-function avisa(txt){
-  const r = $("recado");
-  if(!txt){ r.classList.add("escondida"); return; }
-  r.textContent = txt;
-  r.classList.remove("escondida");
-}
-
-function fala(texto){
-  if(!TEM_VOZ){
-    marcaStatus('🔇 sem voz','nao');
-    avisa('Este navegador não tem voz. Abra o jogo no Chrome ou no Safari.');
-    return;
-  }
-  try{
-    // só cancela se realmente houver algo tocando (cancelar à toa mata a fala no iPhone)
-    if(speechSynthesis.speaking || speechSynthesis.pending) speechSynthesis.cancel();
-    speechSynthesis.resume();
-    const f = new SpeechSynthesisUtterance(texto);
-    f.lang = 'pt-BR'; f.rate = .85;
-    // se não deu para confirmar que a voz é feminina, o tom mais alto ajuda a aproximar
-    f.pitch = vozConfirmadaFeminina ? 1.15 : 1.35;
-    if(vozBR) f.voice = vozBR;
-    f.onstart = () => { jaFalou = true; marcaStatus('🔊 voz ok','sim'); avisa(''); };
-    f.onerror = e => {
-      marcaStatus('🔇 sem voz','nao');
-      avisa('A voz falhou (' + (e.error || 'motivo desconhecido') + '). Toque aqui para fechar.');
-    };
-    speechSynthesis.speak(f);
-  }catch(e){
-    marcaStatus('🔇 sem voz','nao');
-    avisa('A voz falhou: ' + e.message);
-  }
-}
-
-/* teste feito dentro do toque real do dedo — é o que destrava o áudio no celular */
-function testaVoz(){
-  jaFalou = false;
-  fala('Oi! Vamos brincar com os pôneis?');
-  if(vozBR){
-    avisa('Voz em uso: ' + vozBR.name + ' (' + vozBR.lang + ')'
-        + (vozesPt.length > 1
-            ? ' · ' + vozesPt.length + ' vozes em português no aparelho. Toque em "trocar voz" para ouvir a próxima.'
-            : ' · é a única voz em português instalada.'));
-  }
-  setTimeout(() => {
-    if(jaFalou) return;
-    marcaStatus('🔇 sem voz','nao');
-    const nVozes = TEM_VOZ ? speechSynthesis.getVoices().length : 0;
-    if(nVozes === 0){
-      avisa('O aparelho não tem nenhuma voz instalada. No Android: Configurações → Acessibilidade → Saída de texto para fala → instalar o Português (Brasil).');
-    }else if(!vozBR){
-      avisa('O aparelho tem ' + nVozes + ' vozes, mas nenhuma em português. Instale o Português (Brasil) na saída de texto para fala.');
-    }else{
-      avisa('A voz não saiu. Verifique: 1) o jogo precisa estar no Chrome ou Safari, não dentro de outro aplicativo; 2) no iPhone, desligue a chavinha de silencioso; 3) volume da mídia no máximo.');
-    }
-  }, 2200);
-}
-
-/* ===================================================================
-   SONS  — mesmo bip do jogo original, com melodias novas
-   =================================================================== */
-let ctx = null;
-function bip(freqs, dur = .12){
-  try{
-    ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
-    if(ctx.state === "suspended") ctx.resume();
-    freqs.forEach((f, i) => {
-      const o = ctx.createOscillator(), g = ctx.createGain();
-      o.type = 'triangle'; o.frequency.value = f;
-      const t = ctx.currentTime + i * dur;
-      g.gain.setValueAtTime(.0001, t);
-      g.gain.exponentialRampToValueAtTime(.25, t + .02);
-      g.gain.exponentialRampToValueAtTime(.0001, t + dur);
-      o.connect(g).connect(ctx.destination); o.start(t); o.stop(t + dur + .02);
-    });
-  }catch(e){}
-}
-
-const somVira    = () => bip([700], .07);
-const somAchou   = () => bip([784, 988, 1319], .12);
-const somErrou   = () => bip([330, 262], .14);
-const somVitoria = () => bip([523, 659, 784, 1047, 784, 1047], .15);
-const somComeco  = () => bip([523, 659, 784], .10);
-
-/* elogios sorteados, para não repetir sempre a mesma frase */
-const ELOGIOS = ['Isso!', 'Muito bem!', 'Boa!', 'Achou!', 'Que legal!', 'Você conseguiu!'];
-const INCENTIVOS = ['Tenta de novo.', 'Quase!', 'Procura mais um pouquinho.', 'Vai achar!'];
-const escolhe = a => a[Math.floor(Math.random() * a.length)];
-
-// --- estado ---
-let cartas = [], viradas = [], jogadas = 0, achados = 0, totalPares = 0, travado = false;
-
-function embaralhar(lista){
-  const c = lista.slice();
-  for(let i = c.length - 1; i > 0; i--){
-    const j = Math.floor(Math.random() * (i + 1));
-    [c[i], c[j]] = [c[j], c[i]];
-  }
-  return c;
-}
-
-/* Escolhe o arranjo que deixa a carta MAIOR possível dentro do espaço real,
-   testando todas as contagens de coluna. Antes o CSS derivava a largura da
-   altura da linha, e no celular isso estourava a coluna e cortava as cartas. */
-function ajustaTabuleiro(){
-  const tab = $("tabuleiro");
-  const n = cartas.length;
-  if(!n) return;
-
-  const L = tab.clientWidth, A = tab.clientHeight;
-  if(L < 40 || A < 40) return;
-
-  const gap = n > 12 ? 6 : 9;
-  let melhor = null;
-
-  for(let cols = 2; cols <= Math.min(6, n); cols++){
-    const linhas = Math.ceil(n / cols);
-    const largDisponivel = (L - gap * (cols - 1)) / cols;
-    const altDisponivel  = (A - gap * (linhas - 1)) / linhas;
-    // carta é 3:4, então a largura final é limitada pelos dois lados
-    const larg = Math.min(largDisponivel, altDisponivel * 0.75);
-    if(larg > 0 && (!melhor || larg > melhor.larg)) melhor = { larg, cols, linhas };
-  }
-  if(!melhor) return;
-
-  const larg = Math.floor(melhor.larg);
-  const alt  = Math.floor(larg * 4 / 3);
-
-  tab.style.gap = gap + "px";
-  tab.style.gridTemplateColumns = "repeat(" + melhor.cols + ", " + larg + "px)";
-  tab.style.gridAutoRows = alt + "px";
-  // o nome escrito acompanha o tamanho da carta, senão some ou estoura
-  tab.style.setProperty("--nome-fs", Math.max(7, Math.min(13, Math.round(larg / 7))) + "px");
-}
-
-addEventListener("resize", ajustaTabuleiro);
-addEventListener("orientationchange", () => setTimeout(ajustaTabuleiro, 250));
-
-function mostrarTela(id){
-  document.querySelectorAll(".tela").forEach(t => t.classList.remove("ativa"));
-  $(id).classList.add("ativa");
-}
-
-function iniciar(pares){
-
-  if(PONEIS.length < pares){
-    reportarErro("A lista tem só " + PONEIS.length + " pôneis, mas o jogo pediu " + pares + " pares.");
-    return;
-  }
-
-  totalPares = pares;
-  jogadas = 0; achados = 0; viradas = []; travado = false;
-
-  const escolhidos = embaralhar(PONEIS).slice(0, pares);
-  cartas = embaralhar(escolhidos.concat(escolhidos));
-
-  const tab = $("tabuleiro");
-  tab.innerHTML = "";
-
-  cartas.forEach((ponei, i) => {
-    const btn = document.createElement("button");
-    btn.className = "carta";
-    btn.dataset.indice = i;
-    btn.dataset.nome = ponei.nome;
-    btn.setAttribute("aria-label", "Carta virada para baixo");
-    btn.innerHTML =
-      '<div class="carta-interna">' +
-        '<div class="face verso">' +
-          '<svg viewBox="0 0 100 100" aria-hidden="true">' +
-            '<path fill="#FFD34A" d="M50 6l11 27 29 2-22 19 7 28-25-15-25 15 7-28L10 35l29-2z"/>' +
-            '<circle cx="20" cy="20" r="4" fill="#FF6FB0"/>' +
-            '<circle cx="82" cy="30" r="3" fill="#35CFC9"/>' +
-            '<circle cx="26" cy="82" r="3" fill="#35CFC9"/>' +
-            '<circle cx="78" cy="78" r="4" fill="#FF6FB0"/>' +
-          '</svg>' +
-        '</div>' +
-        '<div class="face frente"></div>' +
-      '</div>';
-
-    const frente = btn.querySelector(".frente");
-    const img = new Image();
-    img.alt = ponei.nome;
-    img.src = urlDoPonei(ponei);
-    img.onerror = () => {
-      frente.innerHTML = '<div class="quebrado">Imagem não carregou<br>' + ponei.arquivo + '</div>';
-      reportarErro("Não carregou: " + urlDoPonei(ponei));
-    };
-    frente.appendChild(img);
-
-    const nome = document.createElement("div");
-    nome.className = "nome";
-    nome.textContent = ponei.nome;
-    frente.appendChild(nome);
-
-    btn.addEventListener("click", () => virar(btn));
-    tab.appendChild(btn);
+/* se a imagem do retrato não carregar, entra um emoji no lugar
+   (mesma ideia do relatório de imagens: nada quebra pela metade) */
+const RESERVA = ["🃏", "🔍", "❓"];
+document.querySelectorAll(".retrato img").forEach((img, i) => {
+  img.addEventListener("error", () => {
+    const s = document.createElement("span");
+    s.className = "fallback";
+    s.textContent = RESERVA[i] || "🦄";
+    img.replaceWith(s);
   });
+});
 
-  atualizarPlacar();
-  mostrarTela("tela-jogo");
-  // só dá para medir depois que a tela virou visível
-  requestAnimationFrame(ajustaTabuleiro);
-  somComeco();
-  setTimeout(() => fala('Ache os dois pôneis iguais! Toque em uma cartinha.'), 400);
-  agendaDica();
-}
-
-function atualizarPlacar(){
-  $("m-pares").textContent = achados + "/" + totalPares;
-  $("m-jogadas").textContent = jogadas;
-}
-
-function virar(btn){
-  if(travado) return;
-  if(btn.classList.contains("virada")) return;
-
-  cancelaDica();
-  btn.classList.add("virada");
-  btn.setAttribute("aria-label", btn.dataset.nome);
-  somVira();
-  viradas.push(btn);
-
-  // ela não lê: o nome do pônei só existe se for falado
-  fala(btn.dataset.nome);
-
-  if(viradas.length < 2){ agendaDica(); return; }
-
-  jogadas++;
-  atualizarPlacar();
-  const [a, b] = viradas;
-
-  if(a.dataset.nome === b.dataset.nome){
-    viradas = [];
-    achados++;
-    a.classList.add("achou");
-    b.classList.add("achou");
-    somAchou();
-    atualizarPlacar();
-    if(achados === totalPares){
-      setTimeout(terminar, 700);
-    }else{
-      setTimeout(() => fala(escolhe(ELOGIOS) + ' ' + a.dataset.nome + '!'), 500);
-      agendaDica();
-    }
-  }else{
-    travado = true;
-    setTimeout(() => { somErrou(); fala(escolhe(INCENTIVOS)); }, 450);
-    setTimeout(() => {
-      a.classList.remove("virada");
-      b.classList.remove("virada");
-      a.setAttribute("aria-label", "Carta virada para baixo");
-      b.setAttribute("aria-label", "Carta virada para baixo");
-      viradas = [];
-      travado = false;
-      agendaDica();
-    }, 1800);
-  }
-}
-
-/* se ela parar de tocar, a voz chama de volta em vez de ela ficar perdida */
-let relogioDica = null;
-function cancelaDica(){ clearTimeout(relogioDica); }
-function agendaDica(){
-  cancelaDica();
-  relogioDica = setTimeout(() => {
-    if($("tela-jogo").classList.contains("ativa")) fala('Toque em uma cartinha para virar.');
-  }, 15000);
-}
-
-function terminar(){
-  $("fim-detalhe").textContent = totalPares + " pares em " + jogadas + " jogadas";
-  mostrarTela("tela-fim");
-  cancelaDica();
-  somVitoria();
-  setTimeout(() => fala('Você achou todos os pôneis! Muito bem!'), 300);
-  chuvaDeEstrelas();
-}
-
-function chuvaDeEstrelas(){
-  const simbolos = ["⭐","✨","🌈","💖","🦄"];
-  for(let i = 0; i < 22; i++){
-    const e = document.createElement("div");
-    e.className = "estrela-cai";
-    e.textContent = simbolos[Math.floor(Math.random() * simbolos.length)];
-    e.style.left = Math.random() * 96 + "vw";
-    e.style.animationDuration = (2.2 + Math.random() * 2) + "s";
-    e.style.animationDelay = (Math.random() * 1.2) + "s";
-    document.body.appendChild(e);
-    setTimeout(() => e.remove(), 6000);
-  }
-}
-
-/* ===================================================================
-   3. TESTE DE IMAGENS  — diz na tela quais URLs estão quebradas
-   =================================================================== */
-function testarImagens(){
-  const saida = $("resultado-teste");
-  $("erros-lista").innerHTML = "";
-  $("erros").classList.remove("visivel");
-  saida.textContent = "Testando " + PONEIS.length + " imagens...";
-
-  let ok = 0, falhou = 0;
-  const fim = () => {
-    if(ok + falhou < PONEIS.length) return;
-    saida.textContent = ok + " carregaram · " + falhou + " falharam";
-    if(falhou > 0) reportarErro("Confira o BASE e os nomes dos arquivos no topo do código.");
-  };
-
-  PONEIS.forEach(p => {
-    const img = new Image();
-    img.onload  = () => { ok++; fim(); };
-    img.onerror = () => { falhou++; reportarErro("Falhou: " + urlDoPonei(p)); fim(); };
-    img.src = urlDoPonei(p);
+document.querySelectorAll(".jogo").forEach(b => {
+  b.addEventListener("click", () => {
+    // o toque é real, então é aqui que o áudio do celular destrava
+    somToque();
+    fala(b.dataset.fala);
+    // dá tempo da frase começar antes de trocar de página
+    setTimeout(() => { location.href = b.dataset.pagina; }, 900);
   });
-}
-
-/* ===================================================================
-   4. LIGAÇÕES DOS BOTÕES
-   =================================================================== */
-document.querySelectorAll("[data-pares]").forEach(b => {
-  b.addEventListener("click", () => iniciar(parseInt(b.dataset.pares, 10)));
-});
-$("btn-testar").addEventListener("click", testarImagens);
-$("btn-voltar").addEventListener("click", () => { cancelaDica(); mostrarTela("tela-inicio"); });
-$("btn-denovo").addEventListener("click", () => iniciar(totalPares));
-$("btn-inicio").addEventListener("click", () => mostrarTela("tela-inicio"));
-
-// o botao de status e' o teste de voz feito dentro do toque real do dedo
-$("btnStatus").addEventListener("click", testaVoz);
-$("btnTrocaVoz").addEventListener("click", () => {
-  if(trocaVoz()) testaVoz();
-  else avisa('O aparelho só tem uma voz em português instalada.');
-});
-$("recado").addEventListener("click", () => avisa(''));
-
-// desenha as cartinhas dos botoes de dificuldade (a quantidade e' a informacao)
-document.querySelectorAll(".nivel").forEach(b => {
-  const n = parseInt(b.dataset.pares, 10) * 2;
-  const alvo = b.querySelector(".miniaturas");
-  for(let i = 0; i < n; i++){
-    const m = document.createElement("span");
-    m.className = "mini";
-    alvo.appendChild(m);
-  }
 });
 </script>
 </body>
