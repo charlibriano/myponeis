@@ -129,13 +129,23 @@ body{
     <span class="seta" aria-hidden="true">▶</span>
   </button>
 
+  <button class="jogo" data-cor="roxo" data-pagina="labirinto.html"
+          data-fala="Leva o pônei! Arraste o dedo pelo caminho até a amiga.">
+    <span class="retrato"><img src="imagens/Apple Bloom.png" alt=""></span>
+    <span class="texto">
+      <span class="nome">Leva o Pônei</span>
+      <span class="como">Ache o caminho até a amiga</span>
+    </span>
+    <span class="seta" aria-hidden="true">▶</span>
+  </button>
+
 </div>
 
 <script src="voz.js"></script>
 <script>
 /* se a imagem do retrato não carregar, entra um emoji no lugar
    (mesma ideia do relatório de imagens: nada quebra pela metade) */
-const RESERVA = ["🃏", "🔍", "❓"];
+const RESERVA = ["🃏", "🔍", "❓", "🌀"];
 document.querySelectorAll(".retrato img").forEach((img, i) => {
   img.addEventListener("error", () => {
     const s = document.createElement("span");
