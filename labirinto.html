@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Leva o Pônei — Labirinto</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --lilas:#EFE3FF; --rosa-claro:#FFE4F2;
+  --roxo:#6B3FBF; --roxo-escuro:#4A2A87;
+  --rosa:#FF6FB0; --turquesa:#35CFC9; --amarelo:#FFD34A;
+  --texto:#40276E;
+  --parede:#7B57C9;
+}
+*{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+html,body{ height:100%; overflow:hidden; }
+body{
+  font-family:'Baloo 2','Segoe UI Rounded','SF Pro Rounded',system-ui,sans-serif;
+  color:var(--texto);
+  background:
+    radial-gradient(1200px 600px at 20% -10%, #FFF6C9 0%, transparent 55%),
+    linear-gradient(160deg, var(--lilas) 0%, var(--rosa-claro) 100%);
+  display:flex; flex-direction:column;
+  padding:calc(8px + env(safe-area-inset-top)) 10px calc(10px + env(safe-area-inset-bottom));
+  user-select:none; touch-action:none;
+}
+
+/* ---------- barra ---------- */
+.barra{ display:flex; align-items:center; justify-content:space-between; gap:8px; flex:0 0 auto; margin-bottom:8px; }
+.marcador{
+  background:rgba(255,255,255,.75); border-radius:14px; padding:6px 14px;
+  font-weight:800; font-size:17px; color:var(--roxo);
+  box-shadow:0 2px 6px rgba(107,63,191,.14); text-align:center; min-width:72px;
+}
+.marcador span{ display:block; font-size:10px; font-weight:600; color:#9A83C4; letter-spacing:.08em; text-transform:uppercase; }
+.icone{
+  border:none; background:rgba(255,255,255,.75); color:var(--roxo);
+  font-family:inherit; font-weight:800; font-size:20px;
+  width:44px; height:44px; border-radius:14px; cursor:pointer;
+  box-shadow:0 2px 6px rgba(107,63,191,.14); flex:0 0 auto;
+}
+
+/* ---------- labirinto ---------- */
+#palco{ flex:1; min-height:0; display:flex; align-items:center; justify-content:center; }
+#labirinto{ position:relative; }
+
+.celula{
+  position:absolute;
+  border:0 solid var(--parede);
+  background:rgba(255,255,255,.5);
+}
+.celula.pisada{ background:#FFF3B8; }        /* por onde ela já passou */
+.celula.chegada{ background:#D8F7F0; }
+
+#poneiz, #amiga{
+  position:absolute; display:flex; align-items:center; justify-content:center;
+  pointer-events:none; z-index:3;
+}
+#poneiz{ transition:left .16s ease, top .16s ease; z-index:4; }
+#poneiz img, #amiga img{ width:100%; height:100%; object-fit:contain; }
+#poneiz .emoji, #amiga .emoji{ font-size:26px; }
+
+@keyframes pulsa{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.12); } }
+#amiga{ animation:pulsa 1.6s ease-in-out infinite; }
+
+/* ---------- setas ---------- */
+#setas{
+  flex:0 0 auto; display:grid; gap:8px; justify-content:center; margin-top:10px;
+  grid-template-columns:repeat(3, 62px); grid-template-rows:repeat(2, 54px);
+}
+.seta{
+  border:none; border-radius:18px; cursor:pointer;
+  font-family:inherit; font-size:26px; font-weight:800; color:#fff;
+  background:linear-gradient(180deg,#8B5CE0 0%, var(--roxo) 100%);
+  box-shadow:0 4px 0 var(--roxo-escuro);
+}
+.seta:active{ transform:translateY(3px); box-shadow:0 1px 0 var(--roxo-escuro); }
+.seta[data-dir="cima"]  { grid-column:2; grid-row:1; }
+.seta[data-dir="esq"]   { grid-column:1; grid-row:2; }
+.seta[data-dir="baixo"] { grid-column:2; grid-row:2; }
+.seta[data-dir="dir"]   { grid-column:3; grid-row:2; }
+
+/* ---------- vitória ---------- */
+#festa{
+  position:fixed; inset:0; z-index:60; display:none;
+  align-items:center; justify-content:center; flex-direction:column; gap:14px;
+  background:rgba(255,246,201,.92); text-align:center; padding:20px;
+}
+#festa.visivel{ display:flex; }
+#festa .titulo{ font-size:clamp(30px,10vw,48px); font-weight:800; color:var(--roxo); text-shadow:0 3px 0 #fff; }
+#festa .botao{
+  border:none; border-radius:22px; cursor:pointer; font-family:inherit;
+  font-weight:800; font-size:22px; color:#fff; padding:16px 30px;
+  background:linear-gradient(180deg, var(--rosa) 0%, #E3488F 100%);
+  box-shadow:0 5px 0 #C43A79;
+}
+.estrela-cai{ position:fixed; top:-40px; font-size:26px; pointer-events:none; animation:cair linear forwards; z-index:61; }
+@keyframes cair{ to{ transform:translateY(110vh) rotate(360deg); opacity:.2; } }
+
+/* ---------- voz ---------- */
+#btnStatus, #btnTrocaVoz{
+  border:none; border-radius:12px; cursor:pointer;
+  font-family:inherit; font-weight:800; font-size:12px; padding:6px 10px;
+  background:rgba(255,255,255,.8); color:#8A6FBF;
+  box-shadow:0 2px 6px rgba(107,63,191,.14); flex:0 0 auto;
+}
+#btnStatus[data-ok="sim"]{ background:#D8F7F0; color:#12786F; }
+#btnStatus[data-ok="nao"]{ background:#FFDDE6; color:#B02A4A; }
+#recado{
+  position:fixed; left:8px; right:8px; top:calc(56px + env(safe-area-inset-top)); z-index:70;
+  background:#3B1220; color:#FFE6EE; border:2px solid var(--rosa); border-radius:14px;
+  padding:10px 12px; font-size:13px; line-height:1.45; cursor:pointer;
+  box-shadow:0 8px 24px rgba(0,0,0,.3);
+}
+#recado.escondida{ display:none; }
+
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration:.01ms !important; transition-duration:.01ms !important; }
+}
+</style>
+</head>
+<body>
+
+<div id="recado" class="escondida"></div>
+
+<div class="barra">
+  <button class="icone" id="btnCasa" aria-label="Voltar aos jogos">🏠</button>
+  <div class="marcador"><span>Estrelas</span><b id="mEstrelas">0</b></div>
+  <div class="marcador"><span>Labirinto</span><b id="mNivel">1</b></div>
+  <button id="btnTrocaVoz">trocar voz</button>
+  <button id="btnStatus" data-ok="?">🔈 voz</button>
+</div>
+
+<div id="palco"><div id="labirinto"></div></div>
+
+<div id="setas">
+  <button class="seta" data-dir="cima"  aria-label="Para cima">▲</button>
+  <button class="seta" data-dir="esq"   aria-label="Para a esquerda">◀</button>
+  <button class="seta" data-dir="baixo" aria-label="Para baixo">▼</button>
+  <button class="seta" data-dir="dir"   aria-label="Para a direita">▶</button>
+</div>
+
+<div id="festa">
+  <div class="titulo" id="festaTitulo">Chegou!</div>
+  <button class="botao" id="btnProximo">Outro labirinto</button>
+</div>
+
+<script src="personagens.js"></script>
+<script src="voz.js"></script>
+<script>
+/* ===================================================================
+   LABIRINTO — "Leva o Pônei"
+   Ela tem 4 anos e não lê: a instrução é falada, e o caminho já
+   percorrido fica pintado para ela não se perder.
+   =================================================================== */
+
+const $ = id => document.getElementById(id);
+
+addEventListener("error", e => {
+  const r = $("recado");
+  if(!r) return;
+  r.textContent = "Erro: " + e.message + (e.lineno ? " (linha " + e.lineno + ")" : "");
+  r.classList.remove("escondida");
+});
+$("recado").addEventListener("click", () => $("recado").classList.add("escondida"));
+
+/* o voz.js pode faltar — o jogo não pode morrer por causa disso */
+const TEM_VOZJS = (typeof fala === "function");
+const dizer   = t => { if(TEM_VOZJS) try{ fala(t); }catch(e){} };
+const tocar   = f => { if(typeof f === "function") try{ f(); }catch(e){} };
+
+/* ---------- elenco: usa as imagens já baixadas ---------- */
+const TEM_ELENCO = (typeof PERSONAGENS !== "undefined" && Array.isArray(PERSONAGENS) && PERSONAGENS.length);
+const sorteia = a => a[Math.floor(Math.random() * a.length)];
+
+function retratoDe(p){
+  if(p && p.img) return '<img src="' + encodeURI(p.img) + '" alt="' + p.nome + '">';
+  return '<span class="emoji">🦄</span>';
+}
+
+/* ===================================================================
+   1. GERAÇÃO DO LABIRINTO
+   Algoritmo de escavação (recursive backtracker): parte de uma célula,
+   derruba paredes andando ao acaso e volta atrás quando encurrala.
+   Gera sempre um labirinto com um único caminho entre dois pontos —
+   ou seja, ela nunca fica presa e nunca tem becos infinitos.
+   =================================================================== */
+let grade = [], linhas = 4, colunas = 4;
+let pr = 0, pc = 0;              // posição do pônei
+let nivel = 1, estrelas = 0, lado = 60;
+let poneiAtual = null, amigaAtual = null;
+
+function geraLabirinto(nl, nc){
+  grade = [];
+  for(let r = 0; r < nl; r++){
+    grade.push([]);
+    for(let c = 0; c < nc; c++){
+      grade[r].push({ cima:true, baixo:true, esq:true, dir:true, visitada:false });
+    }
+  }
+
+  const pilha = [[0, 0]];
+  grade[0][0].visitada = true;
+
+  while(pilha.length){
+    const [r, c] = pilha[pilha.length - 1];
+    const vizinhos = [];
+    if(r > 0      && !grade[r-1][c].visitada) vizinhos.push(['cima',  r-1, c]);
+    if(r < nl - 1 && !grade[r+1][c].visitada) vizinhos.push(['baixo', r+1, c]);
+    if(c > 0      && !grade[r][c-1].visitada) vizinhos.push(['esq',   r, c-1]);
+    if(c < nc - 1 && !grade[r][c+1].visitada) vizinhos.push(['dir',   r, c+1]);
+
+    if(!vizinhos.length){ pilha.pop(); continue; }
+
+    const [dir, nr, ncol] = sorteia(vizinhos);
+    const oposto = { cima:'baixo', baixo:'cima', esq:'dir', dir:'esq' }[dir];
+    grade[r][c][dir] = false;
+    grade[nr][ncol][oposto] = false;
+    grade[nr][ncol].visitada = true;
+    pilha.push([nr, ncol]);
+  }
+}
+
+/* ===================================================================
+   2. DESENHO — o tamanho da célula vem do espaço real da tela,
+   mesma lógica do tabuleiro da memória.
+   =================================================================== */
+function desenha(){
+  const palco = $("palco");
+  const L = palco.clientWidth, A = palco.clientHeight;
+  lado = Math.floor(Math.min(L / colunas, A / linhas));
+  lado = Math.max(34, Math.min(lado, 92));
+
+  const cx = $("labirinto");
+  cx.style.width  = (colunas * lado) + "px";
+  cx.style.height = (linhas  * lado) + "px";
+  cx.innerHTML = "";
+
+  const espessura = Math.max(3, Math.round(lado / 14));
+
+  for(let r = 0; r < linhas; r++){
+    for(let c = 0; c < colunas; c++){
+      const g = grade[r][c];
+      const d = document.createElement("div");
+      d.className = "celula";
+      d.dataset.r = r; d.dataset.c = c;
+      d.style.left = (c * lado) + "px";
+      d.style.top  = (r * lado) + "px";
+      d.style.width = lado + "px";
+      d.style.height = lado + "px";
+      d.style.borderTopWidth    = g.cima  ? espessura + "px" : "0";
+      d.style.borderBottomWidth = g.baixo ? espessura + "px" : "0";
+      d.style.borderLeftWidth   = g.esq   ? espessura + "px" : "0";
+      d.style.borderRightWidth  = g.dir   ? espessura + "px" : "0";
+      if(r === linhas - 1 && c === colunas - 1) d.classList.add("chegada");
+      cx.appendChild(d);
+    }
+  }
+
+  const amiga = document.createElement("div");
+  amiga.id = "amiga";
+  amiga.style.width = lado + "px"; amiga.style.height = lado + "px";
+  amiga.style.left = ((colunas - 1) * lado) + "px";
+  amiga.style.top  = ((linhas  - 1) * lado) + "px";
+  amiga.innerHTML = retratoDe(amigaAtual);
+  cx.appendChild(amiga);
+
+  const p = document.createElement("div");
+  p.id = "poneiz";
+  p.style.width = lado + "px"; p.style.height = lado + "px";
+  p.innerHTML = retratoDe(poneiAtual);
+  cx.appendChild(p);
+
+  posicionaPonei();
+  marcaPisada();
+}
+
+function posicionaPonei(){
+  const p = $("poneiz");
+  if(!p) return;
+  p.style.left = (pc * lado) + "px";
+  p.style.top  = (pr * lado) + "px";
+}
+
+function marcaPisada(){
+  const c = document.querySelector('.celula[data-r="' + pr + '"][data-c="' + pc + '"]');
+  if(c && !c.classList.contains("chegada")) c.classList.add("pisada");
+}
+
+/* ===================================================================
+   3. MOVIMENTO
+   =================================================================== */
+let travado = false;
+
+function move(dir){
+  if(travado) return;
+  const g = grade[pr][pc];
+  if(g[dir]) {              // tem parede: avisa de leve e não sai do lugar
+    tocar(typeof somErrou === "function" ? somErrou : null);
+    return;
+  }
+  if(dir === "cima")  pr--;
+  if(dir === "baixo") pr++;
+  if(dir === "esq")   pc--;
+  if(dir === "dir")   pc++;
+
+  tocar(typeof somToque === "function" ? somToque : null);
+  posicionaPonei();
+  marcaPisada();
+  cancelaDica();
+
+  if(pr === linhas - 1 && pc === colunas - 1) setTimeout(chegou, 220);
+  else agendaDica();
+}
+
+/* setas */
+document.querySelectorAll(".seta").forEach(b => {
+  b.addEventListener("click", () => move(b.dataset.dir));
+});
+
+/* teclado, para você testar no computador */
+addEventListener("keydown", e => {
+  const m = { ArrowUp:"cima", ArrowDown:"baixo", ArrowLeft:"esq", ArrowRight:"dir" }[e.key];
+  if(m){ e.preventDefault(); move(m); }
+});
+
+/* arrastar o dedo: cada trecho de meia célula vira um passo */
+let ox = null, oy = null;
+const palco = $("palco");
+
+palco.addEventListener("touchstart", e => {
+  const t = e.touches[0]; ox = t.clientX; oy = t.clientY;
+}, { passive:true });
+
+palco.addEventListener("touchmove", e => {
+  if(ox === null) return;
+  const t = e.touches[0];
+  const dx = t.clientX - ox, dy = t.clientY - oy;
+  const limite = Math.max(18, lado * 0.5);
+
+  if(Math.abs(dx) < limite && Math.abs(dy) < limite) return;
+
+  if(Math.abs(dx) > Math.abs(dy)) move(dx > 0 ? "dir" : "esq");
+  else                            move(dy > 0 ? "baixo" : "cima");
+
+  ox = t.clientX; oy = t.clientY;   // reinicia para permitir arrasto contínuo
+}, { passive:true });
+
+palco.addEventListener("touchend", () => { ox = oy = null; }, { passive:true });
+
+/* ===================================================================
+   4. RODADAS
+   =================================================================== */
+function tamanhoDoNivel(n){
+  if(n <= 2) return 4;
+  if(n <= 4) return 5;
+  if(n <= 7) return 6;
+  return 7;              // para de crescer: 4 anos não precisa de mais
+}
+
+function novaRodada(){
+  travado = false;
+  const t = tamanhoDoNivel(nivel);
+  linhas = colunas = t;
+  pr = pc = 0;
+
+  if(TEM_ELENCO){
+    poneiAtual = sorteia(PERSONAGENS);
+    do { amigaAtual = sorteia(PERSONAGENS); } while(amigaAtual === poneiAtual);
+  }
+
+  geraLabirinto(linhas, colunas);
+  desenha();
+  $("mNivel").textContent = nivel;
+  $("festa").classList.remove("visivel");
+
+  tocar(typeof somComeco === "function" ? somComeco : null);
+  const quem = (amigaAtual && amigaAtual.nome) ? amigaAtual.nome : "a amiga";
+  setTimeout(() => dizer("Leva o pônei até " + quem + "! Arraste o dedo pelo caminho."), 400);
+  agendaDica();
+}
+
+function chegou(){
+  travado = true;
+  cancelaDica();
+  estrelas++;
+  $("mEstrelas").textContent = estrelas;
+  tocar(typeof somVitoria === "function" ? somVitoria : null);
+
+  const quem = (amigaAtual && amigaAtual.nome) ? amigaAtual.nome : "a amiga";
+  $("festaTitulo").textContent = "Achou " + quem + "!";
+  $("festa").classList.add("visivel");
+  setTimeout(() => dizer("Muito bem! Você levou o pônei até " + quem + "!"), 250);
+  chuvaDeEstrelas();
+}
+
+$("btnProximo").addEventListener("click", () => { nivel++; novaRodada(); });
+$("btnCasa").addEventListener("click", () => { location.href = "index.html"; });
+
+function chuvaDeEstrelas(){
+  const s = ["⭐","✨","🌈","💖","🦄"];
+  for(let i = 0; i < 20; i++){
+    const e = document.createElement("div");
+    e.className = "estrela-cai";
+    e.textContent = sorteia(s);
+    e.style.left = (Math.random() * 96) + "vw";
+    e.style.animationDuration = (2.2 + Math.random() * 2) + "s";
+    e.style.animationDelay = (Math.random() * 1.2) + "s";
+    document.body.appendChild(e);
+    setTimeout(() => e.remove(), 6000);
+  }
+}
+
+/* se ela travar, a voz chama de volta */
+let relogio = null;
+function cancelaDica(){ clearTimeout(relogio); }
+function agendaDica(){
+  cancelaDica();
+  relogio = setTimeout(() => {
+    if(travado) return;
+    dizer("Arraste o dedo pelo caminho, ou use as setinhas.");
+    agendaDica();
+  }, 18000);
+}
+
+addEventListener("resize", () => desenha());
+addEventListener("orientationchange", () => setTimeout(desenha, 250));
+
+if(!TEM_ELENCO){
+  $("recado").textContent = "O arquivo personagens.js não carregou, então o pônei aparece como emoji. O jogo funciona igual.";
+  $("recado").classList.remove("escondida");
+}
+
+novaRodada();
+</script>
+</body>
+</html>
