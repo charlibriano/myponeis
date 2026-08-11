@@ -102,16 +102,14 @@ body{
 #tabuleiro{
   flex:1; min-height:0;
   display:grid;
-  gap:var(--gap);
-  grid-auto-rows:1fr;
-  align-content:stretch;
+  justify-content:center;
+  align-content:center;
+  /* as colunas, a altura da linha e o gap vem do JS (ajustaTabuleiro) */
 }
 
 .carta{
   position:relative;
-  height:100%; max-width:100%;
-  aspect-ratio:3/4;
-  justify-self:center; align-self:center;
+  width:100%; height:100%;
   perspective:900px;
   cursor:pointer;
   background:none; border:none; padding:0;
@@ -157,7 +155,7 @@ body{
 .frente .nome{
   flex:0 0 auto;
   width:100%;
-  font-size:clamp(8px, 2.6vw, 12px);
+  font-size:var(--nome-fs, 11px);
   font-weight:800;
   text-align:center;
   padding:3px 2px 4px;
@@ -224,6 +222,15 @@ body{
   background:rgba(255,255,255,.8); color:#8A6FBF;
   box-shadow:0 2px 6px rgba(107,63,191,.14);
 }
+#btnTrocaVoz{
+  position:fixed; top:calc(8px + env(safe-area-inset-top)); right:104px; z-index:40;
+  border:none; border-radius:12px; cursor:pointer;
+  font-family:inherit; font-weight:800; font-size:12px;
+  padding:6px 10px;
+  background:rgba(255,255,255,.8); color:#8A6FBF;
+  box-shadow:0 2px 6px rgba(107,63,191,.14);
+}
+#btnTrocaVoz.escondida{ display:none; }
 #btnStatus[data-ok="sim"]{ background:#D8F7F0; color:#12786F; }
 #btnStatus[data-ok="nao"]{ background:#FFDDE6; color:#B02A4A; }
 
@@ -254,9 +261,11 @@ body{
 .nivel .rotulo small{ display:block; font-size:12px; font-weight:600; color:#9A83C4; letter-spacing:.06em; text-transform:uppercase; }
 .nivel .poneizinho{ margin-left:auto; font-size:30px; }
 
-.nivel[data-pares="4"] .miniaturas{ grid-template-columns:repeat(4,12px); }
-.nivel[data-pares="6"] .miniaturas{ grid-template-columns:repeat(4,12px); }
-.nivel[data-pares="8"] .miniaturas{ grid-template-columns:repeat(4,12px); }
+.nivel .miniaturas{ grid-template-columns:repeat(4, 12px); }
+.nivel[data-pares="6"] .miniaturas{ grid-template-columns:repeat(6, 11px); }
+.nivel[data-pares="6"] .mini{ width:11px; height:15px; }
+.nivel[data-pares="8"] .miniaturas{ grid-template-columns:repeat(8, 10px); }
+.nivel[data-pares="8"] .mini{ width:10px; height:14px; }
 
 @media (prefers-reduced-motion: reduce){
   *{ animation-duration:.01ms !important; transition-duration:.01ms !important; }
@@ -266,6 +275,7 @@ body{
 <body>
 
 <button id="btnStatus" data-ok="?">🔈 testar voz</button>
+<button id="btnTrocaVoz">trocar voz</button>
 <div id="recado" class="escondida"></div>
 
 <!-- ================= TELA INICIAL ================= -->
@@ -578,14 +588,54 @@ function urlDoPonei(p){ return BASE + encodeURIComponent(p.arquivo); }
    na tela. Ela não sabe ler, então a voz é a interface de verdade.
    =================================================================== */
 const TEM_VOZ = ('speechSynthesis' in window);
-let vozBR = null, jaFalou = false;
+let vozBR = null, jaFalou = false, vozConfirmadaFeminina = false;
+let vozesPt = [], vozEscolhidaAMao = false;
+
+/* nomes de voz feminina em pt que aparecem nos aparelhos mais comuns.
+   Android costuma expor "...#female_1-local", iOS usa Luciana, Windows Maria/Francisca. */
+const FEMININA = /(luciana|joana|fernanda|camila|francisca|maria|thalita|brenda|helena|in[eê]s|catarina|vit[oó]ria|female|feminin|mulher|woman)/i;
+const MASCULINA = /(felipe|daniel|ricardo|jo[aã]o|male|masculin|homem|eddy|reed|rocko|grandpa)/i;
+
+function marcaFeminina(){
+  vozConfirmadaFeminina = !!vozBR &&
+    FEMININA.test((vozBR.name + ' ' + (vozBR.voiceURI || '')).toLowerCase());
+}
+
+/* troca para a próxima voz em português do aparelho */
+function trocaVoz(){
+  if(vozesPt.length < 2) return false;
+  const i = vozesPt.indexOf(vozBR);
+  vozBR = vozesPt[(i + 1) % vozesPt.length];
+  vozEscolhidaAMao = true;
+  marcaFeminina();
+  return true;
+}
+
+function pontuaVoz(v){
+  const lang = (v.lang || '').replace('_','-').toLowerCase();
+  let p;
+  if(lang === 'pt-br')          p = 100;   // português do Brasil primeiro
+  else if(lang.startsWith('pt')) p = 60;   // português de Portugal serve de reserva
+  else return -1;
+
+  const rotulo = (v.name + ' ' + (v.voiceURI || '')).toLowerCase();
+  if(FEMININA.test(rotulo))  p += 50;
+  if(MASCULINA.test(rotulo)) p -= 70;
+  if(v.localService)         p += 5;       // voz local não depende de internet
+  return p;
+}
 
 function escolheVoz(){
   if(!TEM_VOZ) return;
-  const vozes = speechSynthesis.getVoices();
-  vozBR = vozes.find(v => v.lang === 'pt-BR')
-       || vozes.find(v => v.lang && v.lang.replace('_','-').startsWith('pt'))
-       || null;
+  const candidatas = speechSynthesis.getVoices()
+    .map(v => ({ v, p: pontuaVoz(v) }))
+    .filter(x => x.p >= 0)
+    .sort((a, b) => b.p - a.p);
+
+  vozesPt = candidatas.map(x => x.v);
+  if(vozEscolhidaAMao && vozBR) return;   // respeita a troca feita pelo pai
+  vozBR = vozesPt.length ? vozesPt[0] : null;
+  marcaFeminina();
 }
 if(TEM_VOZ){ escolheVoz(); speechSynthesis.onvoiceschanged = escolheVoz; }
 
@@ -612,7 +662,9 @@ function fala(texto){
     if(speechSynthesis.speaking || speechSynthesis.pending) speechSynthesis.cancel();
     speechSynthesis.resume();
     const f = new SpeechSynthesisUtterance(texto);
-    f.lang = 'pt-BR'; f.rate = .85; f.pitch = 1.2;
+    f.lang = 'pt-BR'; f.rate = .85;
+    // se não deu para confirmar que a voz é feminina, o tom mais alto ajuda a aproximar
+    f.pitch = vozConfirmadaFeminina ? 1.15 : 1.35;
     if(vozBR) f.voice = vozBR;
     f.onstart = () => { jaFalou = true; marcaStatus('🔊 voz ok','sim'); avisa(''); };
     f.onerror = e => {
@@ -629,7 +681,13 @@ function fala(texto){
 /* teste feito dentro do toque real do dedo — é o que destrava o áudio no celular */
 function testaVoz(){
   jaFalou = false;
-  fala('Vamos brincar!');
+  fala('Oi! Vamos brincar com os pôneis?');
+  if(vozBR){
+    avisa('Voz em uso: ' + vozBR.name + ' (' + vozBR.lang + ')'
+        + (vozesPt.length > 1
+            ? ' · ' + vozesPt.length + ' vozes em português no aparelho. Toque em "trocar voz" para ouvir a próxima.'
+            : ' · é a única voz em português instalada.'));
+  }
   setTimeout(() => {
     if(jaFalou) return;
     marcaStatus('🔇 sem voz','nao');
@@ -687,11 +745,42 @@ function embaralhar(lista){
   return c;
 }
 
-function colunasPara(qtdCartas){
-  if(qtdCartas <= 8)  return 4;   // 4x2
-  if(qtdCartas <= 12) return 3;   // 3x4
-  return 4;                       // 4x4
+/* Escolhe o arranjo que deixa a carta MAIOR possível dentro do espaço real,
+   testando todas as contagens de coluna. Antes o CSS derivava a largura da
+   altura da linha, e no celular isso estourava a coluna e cortava as cartas. */
+function ajustaTabuleiro(){
+  const tab = $("tabuleiro");
+  const n = cartas.length;
+  if(!n) return;
+
+  const L = tab.clientWidth, A = tab.clientHeight;
+  if(L < 40 || A < 40) return;
+
+  const gap = n > 12 ? 6 : 9;
+  let melhor = null;
+
+  for(let cols = 2; cols <= Math.min(6, n); cols++){
+    const linhas = Math.ceil(n / cols);
+    const largDisponivel = (L - gap * (cols - 1)) / cols;
+    const altDisponivel  = (A - gap * (linhas - 1)) / linhas;
+    // carta é 3:4, então a largura final é limitada pelos dois lados
+    const larg = Math.min(largDisponivel, altDisponivel * 0.75);
+    if(larg > 0 && (!melhor || larg > melhor.larg)) melhor = { larg, cols, linhas };
+  }
+  if(!melhor) return;
+
+  const larg = Math.floor(melhor.larg);
+  const alt  = Math.floor(larg * 4 / 3);
+
+  tab.style.gap = gap + "px";
+  tab.style.gridTemplateColumns = "repeat(" + melhor.cols + ", " + larg + "px)";
+  tab.style.gridAutoRows = alt + "px";
+  // o nome escrito acompanha o tamanho da carta, senão some ou estoura
+  tab.style.setProperty("--nome-fs", Math.max(7, Math.min(13, Math.round(larg / 7))) + "px");
 }
+
+addEventListener("resize", ajustaTabuleiro);
+addEventListener("orientationchange", () => setTimeout(ajustaTabuleiro, 250));
 
 function mostrarTela(id){
   document.querySelectorAll(".tela").forEach(t => t.classList.remove("ativa"));
@@ -713,7 +802,6 @@ function iniciar(pares){
 
   const tab = $("tabuleiro");
   tab.innerHTML = "";
-  tab.style.gridTemplateColumns = "repeat(" + colunasPara(cartas.length) + ", 1fr)";
 
   cartas.forEach((ponei, i) => {
     const btn = document.createElement("button");
@@ -756,6 +844,8 @@ function iniciar(pares){
 
   atualizarPlacar();
   mostrarTela("tela-jogo");
+  // só dá para medir depois que a tela virou visível
+  requestAnimationFrame(ajustaTabuleiro);
   somComeco();
   setTimeout(() => fala('Ache os dois pôneis iguais! Toque em uma cartinha.'), 400);
   agendaDica();
@@ -883,6 +973,10 @@ $("btn-inicio").addEventListener("click", () => mostrarTela("tela-inicio"));
 
 // o botao de status e' o teste de voz feito dentro do toque real do dedo
 $("btnStatus").addEventListener("click", testaVoz);
+$("btnTrocaVoz").addEventListener("click", () => {
+  if(trocaVoz()) testaVoz();
+  else avisa('O aparelho só tem uma voz em português instalada.');
+});
 $("recado").addEventListener("click", () => avisa(''));
 
 // desenha as cartinhas dos botoes de dificuldade (a quantidade e' a informacao)
