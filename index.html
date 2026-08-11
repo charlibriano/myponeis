@@ -276,23 +276,36 @@ body{
    PONEIS = um item por pônei: nome que aparece na carta + nome do arquivo.
    =================================================================== */
 
-const BASE = "https://raw.githubusercontent.com/charlibriano/myponeis/main/";
+const BASE = "imagens/";
 
 const PONEIS = [
-  { nome:"Twilight Sparkle", arquivo:"twilight_sparkle.png" },
-  { nome:"Rainbow Dash",     arquivo:"rainbow_dash.png" },
-  { nome:"Pinkie Pie",       arquivo:"pinkie_pie.png" },
-  { nome:"Rarity",           arquivo:"rarity.png" },
-  { nome:"Applejack",        arquivo:"applejack.png" },
-  { nome:"Fluttershy",       arquivo:"fluttershy.png" },
-  { nome:"Spike",            arquivo:"spike.png" },
-  { nome:"Princesa Celestia",arquivo:"princesa_celestia.png" },
-  { nome:"Princesa Luna",    arquivo:"princesa_luna.png" },
-  { nome:"Starlight Glimmer",arquivo:"starlight_glimmer.png" },
-  { nome:"Apple Bloom",      arquivo:"apple_bloom.png" },
-  { nome:"Sweetie Belle",    arquivo:"sweetie_belle.png" },
-  { nome:"Scootaloo",        arquivo:"scootaloo.png" },
-  { nome:"Trixie",           arquivo:"trixie.png" },
+  { nome:"Rarity",            arquivo:"Rarity.png" },
+  { nome:"Princesa Celestia", arquivo:"Princesa Celestia.png" },
+  { nome:"Princesa Cadance",  arquivo:"Princesa Cadance.png" },
+  { nome:"Princesa Ember",    arquivo:"Princesa Ember.png" },
+  { nome:"Flurry Heart",      arquivo:"Flurry Heart.png" },
+  { nome:"Apple Bloom",       arquivo:"Apple Bloom.png" },
+  { nome:"Sweetie Belle",     arquivo:"Sweetie Belle.png" },
+  { nome:"Scootaloo",         arquivo:"Scootaloo.png" },
+  { nome:"Big McIntosh",      arquivo:"Big McIntosh.png" },
+  { nome:"Trixie",            arquivo:"Trixie.png" },
+  { nome:"Diamond Tiara",     arquivo:"Diamond Tiara.png" },
+  { nome:"Silver Spoon",      arquivo:"Silver Spoon.png" },
+  { nome:"Cheerilee",         arquivo:"Cheerilee.png" },
+  { nome:"Lyra Heartstrings", arquivo:"Lyra Heartstrings.png" },
+  { nome:"Octavia Melody",    arquivo:"Octavia Melody.png" },
+  { nome:"DJ Pon-3",          arquivo:"DJ Pon-3.png" },
+  { nome:"Babs Seed",         arquivo:"Babs Seed.png" },
+  { nome:"Coco Pommel",       arquivo:"Coco Pommel.png" },
+  { nome:"Sunburst",          arquivo:"Sunburst.png" },
+  { nome:"Zephyr Breeze",     arquivo:"Zephyr Breeze.png" },
+  { nome:"Twist",             arquivo:"Twist.png" },
+  { nome:"Pipsqueak",         arquivo:"Pipsqueak.png" },
+  { nome:"Gilda",             arquivo:"Gilda.png" },
+  { nome:"Smolder",           arquivo:"Smolder.png" },
+  { nome:"Winona",            arquivo:"Winona.png" },
+  { nome:"Tank",              arquivo:"Tank.png" },
+  { nome:"Owlowiscious",      arquivo:"Owlowiscious.png" },
 ];
 
 /* ===================================================================
@@ -314,7 +327,8 @@ window.addEventListener("error", (e) => {
   reportarErro("Erro no código: " + e.message + "  (linha " + e.lineno + ")");
 });
 
-function urlDoPonei(p){ return BASE + p.arquivo; }
+// os arquivos têm espaço e acento no nome, então precisam ser codificados
+function urlDoPonei(p){ return BASE + encodeURIComponent(p.arquivo); }
 
 // --- som simples (só liga depois do primeiro toque, exigência do celular) ---
 let audio = null;
