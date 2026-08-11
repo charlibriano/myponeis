@@ -1,0 +1,14 @@
+# saídas do script de download
+ferramentas/log.txt
+ferramentas/falhas.txt
+ferramentas/personagens.txt
+ferramentas/personagens.json
+
+# sistema
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# editores
+.vscode/
+.idea/
