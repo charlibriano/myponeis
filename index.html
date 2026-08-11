@@ -213,6 +213,51 @@ body{
   margin-top:14px; font-size:14px; font-weight:600; color:var(--roxo); min-height:20px;
 }
 
+/* ===================================================================
+   VOZ: status e recado  (ela não lê, mas o pai precisa ver o que houve)
+   =================================================================== */
+#btnStatus{
+  position:fixed; top:calc(8px + env(safe-area-inset-top)); right:8px; z-index:40;
+  border:none; border-radius:12px; cursor:pointer;
+  font-family:inherit; font-weight:800; font-size:12px;
+  padding:6px 10px;
+  background:rgba(255,255,255,.8); color:#8A6FBF;
+  box-shadow:0 2px 6px rgba(107,63,191,.14);
+}
+#btnStatus[data-ok="sim"]{ background:#D8F7F0; color:#12786F; }
+#btnStatus[data-ok="nao"]{ background:#FFDDE6; color:#B02A4A; }
+
+#recado{
+  position:fixed; left:8px; right:8px; top:calc(46px + env(safe-area-inset-top)); z-index:45;
+  background:#3B1220; color:#FFE6EE;
+  border:2px solid var(--rosa); border-radius:14px;
+  padding:10px 12px; font-size:13px; line-height:1.45; cursor:pointer;
+  box-shadow:0 8px 24px rgba(0,0,0,.3);
+}
+#recado.escondida{ display:none; }
+
+/* ===================================================================
+   DIFICULDADE SEM TEXTO — a quantidade de cartinhas é a informação
+   =================================================================== */
+.nivel{
+  display:flex; align-items:center; gap:14px;
+  width:100%; padding:14px 18px; border:none; border-radius:24px;
+  cursor:pointer; font-family:inherit;
+  background:linear-gradient(180deg,#FFFFFF 0%, #F6EEFF 100%);
+  box-shadow:0 5px 0 #D9C6F2, 0 10px 18px rgba(107,63,191,.18);
+  transition:transform .1s ease, box-shadow .1s ease;
+}
+.nivel:active{ transform:translateY(4px); box-shadow:0 1px 0 #D9C6F2; }
+.nivel .miniaturas{ display:grid; gap:3px; flex:0 0 auto; }
+.nivel .mini{ width:12px; height:16px; border-radius:3px; background:linear-gradient(150deg,#8B5CE0,#4A2A87); }
+.nivel .rotulo{ font-size:26px; font-weight:800; color:var(--roxo); line-height:1; }
+.nivel .rotulo small{ display:block; font-size:12px; font-weight:600; color:#9A83C4; letter-spacing:.06em; text-transform:uppercase; }
+.nivel .poneizinho{ margin-left:auto; font-size:30px; }
+
+.nivel[data-pares="4"] .miniaturas{ grid-template-columns:repeat(4,12px); }
+.nivel[data-pares="6"] .miniaturas{ grid-template-columns:repeat(4,12px); }
+.nivel[data-pares="8"] .miniaturas{ grid-template-columns:repeat(4,12px); }
+
 @media (prefers-reduced-motion: reduce){
   *{ animation-duration:.01ms !important; transition-duration:.01ms !important; }
 }
@@ -220,15 +265,30 @@ body{
 </head>
 <body>
 
+<button id="btnStatus" data-ok="?">🔈 testar voz</button>
+<div id="recado" class="escondida"></div>
+
 <!-- ================= TELA INICIAL ================= -->
 <section id="tela-inicio" class="tela ativa">
   <h1 class="titulo">Cadê o Par?</h1>
   <p class="subtitulo">Ache os dois pôneis iguais</p>
 
   <div class="opcoes">
-    <button class="botao" data-pares="4">Fácil &nbsp;·&nbsp; 4 pares</button>
-    <button class="botao turquesa" data-pares="6">Médio &nbsp;·&nbsp; 6 pares</button>
-    <button class="botao roxo" data-pares="8">Difícil &nbsp;·&nbsp; 8 pares</button>
+    <button class="nivel" data-pares="4">
+      <span class="miniaturas" aria-hidden="true"></span>
+      <span class="rotulo">4<small>pares</small></span>
+      <span class="poneizinho" aria-hidden="true">🦄</span>
+    </button>
+    <button class="nivel" data-pares="6">
+      <span class="miniaturas" aria-hidden="true"></span>
+      <span class="rotulo">6<small>pares</small></span>
+      <span class="poneizinho" aria-hidden="true">🦄🦄</span>
+    </button>
+    <button class="nivel" data-pares="8">
+      <span class="miniaturas" aria-hidden="true"></span>
+      <span class="rotulo">8<small>pares</small></span>
+      <span class="poneizinho" aria-hidden="true">🦄🦄🦄</span>
+    </button>
   </div>
 
   <div id="resultado-teste"></div>
@@ -513,32 +573,107 @@ window.addEventListener("error", (e) => {
 // os arquivos têm espaço e acento no nome, então precisam ser codificados
 function urlDoPonei(p){ return BASE + encodeURIComponent(p.arquivo); }
 
-// --- som simples (só liga depois do primeiro toque, exigência do celular) ---
-let audio = null;
-function ligarAudio(){
-  if(!audio){
-    try{ audio = new (window.AudioContext || window.webkitAudioContext)(); }
-    catch(e){ audio = false; }
-  }
-  if(audio && audio.state === "suspended") audio.resume();
+/* ===================================================================
+   VOZ  — trazida do js/jogo.js do "Cadê o Pônei?", com o diagnóstico
+   na tela. Ela não sabe ler, então a voz é a interface de verdade.
+   =================================================================== */
+const TEM_VOZ = ('speechSynthesis' in window);
+let vozBR = null, jaFalou = false;
+
+function escolheVoz(){
+  if(!TEM_VOZ) return;
+  const vozes = speechSynthesis.getVoices();
+  vozBR = vozes.find(v => v.lang === 'pt-BR')
+       || vozes.find(v => v.lang && v.lang.replace('_','-').startsWith('pt'))
+       || null;
 }
-function tocar(freq, dur){
-  if(!audio) return;
+if(TEM_VOZ){ escolheVoz(); speechSynthesis.onvoiceschanged = escolheVoz; }
+
+function marcaStatus(txt, ok){
+  const b = $("btnStatus");
+  b.textContent = txt;
+  b.dataset.ok = ok;
+}
+function avisa(txt){
+  const r = $("recado");
+  if(!txt){ r.classList.add("escondida"); return; }
+  r.textContent = txt;
+  r.classList.remove("escondida");
+}
+
+function fala(texto){
+  if(!TEM_VOZ){
+    marcaStatus('🔇 sem voz','nao');
+    avisa('Este navegador não tem voz. Abra o jogo no Chrome ou no Safari.');
+    return;
+  }
   try{
-    const osc = audio.createOscillator();
-    const vol = audio.createGain();
-    osc.type = "sine";
-    osc.frequency.value = freq;
-    vol.gain.setValueAtTime(0.0001, audio.currentTime);
-    vol.gain.exponentialRampToValueAtTime(0.25, audio.currentTime + 0.02);
-    vol.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + dur);
-    osc.connect(vol); vol.connect(audio.destination);
-    osc.start(); osc.stop(audio.currentTime + dur + 0.05);
+    // só cancela se realmente houver algo tocando (cancelar à toa mata a fala no iPhone)
+    if(speechSynthesis.speaking || speechSynthesis.pending) speechSynthesis.cancel();
+    speechSynthesis.resume();
+    const f = new SpeechSynthesisUtterance(texto);
+    f.lang = 'pt-BR'; f.rate = .85; f.pitch = 1.2;
+    if(vozBR) f.voice = vozBR;
+    f.onstart = () => { jaFalou = true; marcaStatus('🔊 voz ok','sim'); avisa(''); };
+    f.onerror = e => {
+      marcaStatus('🔇 sem voz','nao');
+      avisa('A voz falhou (' + (e.error || 'motivo desconhecido') + '). Toque aqui para fechar.');
+    };
+    speechSynthesis.speak(f);
+  }catch(e){
+    marcaStatus('🔇 sem voz','nao');
+    avisa('A voz falhou: ' + e.message);
+  }
+}
+
+/* teste feito dentro do toque real do dedo — é o que destrava o áudio no celular */
+function testaVoz(){
+  jaFalou = false;
+  fala('Vamos brincar!');
+  setTimeout(() => {
+    if(jaFalou) return;
+    marcaStatus('🔇 sem voz','nao');
+    const nVozes = TEM_VOZ ? speechSynthesis.getVoices().length : 0;
+    if(nVozes === 0){
+      avisa('O aparelho não tem nenhuma voz instalada. No Android: Configurações → Acessibilidade → Saída de texto para fala → instalar o Português (Brasil).');
+    }else if(!vozBR){
+      avisa('O aparelho tem ' + nVozes + ' vozes, mas nenhuma em português. Instale o Português (Brasil) na saída de texto para fala.');
+    }else{
+      avisa('A voz não saiu. Verifique: 1) o jogo precisa estar no Chrome ou Safari, não dentro de outro aplicativo; 2) no iPhone, desligue a chavinha de silencioso; 3) volume da mídia no máximo.');
+    }
+  }, 2200);
+}
+
+/* ===================================================================
+   SONS  — mesmo bip do jogo original, com melodias novas
+   =================================================================== */
+let ctx = null;
+function bip(freqs, dur = .12){
+  try{
+    ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+    if(ctx.state === "suspended") ctx.resume();
+    freqs.forEach((f, i) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'triangle'; o.frequency.value = f;
+      const t = ctx.currentTime + i * dur;
+      g.gain.setValueAtTime(.0001, t);
+      g.gain.exponentialRampToValueAtTime(.25, t + .02);
+      g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+      o.connect(g).connect(ctx.destination); o.start(t); o.stop(t + dur + .02);
+    });
   }catch(e){}
 }
-const somVira  = () => tocar(520, 0.10);
-const somAchou = () => { tocar(660, 0.12); setTimeout(()=>tocar(880, 0.18), 110); };
-const somErro  = () => tocar(240, 0.16);
+
+const somVira    = () => bip([700], .07);
+const somAchou   = () => bip([784, 988, 1319], .12);
+const somErrou   = () => bip([330, 262], .14);
+const somVitoria = () => bip([523, 659, 784, 1047, 784, 1047], .15);
+const somComeco  = () => bip([523, 659, 784], .10);
+
+/* elogios sorteados, para não repetir sempre a mesma frase */
+const ELOGIOS = ['Isso!', 'Muito bem!', 'Boa!', 'Achou!', 'Que legal!', 'Você conseguiu!'];
+const INCENTIVOS = ['Tenta de novo.', 'Quase!', 'Procura mais um pouquinho.', 'Vai achar!'];
+const escolhe = a => a[Math.floor(Math.random() * a.length)];
 
 // --- estado ---
 let cartas = [], viradas = [], jogadas = 0, achados = 0, totalPares = 0, travado = false;
@@ -564,7 +699,6 @@ function mostrarTela(id){
 }
 
 function iniciar(pares){
-  ligarAudio();
 
   if(PONEIS.length < pares){
     reportarErro("A lista tem só " + PONEIS.length + " pôneis, mas o jogo pediu " + pares + " pares.");
@@ -622,6 +756,9 @@ function iniciar(pares){
 
   atualizarPlacar();
   mostrarTela("tela-jogo");
+  somComeco();
+  setTimeout(() => fala('Ache os dois pôneis iguais! Toque em uma cartinha.'), 400);
+  agendaDica();
 }
 
 function atualizarPlacar(){
@@ -633,13 +770,16 @@ function virar(btn){
   if(travado) return;
   if(btn.classList.contains("virada")) return;
 
-  ligarAudio();
+  cancelaDica();
   btn.classList.add("virada");
   btn.setAttribute("aria-label", btn.dataset.nome);
   somVira();
   viradas.push(btn);
 
-  if(viradas.length < 2) return;
+  // ela não lê: o nome do pônei só existe se for falado
+  fala(btn.dataset.nome);
+
+  if(viradas.length < 2){ agendaDica(); return; }
 
   jogadas++;
   atualizarPlacar();
@@ -652,10 +792,15 @@ function virar(btn){
     b.classList.add("achou");
     somAchou();
     atualizarPlacar();
-    if(achados === totalPares) setTimeout(terminar, 700);
+    if(achados === totalPares){
+      setTimeout(terminar, 700);
+    }else{
+      setTimeout(() => fala(escolhe(ELOGIOS) + ' ' + a.dataset.nome + '!'), 500);
+      agendaDica();
+    }
   }else{
     travado = true;
-    somErro();
+    setTimeout(() => { somErrou(); fala(escolhe(INCENTIVOS)); }, 450);
     setTimeout(() => {
       a.classList.remove("virada");
       b.classList.remove("virada");
@@ -663,13 +808,27 @@ function virar(btn){
       b.setAttribute("aria-label", "Carta virada para baixo");
       viradas = [];
       travado = false;
-    }, 1000);
+      agendaDica();
+    }, 1800);
   }
+}
+
+/* se ela parar de tocar, a voz chama de volta em vez de ela ficar perdida */
+let relogioDica = null;
+function cancelaDica(){ clearTimeout(relogioDica); }
+function agendaDica(){
+  cancelaDica();
+  relogioDica = setTimeout(() => {
+    if($("tela-jogo").classList.contains("ativa")) fala('Toque em uma cartinha para virar.');
+  }, 15000);
 }
 
 function terminar(){
   $("fim-detalhe").textContent = totalPares + " pares em " + jogadas + " jogadas";
   mostrarTela("tela-fim");
+  cancelaDica();
+  somVitoria();
+  setTimeout(() => fala('Você achou todos os pôneis! Muito bem!'), 300);
   chuvaDeEstrelas();
 }
 
@@ -717,10 +876,25 @@ function testarImagens(){
 document.querySelectorAll("[data-pares]").forEach(b => {
   b.addEventListener("click", () => iniciar(parseInt(b.dataset.pares, 10)));
 });
-$("btn-testar").addEventListener("click", () => { ligarAudio(); testarImagens(); });
-$("btn-voltar").addEventListener("click", () => mostrarTela("tela-inicio"));
+$("btn-testar").addEventListener("click", testarImagens);
+$("btn-voltar").addEventListener("click", () => { cancelaDica(); mostrarTela("tela-inicio"); });
 $("btn-denovo").addEventListener("click", () => iniciar(totalPares));
 $("btn-inicio").addEventListener("click", () => mostrarTela("tela-inicio"));
+
+// o botao de status e' o teste de voz feito dentro do toque real do dedo
+$("btnStatus").addEventListener("click", testaVoz);
+$("recado").addEventListener("click", () => avisa(''));
+
+// desenha as cartinhas dos botoes de dificuldade (a quantidade e' a informacao)
+document.querySelectorAll(".nivel").forEach(b => {
+  const n = parseInt(b.dataset.pares, 10) * 2;
+  const alvo = b.querySelector(".miniaturas");
+  for(let i = 0; i < n; i++){
+    const m = document.createElement("span");
+    m.className = "mini";
+    alvo.appendChild(m);
+  }
+});
 </script>
 </body>
 </html>
