@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cadê o Pônei?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/estilo.css">
+
+</head>
+<body>
+<div id="app">
+
+  <div class="hud">
+    <div class="estrelas">⭐ <span id="placar">0</span></div>
+    <div class="hud-dir">
+      <button class="pill-status" id="btnStatus" data-ok="?">🔊 testar voz</button>
+      <button class="btn-icone escondida" id="btnCasa" aria-label="Voltar ao início">🏠</button>
+    </div>
+  </div>
+
+  <div class="recado escondida" id="recado"></div>
+
+  <section class="tela" id="inicio">
+    <h1>Cadê o Pônei?</h1>
+    <p>Escolha a brincadeira</p>
+    <div id="vitrine"></div>
+    <div class="btns-inicio">
+      <button class="btn-grande" id="btnJogar">Cadê o Pônei?</button>
+      <button class="btn-grande roxo" id="btnSumiu">Quem Sumiu?</button>
+    </div>
+    <div class="rotulo" id="relatorio"></div>
+  </section>
+
+  <section class="tela escondida" id="jogo">
+    <div class="pergunta">
+      <div class="balao">Cadê <span id="artigo">a</span> <b id="nome">…</b>?</div>
+      <button class="btn-icone" id="btnFalar" aria-label="Ouvir o nome de novo">🔊</button>
+    </div>
+    <div class="cartas" id="cartas"></div>
+  </section>
+
+  <section class="tela escondida" id="sumiu">
+    <div class="pergunta">
+      <div class="balao" id="balaoSumiu">Olha bem…</div>
+    </div>
+    <div id="tabuleiro"></div>
+    <div class="rotulo" id="rotuloOpcoes"></div>
+    <div id="opcoes"></div>
+  </section>
+
+</div>
+
+<script src="js/personagens.js"></script>
+<script src="js/poneis.js"></script>
+<script src="js/jogo.js"></script>
+
+</body>
+</html>
