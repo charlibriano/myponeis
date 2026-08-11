@@ -1,61 +1,529 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Cadê o Pônei?</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Cadê o Par?</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/estilo.css">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
+<style>
+/* ===================================================================
+   PALETA
+   =================================================================== */
+:root{
+  --lilas:      #EFE3FF;
+  --rosa-claro: #FFE4F2;
+  --roxo:       #6B3FBF;
+  --roxo-escuro:#4A2A87;
+  --rosa:       #FF6FB0;
+  --turquesa:   #35CFC9;
+  --amarelo:    #FFD34A;
+  --texto:      #40276E;
+  --carta-raio: 18px;
+  --gap: 10px;
+}
 
+*{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+
+html,body{ height:100%; overflow:hidden; }
+
+body{
+  font-family:'Baloo 2', 'Segoe UI Rounded', 'SF Pro Rounded', system-ui, sans-serif;
+  color:var(--texto);
+  background:
+    radial-gradient(1200px 600px at 20% -10%, #FFF6C9 0%, transparent 55%),
+    linear-gradient(160deg, var(--lilas) 0%, var(--rosa-claro) 100%);
+  display:flex; flex-direction:column;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  user-select:none;
+}
+
+.tela{ display:none; flex:1; flex-direction:column; min-height:0; padding:14px; }
+.tela.ativa{ display:flex; }
+
+/* ===================================================================
+   TELA INICIAL
+   =================================================================== */
+#tela-inicio{ align-items:center; justify-content:center; text-align:center; gap:6px; }
+
+.titulo{
+  font-size:clamp(38px, 13vw, 62px);
+  font-weight:800;
+  line-height:.95;
+  color:var(--roxo);
+  text-shadow: 0 3px 0 #fff, 0 6px 14px rgba(107,63,191,.25);
+}
+.subtitulo{ font-size:17px; font-weight:600; color:#8A6FBF; margin-bottom:22px; }
+
+.opcoes{ display:flex; flex-direction:column; gap:12px; width:100%; max-width:300px; }
+
+.botao{
+  font-family:inherit; font-weight:800; font-size:21px;
+  color:#fff; border:none; cursor:pointer;
+  padding:16px 20px; border-radius:22px;
+  background:linear-gradient(180deg, var(--rosa) 0%, #E3488F 100%);
+  box-shadow:0 5px 0 #C43A79, 0 10px 18px rgba(196,58,121,.3);
+  transition:transform .1s ease, box-shadow .1s ease;
+}
+.botao:active{ transform:translateY(4px); box-shadow:0 1px 0 #C43A79; }
+.botao.turquesa{ background:linear-gradient(180deg, var(--turquesa) 0%, #23AFAA 100%); box-shadow:0 5px 0 #1B918D, 0 10px 18px rgba(27,145,141,.3); }
+.botao.turquesa:active{ box-shadow:0 1px 0 #1B918D; }
+.botao.roxo{ background:linear-gradient(180deg, #8B5CE0 0%, var(--roxo) 100%); box-shadow:0 5px 0 var(--roxo-escuro), 0 10px 18px rgba(74,42,135,.3); }
+.botao.roxo:active{ box-shadow:0 1px 0 var(--roxo-escuro); }
+.botao.pequeno{ font-size:15px; padding:11px 16px; border-radius:16px; }
+
+/* ===================================================================
+   BARRA DO JOGO
+   =================================================================== */
+.barra{
+  display:flex; align-items:center; justify-content:space-between;
+  gap:10px; margin-bottom:10px; flex:0 0 auto;
+}
+.placar{ display:flex; gap:8px; }
+.marcador{
+  background:rgba(255,255,255,.75);
+  border-radius:14px; padding:6px 14px;
+  font-weight:800; font-size:17px; color:var(--roxo);
+  box-shadow:0 2px 6px rgba(107,63,191,.14);
+  min-width:70px; text-align:center;
+}
+.marcador span{ display:block; font-size:10px; font-weight:600; color:#9A83C4; letter-spacing:.08em; text-transform:uppercase; }
+.voltar{
+  border:none; background:rgba(255,255,255,.75); color:var(--roxo);
+  font-family:inherit; font-weight:800; font-size:22px;
+  width:44px; height:44px; border-radius:14px; cursor:pointer;
+  box-shadow:0 2px 6px rgba(107,63,191,.14);
+}
+
+/* ===================================================================
+   TABULEIRO
+   =================================================================== */
+#tabuleiro{
+  flex:1; min-height:0;
+  display:grid;
+  gap:var(--gap);
+  grid-auto-rows:1fr;
+  align-content:stretch;
+}
+
+.carta{
+  position:relative;
+  height:100%; max-width:100%;
+  aspect-ratio:3/4;
+  justify-self:center; align-self:center;
+  perspective:900px;
+  cursor:pointer;
+  background:none; border:none; padding:0;
+}
+
+.carta-interna{
+  position:relative; width:100%; height:100%;
+  transform-style:preserve-3d;
+  transition:transform .45s cubic-bezier(.4,1.4,.5,1);
+}
+.carta.virada .carta-interna{ transform:rotateY(180deg); }
+
+.face{
+  position:absolute; inset:0;
+  backface-visibility:hidden; -webkit-backface-visibility:hidden;
+  border-radius:var(--carta-raio);
+  display:flex; align-items:center; justify-content:center;
+  overflow:hidden;
+}
+
+/* verso: a "cutie mark" — assinatura visual do jogo */
+.verso{
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255,255,255,.35) 0%, transparent 45%),
+    linear-gradient(150deg, #8B5CE0 0%, var(--roxo) 55%, var(--roxo-escuro) 100%);
+  box-shadow:0 4px 0 rgba(74,42,135,.55), 0 6px 14px rgba(74,42,135,.28);
+  border:3px solid rgba(255,255,255,.55);
+}
+.verso svg{ width:56%; height:56%; opacity:.95; }
+
+.frente{
+  transform:rotateY(180deg);
+  background:#fff;
+  border:3px solid var(--amarelo);
+  box-shadow:0 4px 0 rgba(200,150,20,.35), 0 6px 14px rgba(107,63,191,.2);
+  flex-direction:column;
+}
+.frente img{
+  width:100%; height:100%;
+  object-fit:contain;
+  padding:6px 6px 0;
+}
+.frente .nome{
+  flex:0 0 auto;
+  width:100%;
+  font-size:clamp(8px, 2.6vw, 12px);
+  font-weight:800;
+  text-align:center;
+  padding:3px 2px 4px;
+  color:var(--roxo);
+  background:#FFF6C9;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.frente .quebrado{
+  font-size:11px; font-weight:600; color:#C0392B;
+  padding:8px; text-align:center; line-height:1.3;
+}
+
+.carta.achou .carta-interna{ animation:pulo .5s ease; }
+.carta.achou .frente{ border-color:var(--turquesa); box-shadow:0 0 0 4px rgba(53,207,201,.35); }
+.carta.achou{ pointer-events:none; }
+@keyframes pulo{
+  0%{ transform:rotateY(180deg) scale(1); }
+  40%{ transform:rotateY(180deg) scale(1.14); }
+  100%{ transform:rotateY(180deg) scale(1); }
+}
+
+/* ===================================================================
+   FIM DE JOGO
+   =================================================================== */
+#tela-fim{ align-items:center; justify-content:center; text-align:center; gap:8px; }
+#tela-fim .titulo{ font-size:clamp(34px, 11vw, 54px); }
+.estrela-cai{ position:fixed; top:-40px; font-size:26px; pointer-events:none; animation:cair linear forwards; }
+@keyframes cair{ to{ transform:translateY(110vh) rotate(360deg); opacity:.2; } }
+
+/* ===================================================================
+   PAINEL DE ERROS  (aparece na tela, sem precisar de console)
+   =================================================================== */
+#erros{
+  display:none;
+  position:fixed; left:8px; right:8px; bottom:8px; z-index:50;
+  background:#3B1220; color:#FFD9E4;
+  border:2px solid #FF6FB0; border-radius:14px;
+  padding:10px 12px; font-size:12px; line-height:1.45;
+  max-height:44vh; overflow:auto;
+  font-family:ui-monospace, Menlo, Consolas, monospace;
+  box-shadow:0 8px 24px rgba(0,0,0,.35);
+}
+#erros.visivel{ display:block; }
+#erros h3{ font-family:inherit; font-size:13px; color:#fff; margin-bottom:6px; }
+#erros ul{ padding-left:16px; }
+#erros li{ margin-bottom:4px; word-break:break-all; }
+#erros .fechar{
+  position:absolute; top:6px; right:8px;
+  background:none; border:none; color:#FFD9E4; font-size:18px; cursor:pointer;
+}
+
+#resultado-teste{
+  margin-top:14px; font-size:14px; font-weight:600; color:var(--roxo); min-height:20px;
+}
+
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration:.01ms !important; transition-duration:.01ms !important; }
+}
+</style>
 </head>
 <body>
-<div id="app">
 
-  <div class="hud">
-    <div class="estrelas">⭐ <span id="placar">0</span></div>
-    <div class="hud-dir">
-      <button class="pill-status" id="btnStatus" data-ok="?">🔊 testar voz</button>
-      <button class="btn-icone escondida" id="btnCasa" aria-label="Voltar ao início">🏠</button>
-    </div>
+<!-- ================= TELA INICIAL ================= -->
+<section id="tela-inicio" class="tela ativa">
+  <h1 class="titulo">Cadê o Par?</h1>
+  <p class="subtitulo">Ache os dois pôneis iguais</p>
+
+  <div class="opcoes">
+    <button class="botao" data-pares="4">Fácil &nbsp;·&nbsp; 4 pares</button>
+    <button class="botao turquesa" data-pares="6">Médio &nbsp;·&nbsp; 6 pares</button>
+    <button class="botao roxo" data-pares="8">Difícil &nbsp;·&nbsp; 8 pares</button>
   </div>
 
-  <div class="recado escondida" id="recado"></div>
+  <div id="resultado-teste"></div>
+  <button class="botao pequeno roxo" id="btn-testar" style="margin-top:6px; max-width:300px; width:100%;">Testar imagens</button>
+</section>
 
-  <section class="tela" id="inicio">
-    <h1>Cadê o Pônei?</h1>
-    <p>Escolha a brincadeira</p>
-    <div id="vitrine"></div>
-    <div class="btns-inicio">
-      <button class="btn-grande" id="btnJogar">Cadê o Pônei?</button>
-      <button class="btn-grande roxo" id="btnSumiu">Quem Sumiu?</button>
+<!-- ================= TELA DO JOGO ================= -->
+<section id="tela-jogo" class="tela">
+  <div class="barra">
+    <button class="voltar" id="btn-voltar" aria-label="Voltar">←</button>
+    <div class="placar">
+      <div class="marcador"><span>Pares</span><b id="m-pares">0/0</b></div>
+      <div class="marcador"><span>Jogadas</span><b id="m-jogadas">0</b></div>
     </div>
-    <div class="rotulo" id="relatorio"></div>
-  </section>
+  </div>
+  <div id="tabuleiro"></div>
+</section>
 
-  <section class="tela escondida" id="jogo">
-    <div class="pergunta">
-      <div class="balao">Cadê <span id="artigo">a</span> <b id="nome">…</b>?</div>
-      <button class="btn-icone" id="btnFalar" aria-label="Ouvir o nome de novo">🔊</button>
-    </div>
-    <div class="cartas" id="cartas"></div>
-  </section>
+<!-- ================= TELA FINAL ================= -->
+<section id="tela-fim" class="tela">
+  <h1 class="titulo">Você achou todos!</h1>
+  <p class="subtitulo" id="fim-detalhe"></p>
+  <div class="opcoes">
+    <button class="botao" id="btn-denovo">Jogar de novo</button>
+    <button class="botao roxo" id="btn-inicio">Escolher outro</button>
+  </div>
+</section>
 
-  <section class="tela escondida" id="sumiu">
-    <div class="pergunta">
-      <div class="balao" id="balaoSumiu">Olha bem…</div>
-    </div>
-    <div id="tabuleiro"></div>
-    <div class="rotulo" id="rotuloOpcoes"></div>
-    <div id="opcoes"></div>
-  </section>
-
+<!-- ================= PAINEL DE ERROS ================= -->
+<div id="erros">
+  <button class="fechar" onclick="document.getElementById('erros').classList.remove('visivel')">×</button>
+  <h3>Problemas encontrados</h3>
+  <ul id="erros-lista"></ul>
 </div>
 
-<script src="js/personagens.js"></script>
-<script src="js/poneis.js"></script>
-<script src="js/jogo.js"></script>
+<script>
+/* ===================================================================
+   1. LISTA DE PÔNEIS  ←←← É SÓ AQUI QUE VOCÊ MEXE
+   -------------------------------------------------------------------
+   BASE  = caminho até a pasta das imagens no GitHub.
+           Troque "main" por "master" se for o nome do seu branch.
+           Se as imagens estiverem numa subpasta, inclua ela no final.
+           Ex.: ".../myponeis/main/imagens/"
 
+   PONEIS = um item por pônei: nome que aparece na carta + nome do arquivo.
+   =================================================================== */
+
+const BASE = "https://raw.githubusercontent.com/charlibriano/myponeis/main/";
+
+const PONEIS = [
+  { nome:"Twilight Sparkle", arquivo:"twilight_sparkle.png" },
+  { nome:"Rainbow Dash",     arquivo:"rainbow_dash.png" },
+  { nome:"Pinkie Pie",       arquivo:"pinkie_pie.png" },
+  { nome:"Rarity",           arquivo:"rarity.png" },
+  { nome:"Applejack",        arquivo:"applejack.png" },
+  { nome:"Fluttershy",       arquivo:"fluttershy.png" },
+  { nome:"Spike",            arquivo:"spike.png" },
+  { nome:"Princesa Celestia",arquivo:"princesa_celestia.png" },
+  { nome:"Princesa Luna",    arquivo:"princesa_luna.png" },
+  { nome:"Starlight Glimmer",arquivo:"starlight_glimmer.png" },
+  { nome:"Apple Bloom",      arquivo:"apple_bloom.png" },
+  { nome:"Sweetie Belle",    arquivo:"sweetie_belle.png" },
+  { nome:"Scootaloo",        arquivo:"scootaloo.png" },
+  { nome:"Trixie",           arquivo:"trixie.png" },
+];
+
+/* ===================================================================
+   2. MOTOR DO JOGO
+   =================================================================== */
+
+const $ = (id) => document.getElementById(id);
+
+// --- relatório de erros na própria tela (sem precisar de dev tools) ---
+function reportarErro(texto){
+  const painel = $("erros");
+  const lista  = $("erros-lista");
+  const item   = document.createElement("li");
+  item.textContent = texto;
+  lista.appendChild(item);
+  painel.classList.add("visivel");
+}
+window.addEventListener("error", (e) => {
+  reportarErro("Erro no código: " + e.message + "  (linha " + e.lineno + ")");
+});
+
+function urlDoPonei(p){ return BASE + p.arquivo; }
+
+// --- som simples (só liga depois do primeiro toque, exigência do celular) ---
+let audio = null;
+function ligarAudio(){
+  if(!audio){
+    try{ audio = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch(e){ audio = false; }
+  }
+  if(audio && audio.state === "suspended") audio.resume();
+}
+function tocar(freq, dur){
+  if(!audio) return;
+  try{
+    const osc = audio.createOscillator();
+    const vol = audio.createGain();
+    osc.type = "sine";
+    osc.frequency.value = freq;
+    vol.gain.setValueAtTime(0.0001, audio.currentTime);
+    vol.gain.exponentialRampToValueAtTime(0.25, audio.currentTime + 0.02);
+    vol.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + dur);
+    osc.connect(vol); vol.connect(audio.destination);
+    osc.start(); osc.stop(audio.currentTime + dur + 0.05);
+  }catch(e){}
+}
+const somVira  = () => tocar(520, 0.10);
+const somAchou = () => { tocar(660, 0.12); setTimeout(()=>tocar(880, 0.18), 110); };
+const somErro  = () => tocar(240, 0.16);
+
+// --- estado ---
+let cartas = [], viradas = [], jogadas = 0, achados = 0, totalPares = 0, travado = false;
+
+function embaralhar(lista){
+  const c = lista.slice();
+  for(let i = c.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [c[i], c[j]] = [c[j], c[i]];
+  }
+  return c;
+}
+
+function colunasPara(qtdCartas){
+  if(qtdCartas <= 8)  return 4;   // 4x2
+  if(qtdCartas <= 12) return 3;   // 3x4
+  return 4;                       // 4x4
+}
+
+function mostrarTela(id){
+  document.querySelectorAll(".tela").forEach(t => t.classList.remove("ativa"));
+  $(id).classList.add("ativa");
+}
+
+function iniciar(pares){
+  ligarAudio();
+
+  if(PONEIS.length < pares){
+    reportarErro("A lista tem só " + PONEIS.length + " pôneis, mas o jogo pediu " + pares + " pares.");
+    return;
+  }
+
+  totalPares = pares;
+  jogadas = 0; achados = 0; viradas = []; travado = false;
+
+  const escolhidos = embaralhar(PONEIS).slice(0, pares);
+  cartas = embaralhar(escolhidos.concat(escolhidos));
+
+  const tab = $("tabuleiro");
+  tab.innerHTML = "";
+  tab.style.gridTemplateColumns = "repeat(" + colunasPara(cartas.length) + ", 1fr)";
+
+  cartas.forEach((ponei, i) => {
+    const btn = document.createElement("button");
+    btn.className = "carta";
+    btn.dataset.indice = i;
+    btn.dataset.nome = ponei.nome;
+    btn.setAttribute("aria-label", "Carta virada para baixo");
+    btn.innerHTML =
+      '<div class="carta-interna">' +
+        '<div class="face verso">' +
+          '<svg viewBox="0 0 100 100" aria-hidden="true">' +
+            '<path fill="#FFD34A" d="M50 6l11 27 29 2-22 19 7 28-25-15-25 15 7-28L10 35l29-2z"/>' +
+            '<circle cx="20" cy="20" r="4" fill="#FF6FB0"/>' +
+            '<circle cx="82" cy="30" r="3" fill="#35CFC9"/>' +
+            '<circle cx="26" cy="82" r="3" fill="#35CFC9"/>' +
+            '<circle cx="78" cy="78" r="4" fill="#FF6FB0"/>' +
+          '</svg>' +
+        '</div>' +
+        '<div class="face frente"></div>' +
+      '</div>';
+
+    const frente = btn.querySelector(".frente");
+    const img = new Image();
+    img.alt = ponei.nome;
+    img.src = urlDoPonei(ponei);
+    img.onerror = () => {
+      frente.innerHTML = '<div class="quebrado">Imagem não carregou<br>' + ponei.arquivo + '</div>';
+      reportarErro("Não carregou: " + urlDoPonei(ponei));
+    };
+    frente.appendChild(img);
+
+    const nome = document.createElement("div");
+    nome.className = "nome";
+    nome.textContent = ponei.nome;
+    frente.appendChild(nome);
+
+    btn.addEventListener("click", () => virar(btn));
+    tab.appendChild(btn);
+  });
+
+  atualizarPlacar();
+  mostrarTela("tela-jogo");
+}
+
+function atualizarPlacar(){
+  $("m-pares").textContent = achados + "/" + totalPares;
+  $("m-jogadas").textContent = jogadas;
+}
+
+function virar(btn){
+  if(travado) return;
+  if(btn.classList.contains("virada")) return;
+
+  ligarAudio();
+  btn.classList.add("virada");
+  btn.setAttribute("aria-label", btn.dataset.nome);
+  somVira();
+  viradas.push(btn);
+
+  if(viradas.length < 2) return;
+
+  jogadas++;
+  atualizarPlacar();
+  const [a, b] = viradas;
+
+  if(a.dataset.nome === b.dataset.nome){
+    viradas = [];
+    achados++;
+    a.classList.add("achou");
+    b.classList.add("achou");
+    somAchou();
+    atualizarPlacar();
+    if(achados === totalPares) setTimeout(terminar, 700);
+  }else{
+    travado = true;
+    somErro();
+    setTimeout(() => {
+      a.classList.remove("virada");
+      b.classList.remove("virada");
+      a.setAttribute("aria-label", "Carta virada para baixo");
+      b.setAttribute("aria-label", "Carta virada para baixo");
+      viradas = [];
+      travado = false;
+    }, 1000);
+  }
+}
+
+function terminar(){
+  $("fim-detalhe").textContent = totalPares + " pares em " + jogadas + " jogadas";
+  mostrarTela("tela-fim");
+  chuvaDeEstrelas();
+}
+
+function chuvaDeEstrelas(){
+  const simbolos = ["⭐","✨","🌈","💖","🦄"];
+  for(let i = 0; i < 22; i++){
+    const e = document.createElement("div");
+    e.className = "estrela-cai";
+    e.textContent = simbolos[Math.floor(Math.random() * simbolos.length)];
+    e.style.left = Math.random() * 96 + "vw";
+    e.style.animationDuration = (2.2 + Math.random() * 2) + "s";
+    e.style.animationDelay = (Math.random() * 1.2) + "s";
+    document.body.appendChild(e);
+    setTimeout(() => e.remove(), 6000);
+  }
+}
+
+/* ===================================================================
+   3. TESTE DE IMAGENS  — diz na tela quais URLs estão quebradas
+   =================================================================== */
+function testarImagens(){
+  const saida = $("resultado-teste");
+  $("erros-lista").innerHTML = "";
+  $("erros").classList.remove("visivel");
+  saida.textContent = "Testando " + PONEIS.length + " imagens...";
+
+  let ok = 0, falhou = 0;
+  const fim = () => {
+    if(ok + falhou < PONEIS.length) return;
+    saida.textContent = ok + " carregaram · " + falhou + " falharam";
+    if(falhou > 0) reportarErro("Confira o BASE e os nomes dos arquivos no topo do código.");
+  };
+
+  PONEIS.forEach(p => {
+    const img = new Image();
+    img.onload  = () => { ok++; fim(); };
+    img.onerror = () => { falhou++; reportarErro("Falhou: " + urlDoPonei(p)); fim(); };
+    img.src = urlDoPonei(p);
+  });
+}
+
+/* ===================================================================
+   4. LIGAÇÕES DOS BOTÕES
+   =================================================================== */
+document.querySelectorAll("[data-pares]").forEach(b => {
+  b.addEventListener("click", () => iniciar(parseInt(b.dataset.pares, 10)));
+});
+$("btn-testar").addEventListener("click", () => { ligarAudio(); testarImagens(); });
+$("btn-voltar").addEventListener("click", () => mostrarTela("tela-inicio"));
+$("btn-denovo").addEventListener("click", () => iniciar(totalPares));
+$("btn-inicio").addEventListener("click", () => mostrarTela("tela-inicio"));
+</script>
 </body>
 </html>
