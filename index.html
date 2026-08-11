@@ -145,13 +145,42 @@ document.querySelectorAll(".retrato img").forEach((img, i) => {
   });
 });
 
+/* qualquer erro de código aparece na tela, sem precisar de dev tools */
+addEventListener("error", e => {
+  const r = document.getElementById("recado");
+  if(!r) return;
+  r.textContent = "Erro: " + e.message + (e.filename ? "  (" + e.filename.split("/").pop() + ":" + e.lineno + ")" : "");
+  r.classList.remove("escondida");
+});
+
+/* o voz.js pode não ter carregado. A navegação NÃO pode depender dele. */
+const TEM_VOZJS = (typeof fala === "function" && typeof somToque === "function");
+if(!TEM_VOZJS){
+  const r = document.getElementById("recado");
+  r.textContent = "O arquivo js/voz.js não carregou, então os jogos abrem sem voz. Confira se ele está na pasta js/ do projeto.";
+  r.classList.remove("escondida");
+  const b = document.getElementById("btnStatus");
+  if(b){ b.textContent = "🔇 sem voz.js"; b.dataset.ok = "nao"; }
+}
+
 document.querySelectorAll(".jogo").forEach(b => {
   b.addEventListener("click", () => {
-    // o toque é real, então é aqui que o áudio do celular destrava
-    somToque();
-    fala(b.dataset.fala);
-    // dá tempo da frase começar antes de trocar de página
-    setTimeout(() => { location.href = b.dataset.pagina; }, 900);
+    const destino = b.dataset.pagina;
+    let espera = 0;
+
+    // o toque é real, então é aqui que o áudio do celular destrava.
+    // se falhar, segue mesmo assim: abrir o jogo é mais importante que a voz.
+    if(TEM_VOZJS){
+      try{
+        somToque();
+        fala(b.dataset.fala);
+        espera = 900;   // dá tempo da frase começar antes de trocar de página
+      }catch(e){
+        espera = 0;
+      }
+    }
+
+    setTimeout(() => { location.href = destino; }, espera);
   });
 });
 </script>
