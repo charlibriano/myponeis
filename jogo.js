@@ -187,7 +187,7 @@ function festa(origem){
 
 /* --- vitrine da tela inicial --- */
 function montaVitrine(){
-  const p = sorteia(PONEIS.filter(x=>x.nivel===1));
+  const p = sorteia(elenco());   // usa o mesmo filtro do jogo, senão a vitrine mostra SVG
   el('vitrine').innerHTML = retrato(p);
 }
 montaVitrine();
