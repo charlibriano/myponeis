@@ -179,3 +179,93 @@ function festejaMissao(){
 
   document.getElementById("festaMissaoOk").addEventListener("click", () => cx.remove());
 }
+
+/* ============================================================
+   DIAGNÓSTICO DE ANIMAÇÃO
+
+   Já convertemos tudo para transform e opacity, que rodam na placa
+   de vídeo. Se ainda assim ficar estático no celular, a causa está
+   fora do código: o sistema desligou animação.
+
+   Duas configurações fazem isso:
+     - "Reduzir movimento", em Acessibilidade
+     - economia de bateria, no Android e no iOS
+
+   Em vez de adivinhar, medimos: perguntamos ao navegador se a
+   preferência está ligada, e escutamos se ALGUMA animação chegou a
+   começar. As duas respostas aparecem na tela.
+
+   E deixamos uma chave: o pai pode forçar as animações mesmo com a
+   preferência ligada, porque quem ligou foi ele, não a criança.
+   ============================================================ */
+
+const ANIM_CHAVE = "poneis.animacao.forcada";
+
+function animacaoForcada(){
+  try{ return localStorage.getItem(ANIM_CHAVE) === "1"; }catch(e){ return false; }
+}
+
+function aplicaForcaAnimacao(){
+  if(animacaoForcada()) document.documentElement.classList.add("animar-sempre");
+  else document.documentElement.classList.remove("animar-sempre");
+}
+aplicaForcaAnimacao();
+
+function preferReduzirMovimento(){
+  try{ return window.matchMedia("(prefers-reduced-motion: reduce)").matches; }
+  catch(e){ return false; }
+}
+
+/* mostra o aviso na barra da página, ou cria uma se não houver */
+function avisoAnimacao(texto, comBotao){
+  let r = document.getElementById("recado");
+  if(!r){
+    r = document.createElement("div");
+    r.id = "recado";
+    r.style.cssText = "position:fixed;left:8px;right:8px;bottom:8px;z-index:150;" +
+      "background:#3B1220;color:#FFE6EE;border:2px solid #FF6FB0;border-radius:14px;" +
+      "padding:10px 12px;font-size:13px;line-height:1.45;" +
+      "font-family:'Baloo 2',system-ui,sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.35)";
+    document.body.appendChild(r);
+  }
+  r.classList.remove("escondida");
+  r.style.display = "block";
+  r.innerHTML = texto;
+
+  if(comBotao){
+    const b = document.createElement("button");
+    b.textContent = animacaoForcada() ? "desligar animações" : "ligar animações mesmo assim";
+    b.style.cssText = "display:block;margin-top:8px;border:none;border-radius:12px;cursor:pointer;" +
+      "font-family:inherit;font-weight:800;font-size:13px;padding:8px 14px;background:#FF6FB0;color:#fff";
+    b.addEventListener("click", () => {
+      try{ localStorage.setItem(ANIM_CHAVE, animacaoForcada() ? "0" : "1"); }catch(e){}
+      location.reload();
+    });
+    r.appendChild(b);
+  }
+}
+
+function verificaAnimacoes(){
+  let alguma = false;
+  const marca = () => { alguma = true; };
+  document.addEventListener("animationstart", marca, true);
+
+  setTimeout(() => {
+    document.removeEventListener("animationstart", marca, true);
+    const reduz = preferReduzirMovimento();
+
+    if(alguma && !reduz) return;              // está tudo rodando: nada a dizer
+
+    if(reduz){
+      avisoAnimacao("Este aparelho está com <b>Reduzir movimento</b> ligado (Acessibilidade), " +
+        "ou em economia de bateria. Por isso as animações ficam paradas — o site respeita essa escolha. " +
+        (animacaoForcada() ? "Você já ligou o modo forçado." : ""), true);
+    }else if(!alguma){
+      avisoAnimacao("Nenhuma animação chegou a começar neste aparelho, e a preferência de " +
+        "reduzir movimento está desligada. Isso aponta para economia de bateria ativa " +
+        "ou um navegador antigo.", true);
+    }
+  }, 2000);
+}
+
+addEventListener("DOMContentLoaded", verificaAnimacoes);
