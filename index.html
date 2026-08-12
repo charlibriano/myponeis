@@ -104,31 +104,89 @@ body{
 .recepcao .oi{ font-size:20px; font-weight:800; color:var(--roxo); line-height:1.1; }
 .recepcao .tarefa{ font-size:12px; font-weight:600; color:#9A83C4; margin:4px 0 5px; }
 
-/* ---------- primeira vez: quem é você? ---------- */
+/* ---------- primeira vez: quem vai brincar? ---------- */
 #apresentacao{
   position:fixed; inset:0; z-index:120; display:none;
-  align-items:center; justify-content:center; flex-direction:column; gap:14px;
-  padding:22px; text-align:center;
-  background:linear-gradient(160deg,#EFE3FF 0%,#FFE4F2 100%);
-  overflow-y:auto;
+  align-items:center; justify-content:flex-start; flex-direction:column;
+  padding:calc(18px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));
+  text-align:center; overflow-y:auto;
+  /* deixa o cenário do fundo aparecer por trás em vez de tapar tudo */
+  background:linear-gradient(180deg, rgba(255,255,255,.72) 0%, rgba(255,240,250,.88) 100%);
+  backdrop-filter:blur(2px);
 }
 #apresentacao.visivel{ display:flex; }
-#apresentacao h2{ font-size:26px; color:var(--roxo); }
-#apresentacao p{ font-size:14px; color:#8A6FBF; max-width:320px; }
-#campoNome{
-  font-family:inherit; font-size:22px; font-weight:800; text-align:center;
-  color:var(--roxo); border:3px solid #D9C6F2; border-radius:18px;
-  padding:12px 16px; width:min(78vw,280px); background:#fff;
+
+.cartao{
+  width:100%; max-width:360px;
+  background:#fff; border-radius:30px;
+  padding:22px 18px 24px;
+  box-shadow:0 8px 0 #E4D8F5, 0 18px 34px rgba(107,63,191,.24);
+  border:3px solid #fff;
 }
+
+#apresentacao .estrelinhas{ font-size:26px; letter-spacing:6px; margin-bottom:2px; }
+#apresentacao h2{
+  font-size:27px; font-weight:800; color:var(--roxo); line-height:1.1;
+  text-shadow:0 2px 0 #fff;
+}
+#apresentacao p{ font-size:13px; font-weight:600; color:#9A83C4; margin:4px 0 14px; }
+
+/* o campo mostra o nome em letras grandes: ela já sabe escrever o dela,
+   e ver a própria letra aparecendo grande faz parte da graça */
+#campoNome{
+  font-family:inherit; font-size:30px; font-weight:800; text-align:center;
+  letter-spacing:2px; color:var(--roxo);
+  border:3px solid #E4D8F5; border-radius:20px;
+  padding:12px 14px; width:100%; background:#FBF6FF;
+  outline:none; transition:border-color .2s ease, box-shadow .2s ease;
+}
+#campoNome:focus{ border-color:var(--rosa); box-shadow:0 0 0 4px rgba(255,111,176,.22); background:#fff; }
+#campoNome::placeholder{ color:#CFC0E8; font-size:22px; letter-spacing:1px; }
+
+.divisor{
+  display:flex; align-items:center; gap:10px;
+  margin:20px 0 12px; color:#C4B4E0; font-size:12px; font-weight:800;
+  text-transform:uppercase; letter-spacing:.12em;
+}
+.divisor::before, .divisor::after{
+  content:""; flex:1; height:3px; border-radius:2px;
+  background:linear-gradient(90deg, transparent, #E4D8F5, transparent);
+}
+
 .escolhaAmigas{
-  display:grid; grid-template-columns:repeat(4,72px); gap:10px; justify-content:center;
+  display:grid; grid-template-columns:repeat(4, 1fr); gap:10px;
 }
 .escolhaAmigas button{
-  border:3px solid #E4D8F5; background:#fff; border-radius:50%;
-  width:72px; height:72px; padding:0; overflow:hidden; cursor:pointer;
+  border:3px solid #E4D8F5; background:#FBF6FF; border-radius:50%;
+  aspect-ratio:1; width:100%; padding:0; overflow:hidden; cursor:pointer;
+  transition:transform .15s ease, border-color .15s ease, box-shadow .15s ease;
 }
-.escolhaAmigas button.marcada{ border-color:#FF6FB0; box-shadow:0 0 0 4px rgba(255,111,176,.3); }
+.escolhaAmigas button:active{ transform:scale(.94); }
+.escolhaAmigas button.marcada{
+  border-color:var(--rosa);
+  box-shadow:0 0 0 5px rgba(255,111,176,.28), 0 4px 10px rgba(196,58,121,.3);
+  transform:scale(1.08);
+}
 .escolhaAmigas img{ width:100%; height:100%; object-fit:cover; object-position:center 34%; }
+
+#nomeDaAmiga{
+  min-height:22px; margin-top:10px;
+  font-size:16px; font-weight:800; color:var(--rosa);
+}
+
+/* o botão existia com a classe .botao, que nunca foi definida nesta
+   página — por isso saía o botão cru do navegador */
+#btnComecar{
+  margin-top:18px; width:100%;
+  border:none; border-radius:24px; cursor:pointer;
+  font-family:inherit; font-weight:800; font-size:24px; color:#fff;
+  padding:16px 20px;
+  background:linear-gradient(180deg, #FF8FC0 0%, #E3488F 100%);
+  box-shadow:0 6px 0 #C43A79, 0 12px 22px rgba(196,58,121,.32);
+  transition:transform .1s ease, box-shadow .1s ease, filter .2s ease;
+}
+#btnComecar:active{ transform:translateY(5px); box-shadow:0 1px 0 #C43A79; }
+#btnComecar.esperando{ filter:grayscale(.5) opacity(.6); }
 </style>
 <link rel="stylesheet" href="cenario.css">
 </head>
@@ -221,13 +279,19 @@ body{
 </div>
 
 <div id="apresentacao">
-  <h2>Quem vai brincar?</h2>
-  <p>Escreva o nome dela. A voz vai chamar por ele durante os jogos.</p>
-  <input id="campoNome" maxlength="14" placeholder="nome" autocomplete="off">
-  <h2 style="margin-top:10px">Escolha a amiga</h2>
-  <p>Essa pônei acompanha ela em todos os jogos.</p>
-  <div class="escolhaAmigas" id="escolhaAmigas"></div>
-  <button class="botao" id="btnComecar" style="margin-top:10px">Começar</button>
+  <div class="cartao">
+    <div class="estrelinhas" aria-hidden="true">🌈 ✨ 🦄 ✨ 🌈</div>
+    <h2>Quem vai brincar?</h2>
+    <p>Escreva o nome dela aqui</p>
+    <input id="campoNome" maxlength="14" placeholder="nome" autocomplete="off"
+           autocapitalize="words" spellcheck="false">
+
+    <div class="divisor">escolha a amiga</div>
+    <div class="escolhaAmigas" id="escolhaAmigas"></div>
+    <div id="nomeDaAmiga"></div>
+
+    <button id="btnComecar" class="esperando">Começar</button>
+  </div>
 </div>
 
 <script src="frases.js"></script>
@@ -282,15 +346,25 @@ function montaEscolha(){
       amigaEscolhida = nome;
       cx.querySelectorAll("button").forEach(x => x.classList.remove("marcada"));
       b.classList.add("marcada");
+      // ela não lê ainda, mas o pai precisa saber quem escolheu
+      document.getElementById("nomeDaAmiga").textContent = nome;
       if(typeof somToque === "function") somToque();
-      if(typeof fala === "function") fala(nome);
+      confereBotao();
     });
     cx.appendChild(b);
   });
 }
 
+/* o botão só ganha cor quando há nome e amiga escolhidos — assim ele
+   não parece quebrado quando o toque não faz nada */
+function confereBotao(){
+  const pronto = document.getElementById("campoNome").value.trim() !== "" && amigaEscolhida;
+  document.getElementById("btnComecar").classList.toggle("esperando", !pronto);
+}
+
 function abreApresentacao(){
   montaEscolha();
+  document.getElementById("campoNome").addEventListener("input", confereBotao);
   document.getElementById("apresentacao").classList.add("visivel");
 }
 
@@ -306,7 +380,7 @@ document.getElementById("btnComecar").addEventListener("click", () => {
 
   document.getElementById("apresentacao").classList.remove("visivel");
   mostraRecepcao();
-  if(typeof fala === "function") fala("Oi " + nome + "! Eu sou " + amigaEscolhida + ". Vamos brincar!");
+  if(typeof somVitoria === "function") somVitoria();
 });
 
 function mostraRecepcao(){
