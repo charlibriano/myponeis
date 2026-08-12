@@ -64,7 +64,7 @@ body{
 
 /* pegada de casco: fica na célula, com a ponta virada para onde ela foi */
 .pegada{
-  position:absolute; pointer-events:none; z-index:2;
+  position:absolute; pointer-events:none; z-index:1;
   background-repeat:no-repeat; background-position:center; background-size:contain;
   /* ferradura: um arco grosso aberto embaixo, com os furos dos cravos.
      A gota anterior não lia como pegada de cavalo. */
@@ -89,17 +89,21 @@ body{
 .item{
   position:absolute; z-index:3; pointer-events:none;
   display:flex; align-items:center; justify-content:center;
+  /* text-shadow no lugar de filter:drop-shadow. Filtro cria uma superfície
+     separada que o navegador reprocessa a cada quadro; no celular ele
+     desiste e a animação morre. text-shadow é pintado junto com o texto. */
+  text-shadow:0 3px 4px rgba(60,40,110,.45);
+  will-change:transform;
   animation:itemFlutua 2.2s ease-in-out infinite;
-  filter:drop-shadow(0 3px 4px rgba(60,40,110,.45));
 }
 @keyframes itemFlutua{
-  0%,100%{ transform:translateY(0)    scale(1); }
-  50%    { transform:translateY(-14%) scale(1.08); }
+  0%,100%{ transform:translate3d(0,0,0)    scale(1); }
+  50%    { transform:translate3d(0,-14%,0) scale(1.08); }
 }
 .item.sumindo{ animation:itemPego .45s ease-out forwards; }
 @keyframes itemPego{
-  0%  { transform:scale(1)   translateY(0);     opacity:1; }
-  100%{ transform:scale(1.9) translateY(-90%);  opacity:0; }
+  0%  { transform:translate3d(0,0,0)     scale(1);   opacity:1; }
+  100%{ transform:translate3d(0,-90%,0)  scale(1.9); opacity:0; }
 }
 
 /* portão: fecha a chegada até ela achar a chave */
@@ -187,7 +191,7 @@ body{
   <button class="icone" id="btnCasa" aria-label="Voltar aos jogos">🏠</button>
   <div class="marcador"><span>Estrelas</span><b id="mEstrelas">0</b></div>
   <div class="marcador"><span>Labirinto</span><b id="mNivel">1</b></div>
-  <div class="marcador" id="caixaMacas"><span>Maçãs</span><b id="mMacas">0/0</b></div>
+  <div class="marcador" id="caixaMacas"><span id="rotuloItem">Itens</span><b id="mMacas">0/0</b></div>
   <button id="btnTrocaVoz">trocar voz</button>
   <button id="btnStatus" data-ok="?">🔈 voz</button>
 </div>
@@ -238,6 +242,94 @@ const sorteia = a => a[Math.floor(Math.random() * a.length)];
 function retratoDe(p){
   if(p && p.img) return '<img src="' + encodeURI(p.img) + '" alt="' + p.nome + '">';
   return '<span class="emoji">🦄</span>';
+}
+
+
+/* ===================================================================
+   CENÁRIOS
+   Criança de 4 anos perde o interesse quando vê a mesma tela três
+   vezes. Cada rodada acontece num lugar diferente: muda o céu, o
+   chão, as cercas, o item que ela coleta e o nome que a voz anuncia.
+
+   Os cenários entram embaralhados e só repetem depois que todos os
+   sete passaram — assim ela nunca vê o mesmo duas vezes seguidas.
+   =================================================================== */
+const CENARIOS = [
+  { nome:"o jardim",   item:"🍎", oQue:"maçã",     oQuePl:"maçãs",
+    ceuAlto:"#7FCFF2", ceuBaixo:"#C8EEFF", sol:"#FFF0B8",
+    chaoClaro:"#F6E7C8", chaoEscuro:"#EAD6B0", pedrisco:"rgba(160,120,80,.20)",
+    molduraClara:"#E8D5AE", molduraEscura:"#DCC79A",
+    paredeTopo:"#63C36F", paredeMeio:"#3E9A54", paredeBase:"#2E7A41", paredeSombra:"rgba(20,90,45,.35)" },
+
+  { nome:"a praia",    item:"🐚", oQue:"conchinha", oQuePl:"conchinhas",
+    ceuAlto:"#6FD8E8", ceuBaixo:"#D6F6FF", sol:"#FFE9A8",
+    chaoClaro:"#FBEFCF", chaoEscuro:"#F0DCA8", pedrisco:"rgba(200,160,100,.22)",
+    molduraClara:"#F2DFB0", molduraEscura:"#E4CB92",
+    paredeTopo:"#7FD8E0", paredeMeio:"#48AFC4", paredeBase:"#2E8CA6", paredeSombra:"rgba(20,90,110,.35)" },
+
+  { nome:"a neve",     item:"❄️", oQue:"floquinho", oQuePl:"floquinhos",
+    ceuAlto:"#A8D8F0", ceuBaixo:"#E8F6FF", sol:"#FFFFFF",
+    chaoClaro:"#FBFDFF", chaoEscuro:"#DCEAF6", pedrisco:"rgba(140,175,205,.25)",
+    molduraClara:"#E4F0FA", molduraEscura:"#CFE2F2",
+    paredeTopo:"#CFEBFA", paredeMeio:"#95C8E8", paredeBase:"#6BA8D0", paredeSombra:"rgba(60,120,165,.32)" },
+
+  { nome:"a floresta", item:"🌰", oQue:"castanha",  oQuePl:"castanhas",
+    ceuAlto:"#8FD0A8", ceuBaixo:"#DAF2DC", sol:"#F4F0B0",
+    chaoClaro:"#E0D0A8", chaoEscuro:"#C8B48A", pedrisco:"rgba(110,85,50,.24)",
+    molduraClara:"#CBB894", molduraEscura:"#B49E78",
+    paredeTopo:"#A8763E", paredeMeio:"#7E5528", paredeBase:"#5E3D1B", paredeSombra:"rgba(60,35,10,.38)" },
+
+  { nome:"o mundo dos doces", item:"🍬", oQue:"balinha", oQuePl:"balinhas",
+    ceuAlto:"#F5A8D0", ceuBaixo:"#FFE0F0", sol:"#FFF4C8",
+    chaoClaro:"#FFF0DC", chaoEscuro:"#F4DCBC", pedrisco:"rgba(210,140,170,.22)",
+    molduraClara:"#F8DCC8", molduraEscura:"#EEC4AC",
+    paredeTopo:"#FF9ECB", paredeMeio:"#E86BAA", paredeBase:"#C4488A", paredeSombra:"rgba(150,40,95,.32)" },
+
+  { nome:"o castelo",  item:"💎", oQue:"joia",      oQuePl:"joias",
+    ceuAlto:"#9CB8E8", ceuBaixo:"#DCE6FA", sol:"#FFF2CC",
+    chaoClaro:"#E8E2F2", chaoEscuro:"#D2C8E4", pedrisco:"rgba(120,105,150,.24)",
+    molduraClara:"#DCD2EC", molduraEscura:"#C4B8DC",
+    paredeTopo:"#BFB4D4", paredeMeio:"#9186B0", paredeBase:"#6E6390", paredeSombra:"rgba(55,45,85,.34)" },
+
+  { nome:"o pôr do sol", item:"⭐", oQue:"estrelinha", oQuePl:"estrelinhas",
+    ceuAlto:"#F5A87E", ceuBaixo:"#FFE2C8", sol:"#FFD08A",
+    chaoClaro:"#F2DCC0", chaoEscuro:"#E0C29E", pedrisco:"rgba(160,105,70,.22)",
+    molduraClara:"#E8CDAC", molduraEscura:"#D4B48E",
+    paredeTopo:"#C48EB4", paredeMeio:"#9A6494", paredeBase:"#744874", paredeSombra:"rgba(70,35,70,.34)" }
+];
+
+let baralhoCenarios = [], cenario = CENARIOS[0];
+
+function proximoCenario(){
+  if(!baralhoCenarios.length){
+    baralhoCenarios = CENARIOS.slice();
+    for(let i = baralhoCenarios.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [baralhoCenarios[i], baralhoCenarios[j]] = [baralhoCenarios[j], baralhoCenarios[i]];
+    }
+    // se o primeiro do baralho novo for igual ao último jogado, manda para o fim
+    if(baralhoCenarios[0] === cenario && baralhoCenarios.length > 1){
+      baralhoCenarios.push(baralhoCenarios.shift());
+    }
+  }
+  cenario = baralhoCenarios.shift();
+  aplicaCenario();
+}
+
+function aplicaCenario(){
+  const r = document.documentElement.style;
+  r.setProperty("--ceu-alto",       cenario.ceuAlto);
+  r.setProperty("--ceu-baixo",      cenario.ceuBaixo);
+  r.setProperty("--sol",            cenario.sol);
+  r.setProperty("--chao-claro",     cenario.chaoClaro);
+  r.setProperty("--chao-escuro",    cenario.chaoEscuro);
+  r.setProperty("--pedrisco",       cenario.pedrisco);
+  r.setProperty("--moldura-clara",  cenario.molduraClara);
+  r.setProperty("--moldura-escura", cenario.molduraEscura);
+  r.setProperty("--parede-topo",    cenario.paredeTopo);
+  r.setProperty("--parede-meio",    cenario.paredeMeio);
+  r.setProperty("--parede-base",    cenario.paredeBase);
+  r.setProperty("--parede-sombra",  cenario.paredeSombra);
 }
 
 /* ===================================================================
@@ -298,11 +390,11 @@ function desenha(){
   cx.style.height = (linhas  * lado) + "px";
   cx.innerHTML = "";
 
-  const espessura = Math.max(3, Math.round(lado / 14));
+  const espessura = Math.max(6, Math.round(lado / 8));   // arbusto pede mais corpo que uma borda
 
+  /* 1. o chão: cada casa é um pedaço de caminho */
   for(let r = 0; r < linhas; r++){
     for(let c = 0; c < colunas; c++){
-      const g = grade[r][c];
       const d = document.createElement("div");
       d.className = "celula";
       d.dataset.r = r; d.dataset.c = c;
@@ -310,12 +402,40 @@ function desenha(){
       d.style.top  = (r * lado) + "px";
       d.style.width = lado + "px";
       d.style.height = lado + "px";
-      d.style.borderTopWidth    = g.cima  ? espessura + "px" : "0";
-      d.style.borderBottomWidth = g.baixo ? espessura + "px" : "0";
-      d.style.borderLeftWidth   = g.esq   ? espessura + "px" : "0";
-      d.style.borderRightWidth  = g.dir   ? espessura + "px" : "0";
       if(r === linhas - 1 && c === colunas - 1) d.classList.add("chegada");
       cx.appendChild(d);
+    }
+  }
+
+  /* 2. as paredes: arbustos desenhados por cima, um elemento por trecho.
+
+     Antes eram bordas de CSS. Borda é fina, tem canto vivo e não aceita
+     textura, então o labirinto parecia planilha. Como elemento próprio,
+     cada trecho ganha ponta arredondada, folhagem e volume.
+
+     Cada parede é registrada nas duas casas vizinhas. Para não desenhar
+     duas vezes, percorro só a de cima e a da esquerda de cada casa, e
+     fecho a moldura com a de baixo da última linha e a da direita da
+     última coluna. */
+  const meia = espessura / 2;
+  const poeParede = (x, y, w, h) => {
+    const p = document.createElement("div");
+    p.className = "parede";
+    p.style.left = x + "px"; p.style.top = y + "px";
+    p.style.width = w + "px"; p.style.height = h + "px";
+    p.style.borderRadius = meia + "px";
+    cx.appendChild(p);
+  };
+
+  for(let r = 0; r < linhas; r++){
+    for(let c = 0; c < colunas; c++){
+      const g = grade[r][c];
+      if(g.cima) poeParede(c * lado - meia, r * lado - meia, lado + espessura, espessura);
+      if(g.esq)  poeParede(c * lado - meia, r * lado - meia, espessura, lado + espessura);
+      if(r === linhas - 1 && g.baixo)
+        poeParede(c * lado - meia, (r + 1) * lado - meia, lado + espessura, espessura);
+      if(c === colunas - 1 && g.dir)
+        poeParede((c + 1) * lado - meia, r * lado - meia, espessura, lado + espessura);
     }
   }
 
@@ -356,7 +476,7 @@ function desenhaItens(){
     cx.appendChild(d);
   };
 
-  macas.forEach((m, i) => { if(!m.pego) poe(m.r, m.c, "🍎", "maca-" + i); });
+  macas.forEach((m, i) => { if(!m.pego) poe(m.r, m.c, cenario.item, "maca-" + i); });
   if(chave && !chave.pego) poe(chave.r, chave.c, "🔑", "chave");
 
   // portão barrando a chegada enquanto a chave não aparecer
@@ -572,7 +692,9 @@ function recolhe(){
     if(el){ el.classList.add("sumindo"); setTimeout(() => el.remove(), 450); }
     tocar(typeof somAchou === "function" ? somAchou : null);
     const faltam = macas.filter(x => !x.pego).length;
-    dizer(faltam ? "Pegou uma maçã! Faltam " + faltam + "." : "Pegou todas as maçãs!");
+    dizer(faltam
+      ? "Pegou uma " + cenario.oQue + "! " + (faltam === 1 ? "Falta uma." : "Faltam " + faltam + ".")
+      : "Pegou todas as " + cenario.oQuePl + "!");
     $("mMacas").textContent = macas.filter(x => x.pego).length + "/" + macas.length;
   });
 
@@ -645,6 +767,8 @@ function novaRodada(){
     do { amigaAtual = sorteia(PERSONAGENS); } while(amigaAtual === poneiAtual);
   }
 
+  proximoCenario();
+  $("rotuloItem").textContent = cenario.oQuePl;
   geraLabirinto(linhas, colunas);
   espalhaItens();
   desenha();
@@ -653,9 +777,9 @@ function novaRodada(){
 
   tocar(typeof somComeco === "function" ? somComeco : null);
   const quem = (amigaAtual && amigaAtual.nome) ? amigaAtual.nome : "a amiga";
-  setTimeout(() => dizer(chave
-      ? "Acha a chavinha para abrir o portão, e leva o pônei até " + quem + "!"
-      : "Leva o pônei até " + quem + "! Pega as maçãs pelo caminho."), 400);
+  setTimeout(() => dizer("Agora vamos para " + cenario.nome + "! " + (chave
+      ? "Acha a chavinha para abrir o portão, e leva o pônei até " + quem + "."
+      : "Leva o pônei até " + quem + ", e pega as " + cenario.oQuePl + " pelo caminho.")), 400);
   agendaDica();
 }
 
@@ -697,7 +821,7 @@ function chegou(){
     tocar(typeof somVitoria === "function" ? somVitoria : null);
     const todas = macas.length && macas.every(m => m.pego);
     dizer(todas
-      ? "O pônei chegou até " + quem + ", e você pegou todas as maçãs!"
+      ? "O pônei chegou até " + quem + ", e você pegou todas as " + cenario.oQuePl + "!"
       : "O pônei chegou até " + quem + "!");
     chuvaDeEstrelas();
     setTimeout(() => premiar(() => $("festa").classList.add("visivel")), 1100);
