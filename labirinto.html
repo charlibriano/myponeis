@@ -871,8 +871,11 @@ addEventListener("resize", () => desenha());
 addEventListener("orientationchange", () => setTimeout(desenha, 250));
 
 if(!TEM_ELENCO){
-  $("recado").textContent = "O arquivo personagens.js não carregou, então o pônei aparece como emoji. O jogo funciona igual.";
+  // aviso legítimo, mas some sozinho: barra fixa por cima do tabuleiro
+  // atrapalha quem está jogando
+  $("recado").textContent = "O personagens.js não carregou; o pônei aparece como emoji.";
   $("recado").classList.remove("escondida");
+  setTimeout(() => $("recado").classList.add("escondida"), 6000);
 }
 
 novaRodada();
