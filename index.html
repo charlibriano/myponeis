@@ -99,6 +99,17 @@ body{
 
 <div class="jogos">
 
+  <button class="jogo" data-cor="turq" data-pagina="album.html"
+          data-fala="Seu álbum de pôneis!">
+    <span class="retrato"><img src="imagens/Princesa Cadance.png" alt=""></span>
+    <span class="texto">
+      <span class="nome">Meu Álbum</span>
+      <span class="como" id="quantasTenho">Suas pôneis</span>
+    </span>
+    <span class="seta" aria-hidden="true">▶</span>
+  </button>
+
+
   <button class="jogo" data-cor="roxo" data-pagina="memoria.html"
           data-fala="Jogo da memória! Ache os dois pôneis iguais.">
     <span class="retrato"><img src="imagens/Rarity.png" alt=""></span>
@@ -142,10 +153,11 @@ body{
 </div>
 
 <script src="voz.js"></script>
+<script src="album.js"></script>
 <script>
 /* se a imagem do retrato não carregar, entra um emoji no lugar
    (mesma ideia do relatório de imagens: nada quebra pela metade) */
-const RESERVA = ["🃏", "🔍", "❓", "🌀"];
+const RESERVA = ["📖", "🃏", "🔍", "❓", "🌀"];
 document.querySelectorAll(".retrato img").forEach((img, i) => {
   img.addEventListener("error", () => {
     const s = document.createElement("span");
@@ -172,6 +184,12 @@ if(!TEM_VOZJS){
   const b = document.getElementById("btnStatus");
   if(b){ b.textContent = "🔇 sem voz.js"; b.dataset.ok = "nao"; }
 }
+
+/* o menu mostra quantas ela já tem — o progresso fica visível na abertura */
+try{
+  const q = document.getElementById("quantasTenho");
+  if(q && typeof quantasTem === "function") q.textContent = quantasTem() + " de " + totalDoAlbum() + " pôneis";
+}catch(e){}
 
 document.querySelectorAll(".jogo").forEach(b => {
   b.addEventListener("click", () => {
