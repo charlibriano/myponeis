@@ -38,7 +38,12 @@ function pontuaVoz(v){
   const rotulo = (v.name + ' ' + (v.voiceURI || '')).toLowerCase();
   if(FEMININA.test(rotulo))  p += 50;
   if(MASCULINA.test(rotulo)) p -= 70;
-  if(v.localService)         p += 5;        // voz local não depende de internet
+  /* ERRO ANTERIOR: eu somava pontos para voz local, achando que era melhor
+     por não depender de internet. É o contrário: a voz local do aparelho é a
+     antiga, sintetizada por regras — a robótica. As vozes boas (neurais) vêm
+     pela rede. Agora a de rede ganha a preferência, e a local só entra como
+     reserva quando não há outra. */
+  if(!v.localService)        p += 25;       // voz de rede costuma ser neural
   return p;
 }
 
@@ -81,7 +86,135 @@ function avisa(txt){
   r.classList.remove('escondida');
 }
 
+/* ---------- chave geral da voz ----------
+   Voz sintética ruim é pior que silêncio nenhum. Se as vozes do aparelho
+   não agradarem, desligue aqui: os sons e as animações continuam, e os
+   jogos seguem jogáveis sem nenhuma fala. */
+const VOZ_CHAVE = "poneis.voz.ligada";
+
+function vozLigada(){
+  try{ return localStorage.getItem(VOZ_CHAVE) !== "0"; }catch(e){ return true; }
+}
+function ligaDesligaVoz(){
+  try{ localStorage.setItem(VOZ_CHAVE, vozLigada() ? "0" : "1"); }catch(e){}
+  if(!vozLigada()){
+    if(TEM_VOZ) try{ speechSynthesis.cancel(); }catch(e){}
+    if(typeof paraAudio === "function") paraAudio();
+  }
+  pintaBotaoVoz();
+}
+function pintaBotaoVoz(){
+  const b = _el("btnVozLigada");
+  if(!b) return;
+  const on = vozLigada();
+  b.textContent = on ? "voz ligada" : "voz desligada";
+  b.style.background = on ? "rgba(255,255,255,.8)" : "#FFDDE6";
+  b.style.color = on ? "#8A6FBF" : "#B02A4A";
+}
+
+
+/* ============================================================
+   VOZ GRAVADA  (audio/*.mp3)
+
+   Quando existe arquivo para a frase, ele é tocado. Só quando não
+   existe é que cai na voz do aparelho. Assim a voz é a mesma em
+   qualquer celular, mesmo sem nenhuma voz instalada.
+
+   Precisa do frases.js carregado antes deste arquivo.
+   ============================================================ */
+
+const AUDIO_PASTA = "audio/";
+let audioNaFila = [], audioTocando = null, audioDisponivel = null;
+
+/* Descobre uma vez se a pasta de áudio existe. Enquanto não sabe,
+   usa a voz do aparelho — nunca fica mudo esperando resposta. */
+function testaAudio(){
+  if(typeof FRASES === "undefined") { audioDisponivel = false; return; }
+  const tenta = ext => {
+    const a = new Audio(AUDIO_PASTA + "vamos-brincar" + ext);
+    a.addEventListener("canplaythrough", () => { audioDisponivel = true; }, { once:true });
+    a.addEventListener("error", () => {
+      if(ext === ".mp3") tenta(".wav"); else audioDisponivel = false;
+    }, { once:true });
+    a.load();
+  };
+  tenta(".mp3");
+}
+
+/* Quebra a frase pedida na lista de arquivos que a reproduzem.
+   Devolve null quando algum pedaço não existe — melhor cair inteiro
+   na voz sintética que falar metade. */
+function pedacosDaFrase(texto){
+  if(typeof FRASES === "undefined") return null;
+  const alvo = chaveDeVoz(texto);
+
+  for(const id in FRASES){
+    if(chaveDeVoz(FRASES[id]) === alvo) return [id];
+  }
+
+  for(const molde of MOLDES){
+    const partes = chaveDeVoz(molde.texto).split(/\{(nome|letra|n)\}/);
+    const antes = partes[0].trim(), tipo = partes[1], depois = (partes[2] || "").trim();
+    if(!alvo.startsWith(antes) || !alvo.endsWith(depois)) continue;
+
+    let meio = alvo.slice(antes.length, alvo.length - depois.length).trim();
+    if(!meio) continue;
+
+    if(tipo === "nome"){
+      const achado = NOMES_VOZ.concat(LUGARES_VOZ).find(n => chaveDeVoz(n) === meio);
+      if(achado) return [molde.id + "-ini", idDeNome(achado), molde.id + "-fim"];
+    }else if(tipo === "letra"){
+      const L = LETRAS_VOZ.find(x => chaveDeVoz(x) === meio);
+      if(L) return [molde.id + "-ini", idDeLetra(L), molde.id + "-fim"];
+    }else if(tipo === "n"){
+      if(NUMEROS_VOZ.includes(meio)) return [molde.id + "-ini", idDeNumero(meio), molde.id + "-fim"];
+    }
+  }
+  return null;
+}
+
+function paraAudio(){
+  audioNaFila = [];
+  if(audioTocando){ try{ audioTocando.pause(); }catch(e){} audioTocando = null; }
+}
+
+/* Aceita .mp3 e .wav: o gerador do Windows produz WAV, e converter
+   para MP3 exigiria instalar mais um programa. Tenta MP3 primeiro,
+   cai para WAV, e só então desiste daquele pedaço. */
+function tocaArquivo(id, ext, aoFalhar){
+  const a = new Audio(AUDIO_PASTA + id + ext);
+  audioTocando = a;
+  a.addEventListener("ended", tocaFila, { once:true });
+  a.addEventListener("error", aoFalhar, { once:true });
+  a.play().catch(aoFalhar);
+}
+
+function tocaFila(){
+  if(!audioNaFila.length){ audioTocando = null; return; }
+  const id = audioNaFila.shift();
+  // pedaço faltando não pode travar a fila: pula e segue
+  tocaArquivo(id, ".mp3", () => tocaArquivo(id, ".wav", tocaFila));
+}
+
+/* devolve true quando conseguiu tocar por arquivo */
+function falaGravada(texto){
+  if(audioDisponivel === false) return false;
+  const ids = pedacosDaFrase(texto);
+  if(!ids) return false;
+  paraAudio();
+  audioNaFila = ids.filter(Boolean);
+  tocaFila();
+  return true;
+}
+
+addEventListener("DOMContentLoaded", testaAudio);
+
 function fala(texto){
+  if(!vozLigada()) return;
+
+  // arquivo gravado tem prioridade sobre a voz do aparelho
+  if(falaGravada(texto)) return;
+
   if(!TEM_VOZ){
     marcaStatus('🔇 sem voz', 'nao');
     avisa('Este navegador não tem voz. Abra o jogo no Chrome ou no Safari.');
@@ -93,9 +226,12 @@ function fala(texto){
     speechSynthesis.resume();
     const f = new SpeechSynthesisUtterance(texto);
     f.lang = 'pt-BR';
-    f.rate = .85;
-    // sem confirmar que a voz é feminina, o tom mais alto aproxima
-    f.pitch = vozConfirmadaFeminina ? 1.15 : 1.35;
+    f.rate = .95;                     // .85 arrastava a fala e soava artificial
+    /* Mexer no tom é o que mais deixa a voz com cara de robô: o sintetizador
+       reprocessa a onda e some com a entonação natural. Tom 1 é o original.
+       O 1.35 de antes, que eu usava para simular voz feminina, era o pior
+       ofensor — melhor uma voz masculina natural que uma feminina distorcida. */
+    f.pitch = 1;
     if(vozBR) f.voice = vozBR;
     f.onstart = () => { jaFalou = true; marcaStatus('🔊 voz ok', 'sim'); avisa(''); };
     f.onerror = e => {
@@ -164,6 +300,19 @@ const escolhe = a => a[Math.floor(Math.random() * a.length)];
 /* liga os botões de voz, se a página tiver */
 addEventListener('DOMContentLoaded', () => {
   const bs = _el('btnStatus'), bt = _el('btnTrocaVoz'), r = _el('recado');
+
+  // a chave nasce ao lado do botão de status, sem precisar mexer no HTML
+  if(bs && !_el('btnVozLigada')){
+    const b = document.createElement('button');
+    b.id = 'btnVozLigada';
+    b.style.cssText = bs.getAttribute('style') || '';
+    b.className = bs.className;
+    b.style.cssText += ';border:none;border-radius:12px;cursor:pointer;font-family:inherit;' +
+      'font-weight:800;font-size:12px;padding:6px 10px;box-shadow:0 2px 6px rgba(107,63,191,.14)';
+    b.addEventListener('click', ligaDesligaVoz);
+    bs.parentNode.insertBefore(b, bs);
+    pintaBotaoVoz();
+  }
   if(bs) bs.addEventListener('click', () => testaVoz());
   if(bt) bt.addEventListener('click', () => {
     if(trocaVoz()) testaVoz();
