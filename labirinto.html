@@ -243,6 +243,13 @@ addEventListener("error", e => {
 });
 $("recado").addEventListener("click", () => $("recado").classList.add("escondida"));
 
+function avisaNaTela(txt){
+  const r = $("recado");
+  if(!r) return;
+  r.textContent = txt;
+  r.classList.remove("escondida");
+}
+
 /* o voz.js pode faltar — o jogo não pode morrer por causa disso */
 const TEM_VOZJS = (typeof fala === "function");
 const dizer   = t => { if(TEM_VOZJS) try{ fala(t); }catch(e){} };
@@ -354,7 +361,8 @@ function aplicaCenario(){
    =================================================================== */
 let grade = [], linhas = 4, colunas = 4;
 let pr = 0, pc = 0;              // posição do pônei
-let nivel = 1, estrelas = 0, lado = 60;
+let nivel = (typeof nivelSalvo === 'function') ? nivelSalvo() : 1;
+let estrelas = 0, lado = 60;
 let poneiAtual = null, amigaAtual = null;
 
 function geraLabirinto(nl, nc){
@@ -591,9 +599,15 @@ function espalhaItens(){
   rodadaDeLetras = false;
 
   const doNome = nomeEmLetras();
-  if(doNome.length >= 2 && nivel % 3 === 0){   // 3º, 6º, 9º labirinto...
+  const vezDeLetras = (nivel % 2 === 0);       // 2º, 4º, 6º labirinto...
+
+  if(vezDeLetras && doNome.length >= 2){
     rodadaDeLetras = true;
     letras = doNome;
+  }else if(vezDeLetras){
+    // falhar calado aqui é o pior caso: some uma fase inteira sem explicação
+    avisaNaTela("Esta seria a fase das letras do nome, mas nenhum nome está gravado neste aparelho. " +
+                "Abra a tela inicial (🏠) e preencha o nome dela em \"Quem vai brincar?\".");
   }
 
   const ok = casasAlcancaveis();
@@ -850,19 +864,21 @@ function novaRodada(){
   }
 
   proximoCenario();
-  $("rotuloItem").textContent = rodadaDeLetras ? "Letras" : cenario.oQuePl;
   geraLabirinto(linhas, colunas);
   espalhaItens();
+  // só depois de espalhar é que se sabe se a rodada é de letras
+  $("rotuloItem").textContent = rodadaDeLetras ? "Letras" : cenario.oQuePl;
   desenha();
   $("mNivel").textContent = nivel;
+  if(typeof salvaNivel === "function") salvaNivel(nivel);
   $("festa").classList.remove("visivel");
 
   tocar(typeof somComeco === "function" ? somComeco : null);
   const quem = (amigaAtual && amigaAtual.nome) ? amigaAtual.nome : "a amiga";
   setTimeout(() => {
     if(rodadaDeLetras){
-      dizer("Agora vamos para " + cenario.nome + "! Pegue as letras do seu nome, na ordem certa. "
-          + "Comece pela letra " + letras[0] + ".");
+      dizer("Agora vamos para " + cenario.nome + "! Esta é a fase das letras. "
+          + "Pegue as letras do seu nome na ordem certa, começando pela letra " + letras[0] + ".");
     }else{
       dizer("Agora vamos para " + cenario.nome + "! " + (chave
         ? "Acha a chavinha para abrir o portão, e leva o pônei até " + quem + "."
