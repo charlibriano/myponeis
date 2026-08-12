@@ -301,20 +301,24 @@ body::before{
   50%    { opacity:1; }
 }
 
-/* os pôneis: fichas redondas maiores que a célula, com anel branco */
-#poneiz, #amiga{ overflow:visible; }
+/* Os pôneis cabem DENTRO da célula.
+
+   Antes o anel era box-shadow, que cresce para fora do elemento: a
+   imagem já tinha 104% da célula e cada anel somava mais 7px em volta,
+   então o medalhão ficava quase o dobro da casa do labirinto.
+
+   Agora o anel branco é uma borda com box-sizing:border-box, ou seja,
+   desenhada por dentro dos 100%. Só o fio colorido de 2px fica de fora. */
+#poneiz, #amiga{ overflow:visible; padding:4%; }
 #poneiz img, #amiga img{
-  width:104% !important; height:104% !important;
+  width:100% !important; height:100% !important;
   object-fit:cover !important; object-position:center 34%;
   border-radius:50%;
-  box-shadow:0 0 0 4px #fff, 0 5px 12px rgba(60,40,110,.4);
+  border:3px solid #fff;
+  box-sizing:border-box;
 }
-#poneiz img{
-  box-shadow:0 0 0 4px #fff, 0 0 0 7px #FF6FB0, 0 6px 14px rgba(60,40,110,.45);
-}
-#amiga img{
-  box-shadow:0 0 0 4px #fff, 0 0 0 7px #35CFC9, 0 6px 14px rgba(60,40,110,.45);
-}
+#poneiz img{ box-shadow:0 0 0 2px #FF6FB0, 0 3px 8px rgba(60,40,110,.4); }
+#amiga  img{ box-shadow:0 0 0 2px #35CFC9, 0 3px 8px rgba(60,40,110,.4); }
 
 /* setas maiores e mais gordinhas */
 .seta{ border-radius:26px !important; font-size:30px !important; }
