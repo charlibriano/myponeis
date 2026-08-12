@@ -21,10 +21,10 @@
 
 /* ---------- 1. o céu ---------- */
 html{
+  min-height:100%;
   background:
     radial-gradient(60vw 40vw at 82% 6%, var(--sol) 0%, rgba(255,240,184,0) 62%),
     linear-gradient(180deg, var(--ceu-alto) 0%, var(--ceu-baixo) 62%, #E8F8E9 100%);
-  background-attachment:fixed;
 }
 body{ background:transparent !important; }
 
@@ -56,22 +56,44 @@ body::before{
 }
 
 /* ---------- 3. nuvens ---------- */
-/* duas faixas em velocidades diferentes dão sensação de profundidade */
-body::after{
+/* ANTES isto animava background-position, que obriga o navegador a
+   redesenhar a tela inteira a cada quadro. O celular descarta esse tipo
+   de animação para poupar bateria — por isso ficava parado no aparelho
+   e andava no PC.
+
+   Agora são duas faixas que deslizam com transform: a placa de vídeo
+   resolve sozinha, sem redesenhar nada. Cada faixa tem 200% de largura
+   com o desenho repetido, então deslocar metade dela emenda perfeito e
+   o laço fica invisível.
+
+   As faixas são pseudo-elementos de .cenario-chao só para não precisar
+   mexer no HTML das cinco páginas. Com position:fixed elas escapam do
+   tamanho do pai e ocupam a tela toda. */
+.cenario-chao::before,
+.cenario-chao::after{
   content:"";
-  position:fixed; inset:0;
+  position:fixed; left:0;
+  width:200vmax; height:16vmax;
   pointer-events:none; z-index:-2;
-  background-repeat:repeat-x, repeat-x;
-  background-position:0 12vh, 0 30vh;
-  background-size:70vmax 16vmax, 46vmax 10vmax;
-  background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 700 160'%3E%3Cg fill='%23ffffff' opacity='.92'%3E%3Cellipse cx='120' cy='96' rx='78' ry='40'/%3E%3Cellipse cx='176' cy='74' rx='54' ry='40'/%3E%3Cellipse cx='226' cy='98' rx='62' ry='34'/%3E%3Cellipse cx='470' cy='58' rx='60' ry='30'/%3E%3Cellipse cx='516' cy='42' rx='42' ry='30'/%3E%3Cellipse cx='558' cy='60' rx='48' ry='26'/%3E%3C/g%3E%3C/svg%3E"),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 700 160'%3E%3Cg fill='%23ffffff' opacity='.6'%3E%3Cellipse cx='330' cy='88' rx='66' ry='32'/%3E%3Cellipse cx='378' cy='70' rx='46' ry='32'/%3E%3Cellipse cx='424' cy='90' rx='52' ry='28'/%3E%3C/g%3E%3C/svg%3E");
-  animation:nuvensAndam 90s linear infinite;
+  background-repeat:repeat-x;
+  background-size:70vmax 16vmax;
+  will-change:transform;
 }
-@keyframes nuvensAndam{
-  from{ background-position:   0   12vh,    0   30vh; }
-  to  { background-position: -70vmax 12vh, -46vmax 30vh; }
+.cenario-chao::before{
+  top:11vh;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 700 160'%3E%3Cg fill='%23ffffff' opacity='.92'%3E%3Cellipse cx='120' cy='96' rx='78' ry='40'/%3E%3Cellipse cx='176' cy='74' rx='54' ry='40'/%3E%3Cellipse cx='226' cy='98' rx='62' ry='34'/%3E%3Cellipse cx='470' cy='58' rx='60' ry='30'/%3E%3Cellipse cx='516' cy='42' rx='42' ry='30'/%3E%3Cellipse cx='558' cy='60' rx='48' ry='26'/%3E%3C/g%3E%3C/svg%3E");
+  animation:nuvemDesliza 70s linear infinite;
+}
+.cenario-chao::after{
+  top:29vh;
+  background-size:46vmax 10vmax;
+  opacity:.62;
+  animation:nuvemDesliza 115s linear infinite;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 700 160'%3E%3Cg fill='%23ffffff'%3E%3Cellipse cx='330' cy='88' rx='66' ry='32'/%3E%3Cellipse cx='378' cy='70' rx='46' ry='32'/%3E%3Cellipse cx='424' cy='90' rx='52' ry='28'/%3E%3C/g%3E%3C/svg%3E");
+}
+@keyframes nuvemDesliza{
+  from{ transform:translate3d(0,0,0); }
+  to  { transform:translate3d(-100vmax,0,0); }
 }
 
 /* ---------- 4. colinas ---------- */
@@ -139,9 +161,12 @@ body::after{
   pointer-events:none;
   animation:varre 5.5s ease-in-out infinite;
 }
+/* também precisou sair de 'left' para 'transform': animar left obriga o
+   navegador a recalcular o layout a cada quadro, e o celular descarta.
+   500% da própria largura equivale ao trajeto de -50% até 130% do botão. */
 @keyframes varre{
-  0%, 62%{ left:-50%; }
-  86%, 100%{ left:130%; }
+  0%, 62%  { transform:translate3d(0,0,0)    skewX(-18deg); }
+  86%, 100%{ transform:translate3d(500%,0,0) skewX(-18deg); }
 }
 
 /* as opções do menu entram deslizando, uma depois da outra */
@@ -263,11 +288,21 @@ body::after{
 }
 .celula.chegada{
   background:radial-gradient(circle at 50% 45%, #FFFCE0 0%, #FFE07A 78%) !important;
+  box-shadow:inset 0 0 12px rgba(230,160,30,.45);
+  position:relative;
+}
+/* o pulsar da chegada é uma camada por cima que só muda de opacidade;
+   animar box-shadow direto obrigaria o navegador a repintar a célula */
+.celula.chegada::after{
+  content:"";
+  position:absolute; inset:0; border-radius:inherit;
+  background:radial-gradient(circle at 50% 50%, rgba(255,225,120,.9) 0%, rgba(255,215,90,0) 70%);
   animation:chegadaBrilha 1.5s ease-in-out infinite;
+  pointer-events:none;
 }
 @keyframes chegadaBrilha{
-  0%,100%{ box-shadow:inset 0 0 10px rgba(230,160,30,.4); }
-  50%    { box-shadow:inset 0 0 20px rgba(255,200,60,.85); }
+  0%,100%{ opacity:.25; }
+  50%    { opacity:1; }
 }
 
 /* os pôneis: fichas redondas maiores que a célula, com anel branco */
