@@ -208,6 +208,16 @@ body{
     <span class="seta" aria-hidden="true">▶</span>
   </button>
 
+  <button class="jogo" data-cor="rosa" data-pagina="nome.html"
+          data-fala="Balões do nome! Estoura os balões e escreve o seu nome.">
+    <span class="retrato"><img src="imagens/Sweetie Belle.png" alt=""></span>
+    <span class="texto">
+      <span class="nome">Balões do Nome</span>
+      <span class="como">Estoure na ordem certa</span>
+    </span>
+    <span class="seta" aria-hidden="true">▶</span>
+  </button>
+
 </div>
 
 <div id="apresentacao">
@@ -226,7 +236,7 @@ body{
 <script>
 /* se a imagem do retrato não carregar, entra um emoji no lugar
    (mesma ideia do relatório de imagens: nada quebra pela metade) */
-const RESERVA = ["📖", "🃏", "🔍", "❓", "🌀"];
+const RESERVA = ["📖", "🃏", "🔍", "❓", "🌀", "🎈"];
 document.querySelectorAll(".retrato img").forEach((img, i) => {
   img.addEventListener("error", () => {
     const s = document.createElement("span");
