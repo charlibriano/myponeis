@@ -394,9 +394,19 @@ function soltaBalao(letra, forcada){
 
 function letraDaVez(){ return letras[posicao]; }
 
-/* A ajuda automática que acendia o balão certo foi removida pelo mesmo
-   motivo: ela sabe a ordem, e o halo entregaria a resposta. O que
-   sobrou é o retorno de erro — o balão balança e a vaga da vez sacode. */
+/* A ajuda automática que acendia o balão certo foi removida: ela sabe a
+   ordem, e o halo entregaria a resposta. O retorno de erro continua —
+   o balão balança e a vaga da vez sacode. */
+
+/* Garante que a letra da vez esteja sempre no céu. Sem isto ela pode
+   ficar olhando balões que não servem, e a brincadeira trava. */
+function garanteLetraCerta(){
+  const alvo = letraDaVez();
+  if(!alvo) return;
+  const existe = Array.from(document.querySelectorAll(".balao"))
+    .some(b => b.dataset.letra === alvo && !b.classList.contains("estourou"));
+  if(!existe) soltaBalao(alvo, true);
+}
 
 function proximoBalao(){
   if(!rodando) return;
