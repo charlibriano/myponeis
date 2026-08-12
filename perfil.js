@@ -269,3 +269,20 @@ function verificaAnimacoes(){
 }
 
 addEventListener("DOMContentLoaded", verificaAnimacoes);
+
+/* ---------- progresso do labirinto ----------
+   O nível voltava a 1 a cada abertura da página, então quem voltasse
+   ao menu entre uma fase e outra nunca passava do labirinto 2 — e as
+   rodadas especiais, que dependem da contagem, nunca chegavam. */
+const LAB_CHAVE = "poneis.labirinto.nivel";
+
+function nivelSalvo(){
+  try{
+    const n = parseInt(localStorage.getItem(LAB_CHAVE), 10);
+    return (n >= 1 && n <= 99) ? n : 1;
+  }catch(e){ return 1; }
+}
+
+function salvaNivel(n){
+  try{ localStorage.setItem(LAB_CHAVE, String(n)); }catch(e){}
+}
