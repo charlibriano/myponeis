@@ -337,6 +337,7 @@ body{
 </div>
 
 <script src="voz.js"></script>
+<script src="album.js"></script>
 <script>
 /* ===================================================================
    1. LISTA DE PÔNEIS  ←←← É SÓ AQUI QUE VOCÊ MEXE
@@ -770,11 +771,12 @@ function agendaDica(){
 
 function terminar(){
   $("fim-detalhe").textContent = totalPares + " pares em " + jogadas + " jogadas";
-  mostrarTela("tela-fim");
   cancelaDica();
-  somVitoria();
-  setTimeout(() => fala('Você achou todos os pôneis! Muito bem!'), 300);
-  chuvaDeEstrelas();
+  // o prêmio vem primeiro: é ele que faz ela querer jogar de novo
+  premiar(() => {
+    mostrarTela("tela-fim");
+    chuvaDeEstrelas();
+  });
 }
 
 function chuvaDeEstrelas(){
