@@ -319,15 +319,8 @@ addEventListener("error", e => {
   r.classList.remove("escondida");
 });
 
-/* o voz.js pode não ter carregado. A navegação NÃO pode depender dele. */
-const TEM_VOZJS = (typeof fala === "function" && typeof somToque === "function");
-if(!TEM_VOZJS){
-  const r = document.getElementById("recado");
-  r.textContent = "O arquivo js/voz.js não carregou, então os jogos abrem sem voz. Confira se ele está na pasta js/ do projeto.";
-  r.classList.remove("escondida");
-  const b = document.getElementById("btnStatus");
-  if(b){ b.textContent = "🔇 sem voz.js"; b.dataset.ok = "nao"; }
-}
+/* aviso sobre o voz.js removido: ele falava de voz, que não existe
+   mais, e apontava para um caminho que nem é mais usado */
 
 /* ===================================================================
    PERFIL: primeira vez, e a recepção da amiga
