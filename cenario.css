@@ -177,3 +177,113 @@ body::after{
     animation:none !important;
   }
 }
+
+/* ============================================================
+   7. MEDALHÕES REDONDOS
+
+   As imagens da wiki são quadros da série: 261 das 263 têm fundo
+   sólido, com cenário atrás do personagem. Recortar o pônei do
+   cenário automaticamente não é viável — o fundo não é cor chapada.
+
+   A saída é enquadrar: corta em círculo com object-fit:cover e
+   põe um anel em volta. O pedaço de cenário que sobra vira moldura,
+   e o quadrado desaparece.
+   ============================================================ */
+
+/* retratos do menu */
+.jogo .retrato{
+  border-radius:50% !important;
+  padding:0 !important;
+  overflow:hidden;
+  box-shadow:0 0 0 4px #fff, 0 6px 14px rgba(74,42,135,.3);
+}
+.jogo .retrato img{
+  width:100% !important; height:100% !important;
+  object-fit:cover !important; object-position:center 34%;
+  padding:0 !important; border-radius:50%;
+}
+
+/* cartas do jogo da memória */
+.frente img{
+  border-radius:50% !important;
+  object-fit:cover !important; object-position:center 34%;
+  width:82% !important; height:auto !important;
+  aspect-ratio:1; margin:6% auto 0;
+  padding:0 !important;
+  box-shadow:0 0 0 3px #fff, 0 3px 8px rgba(74,42,135,.28);
+}
+
+/* fichas do álbum */
+.ficha .foto{ padding:6px; }
+.ficha .foto img{
+  border-radius:50% !important;
+  object-fit:cover !important; object-position:center 34%;
+  padding:0 !important;
+  box-shadow:0 0 0 3px #fff, 0 3px 7px rgba(74,42,135,.22);
+}
+.ficha.falta .foto img{ box-shadow:none; }
+
+/* tela do prêmio */
+#premio .moldura{ border-radius:50% !important; }
+#premio .moldura img{
+  border-radius:50% !important;
+  object-fit:cover !important; object-position:center 34%;
+  padding:0 !important;
+}
+
+/* ============================================================
+   8. O LABIRINTO DEIXA DE SER GRADE DE CAIXAS
+
+   O chão vira grama em ladrilhos arredondados, as paredes ganham
+   ponta redonda, e os dois pôneis viram fichas circulares que
+   flutuam acima do tabuleiro em vez de preencher a célula.
+   ============================================================ */
+
+#labirinto{
+  /* o JS define width = colunas x lado; com border-box o padding comeria
+     essa medida e as células vazariam para fora do tabuleiro */
+  box-sizing:content-box !important;
+  padding:6px;
+  border-radius:26px;
+  background:linear-gradient(180deg, #A8E6A8 0%, #8FDC97 100%);
+  box-shadow:
+    inset 0 3px 10px rgba(60,140,80,.35),
+    0 10px 26px rgba(74,42,135,.28),
+    0 0 0 6px rgba(255,255,255,.75);
+}
+
+.celula{
+  border-radius:9px !important;
+  border-color:#6B4BB8 !important;
+  background:radial-gradient(circle at 40% 32%, rgba(255,255,255,.62) 0%, rgba(255,255,255,.24) 70%) !important;
+}
+.celula.pisada{
+  background:radial-gradient(circle at 40% 32%, #FFF6C0 0%, #FFE99A 75%) !important;
+  box-shadow:inset 0 0 8px rgba(220,170,40,.45);
+}
+.celula.chegada{
+  background:radial-gradient(circle at 50% 45%, #FFFCE0 0%, #FFE07A 78%) !important;
+  animation:chegadaBrilha 1.5s ease-in-out infinite;
+}
+@keyframes chegadaBrilha{
+  0%,100%{ box-shadow:inset 0 0 10px rgba(230,160,30,.4); }
+  50%    { box-shadow:inset 0 0 20px rgba(255,200,60,.85); }
+}
+
+/* os pôneis: fichas redondas maiores que a célula, com anel branco */
+#poneiz, #amiga{ overflow:visible; }
+#poneiz img, #amiga img{
+  width:104% !important; height:104% !important;
+  object-fit:cover !important; object-position:center 34%;
+  border-radius:50%;
+  box-shadow:0 0 0 4px #fff, 0 5px 12px rgba(60,40,110,.4);
+}
+#poneiz img{
+  box-shadow:0 0 0 4px #fff, 0 0 0 7px #FF6FB0, 0 6px 14px rgba(60,40,110,.45);
+}
+#amiga img{
+  box-shadow:0 0 0 4px #fff, 0 0 0 7px #35CFC9, 0 6px 14px rgba(60,40,110,.45);
+}
+
+/* setas maiores e mais gordinhas */
+.seta{ border-radius:26px !important; font-size:30px !important; }
