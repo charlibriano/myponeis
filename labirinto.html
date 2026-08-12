@@ -313,22 +313,51 @@ function desenha(){
 let caminho = [[0, 0]];
 const GIRO = { cima:0, dir:90, baixo:180, esq:270 };
 
+/* Um cavalo tem quatro cascos e anda alternando os lados, então uma
+   marca sozinha no meio da casa parece carimbo, não passada.
+
+   Cada casa recebe DUAS ferraduras: uma um pouco atrás e outra à frente,
+   deslocadas para lados opostos. E o lado troca a cada casa, de modo que
+   o rastro inteiro zigue-zagueia como pegada na areia.
+
+   'ao longo' é o eixo da direção em que ela andou; 'de lado' é o eixo
+   perpendicular. Qual deles é o horizontal depende da direção, por isso
+   os dois casos abaixo. */
 function desenhaRastro(){
   const cx = $("labirinto");
   cx.querySelectorAll(".pegada").forEach(e => e.remove());
-  const tam = Math.round(lado * 0.34);   // 46% competia com o medalhão do pônei
+
+  const tam = Math.round(lado * 0.26);
+  const meio = (lado - tam) / 2;
+  const AO_LONGO = lado * 0.17;   // distância entre a marca de trás e a da frente
+  const DE_LADO  = lado * 0.15;   // afastamento do eixo central
 
   caminho.forEach((passo, i) => {
     if(i === 0) return;                       // a largada é o próprio pônei
     const [r, c, dir] = passo;
-    const p = document.createElement("div");
-    p.className = "pegada" + (i === caminho.length - 1 ? " atual" : "");
-    p.style.width = tam + "px";
-    p.style.height = tam + "px";
-    p.style.left = (c * lado + (lado - tam) / 2) + "px";
-    p.style.top  = (r * lado + (lado - tam) / 2) + "px";
-    p.style.rotate = (GIRO[dir] || 0) + "deg";
-    cx.appendChild(p);
+    const vertical = (dir === "cima" || dir === "baixo");
+    const sentido  = (dir === "baixo" || dir === "dir") ? 1 : -1;
+    const ladoDaVez = (i % 2 === 0) ? 1 : -1;  // alterna a cada casa
+
+    [-1, 1].forEach((ordem, k) => {
+      const aoLongo = ordem * AO_LONGO * sentido;
+      const deLado  = (k === 0 ? ladoDaVez : -ladoDaVez) * DE_LADO;
+
+      const dx = vertical ? deLado  : aoLongo;
+      const dy = vertical ? aoLongo : deLado;
+
+      const p = document.createElement("div");
+      p.className = "pegada" + (i === caminho.length - 1 ? " atual" : "");
+      p.dataset.passo = i;
+      p.style.width  = tam + "px";
+      p.style.height = tam + "px";
+      p.style.left = (c * lado + meio + dx) + "px";
+      p.style.top  = (r * lado + meio + dy) + "px";
+      p.style.rotate = (GIRO[dir] || 0) + "deg";
+      // a de trás surge um instante antes da da frente: vira uma passada
+      p.style.animationDelay = (ordem === -1 ? 0 : 70) + "ms";
+      cx.appendChild(p);
+    });
   });
 }
 
@@ -448,9 +477,8 @@ function poneiCaminha(aoFim){
     p.style.left = (c * lado) + "px";
     p.style.top  = (r * lado) + "px";
     tocar(typeof somToque === "function" ? somToque : null);
-    // apaga a pegada que ele acabou de pisar
-    const pe = $("labirinto").querySelectorAll(".pegada")[0];
-    if(pe) pe.remove();
+    // apaga as duas ferraduras da casa que ele acabou de pisar
+    $("labirinto").querySelectorAll('.pegada[data-passo="' + i + '"]').forEach(e => e.remove());
     setTimeout(passo, 300);
   };
   setTimeout(passo, 260);
