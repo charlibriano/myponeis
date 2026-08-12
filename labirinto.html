@@ -66,7 +66,9 @@ body{
 .pegada{
   position:absolute; pointer-events:none; z-index:2;
   background-repeat:no-repeat; background-position:center; background-size:contain;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 60'%3E%3Cpath fill='%237B57C9' d='M30 6c11 0 19 8 19 19 0 12-8 21-19 29C19 46 11 37 11 25 11 14 19 6 30 6z' opacity='.28'/%3E%3Cpath fill='%237B57C9' d='M30 15c6.6 0 11 4.6 11 10.6 0 6.4-4.4 11.6-11 17.4-6.6-5.8-11-11-11-17.4C19 19.6 23.4 15 30 15z' opacity='.55'/%3E%3C/svg%3E");
+  /* ferradura: um arco grosso aberto embaixo, com os furos dos cravos.
+     A gota anterior não lia como pegada de cavalo. */
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 60'%3E%3Cpath d='M17 47 A 17 19 0 1 1 43 47' fill='none' stroke='%236B4BB8' stroke-width='10' stroke-linecap='round' opacity='.42'/%3E%3Cg fill='%23F3EDFF' opacity='.85'%3E%3Ccircle cx='14.5' cy='36' r='2'/%3E%3Ccircle cx='17' cy='25' r='2'/%3E%3Ccircle cx='24' cy='17' r='2'/%3E%3Ccircle cx='36' cy='17' r='2'/%3E%3Ccircle cx='43' cy='25' r='2'/%3E%3Ccircle cx='45.5' cy='36' r='2'/%3E%3C/g%3E%3C/svg%3E");
   animation:pegadaSurge .28s ease-out both;
 }
 @keyframes pegadaSurge{
@@ -314,7 +316,7 @@ const GIRO = { cima:0, dir:90, baixo:180, esq:270 };
 function desenhaRastro(){
   const cx = $("labirinto");
   cx.querySelectorAll(".pegada").forEach(e => e.remove());
-  const tam = Math.round(lado * 0.46);
+  const tam = Math.round(lado * 0.34);   // 46% competia com o medalhão do pônei
 
   caminho.forEach((passo, i) => {
     if(i === 0) return;                       // a largada é o próprio pônei
