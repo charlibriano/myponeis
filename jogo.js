@@ -4,27 +4,10 @@
 const el = id => document.getElementById(id);
 let estrelas = 0, rodada = 0, alvo = null, travado = false;
 
-/* --- voz --- */
-const TEM_VOZ = ('speechSynthesis' in window);
-let vozBR = null, jaFalou = false;
+/* a seleção de voz saiu junto com as falas */
 
-function escolheVoz(){
-  if(!TEM_VOZ) return;
-  const vozes = speechSynthesis.getVoices();
-  vozBR = vozes.find(v=>v.lang==='pt-BR')
-       || vozes.find(v=>v.lang && v.lang.replace('_','-').startsWith('pt'))
-       || null;
-}
-if(TEM_VOZ){
-  escolheVoz();
-  speechSynthesis.onvoiceschanged = escolheVoz;
-}
+function marcaStatus(){}   // o botão de status da voz foi removido
 
-function marcaStatus(txt, ok){
-  const b = el('btnStatus');
-  b.textContent = txt;
-  b.dataset.ok = ok;
-}
 function avisa(txt){
   const r = el('recado');
   if(!txt){ r.classList.add('escondida'); return; }
@@ -33,50 +16,12 @@ function avisa(txt){
 }
 el('recado').addEventListener('click', ()=>avisa(''));
 
-function fala(texto){
-  return;   // falas removidas do jogo — só efeitos sonoros
+/* As falas foram removidas do jogo. A função continua existindo, vazia,
+   porque é chamada em dezenas de lugares — arrancar cada chamada daria
+   mais risco de quebrar do que ganho. */
+function fala(){}
 
-  if(!TEM_VOZ){
-    marcaStatus('🔇 sem voz','nao');
-    avisa('Este navegador não tem voz. Abra o jogo no Chrome ou no Safari.');
-    return;
-  }
-  try{
-    // só cancela se realmente houver algo tocando (cancelar à toa mata a fala no iPhone)
-    if(speechSynthesis.speaking || speechSynthesis.pending) speechSynthesis.cancel();
-    speechSynthesis.resume();
-    const f = new SpeechSynthesisUtterance(texto);
-    f.lang = 'pt-BR'; f.rate = .85; f.pitch = 1.2;
-    if(vozBR) f.voice = vozBR;
-    f.onstart = ()=>{ jaFalou = true; marcaStatus('🔊 voz ok','sim'); avisa(''); };
-    f.onerror = e => {
-      marcaStatus('🔇 sem voz','nao');
-      avisa('A voz falhou (' + (e.error || 'motivo desconhecido') + '). Toque aqui para fechar, ou no botão "sem voz" para ver os detalhes.');
-    };
-    speechSynthesis.speak(f);
-  }catch(e){
-    marcaStatus('🔇 sem voz','nao');
-    avisa('A voz falhou: ' + e.message);
-  }
-}
-
-/* teste feito dentro do toque real do dedo — é o que destrava o áudio no celular */
-function testaVoz(){
-  jaFalou = false;
-  fala('Vamos brincar!');
-  setTimeout(()=>{
-    if(jaFalou) return;
-    marcaStatus('🔇 sem voz','nao');
-    const nVozes = TEM_VOZ ? speechSynthesis.getVoices().length : 0;
-    if(nVozes === 0){
-      avisa('O aparelho não tem nenhuma voz instalada. No Android: Configurações → Acessibilidade → Saída de texto para fala → instalar o idioma Português (Brasil).');
-    }else if(!vozBR){
-      avisa('O aparelho tem ' + nVozes + ' vozes, mas nenhuma em português. Instale o Português (Brasil) na saída de texto para fala.');
-    }else{
-      avisa('A voz não saiu. Verifique: 1) o jogo precisa estar aberto no Chrome ou Safari, não dentro de outro aplicativo; 2) no iPhone, desligue a chavinha de silencioso; 3) volume da mídia no máximo.');
-    }
-  }, 2200);
-}
+function testaVoz(){}   // falas removidas do jogo
 
 /* --- sons curtinhos --- */
 let ctx = null;
@@ -322,24 +267,16 @@ el('btnJogar').addEventListener('click', ()=>{
   el('inicio').classList.add('escondida');
   el('jogo').classList.remove('escondida');
   el('btnCasa').classList.remove('escondida');
-  testaVoz();
-  setTimeout(novaRodada, 1400);
+  setTimeout(novaRodada, 600);   // 1400 era espera da fala de abertura
 });
 
-el('btnStatus').addEventListener('click', ()=>{
-  const n = TEM_VOZ ? speechSynthesis.getVoices().length : 0;
-  const pt = TEM_VOZ
-    ? speechSynthesis.getVoices().filter(v=>v.lang && v.lang.replace('_','-').startsWith('pt')).map(v=>v.name).slice(0,2).join(' / ')
-    : '';
-  avisa('Suporte a voz: ' + (TEM_VOZ ? 'sim' : 'não')
-      + ' · vozes no aparelho: ' + n
-      + ' · em português: ' + (pt || 'nenhuma')
-      + ' · já falou alguma vez: ' + (jaFalou ? 'sim' : 'não')
-      + '. Testando agora…');
-  testaVoz();
-});
-el('btnFalar').addEventListener('click', ()=>{
-  if(alvo) fala('Cadê ' + alvo.art + ' ' + alvo.nome + '?');
+/* O botão de status da voz e o de repetir a fala não têm mais função:
+   as falas foram removidas. Some com os dois em vez de deixá-los na
+   tela sem fazer nada — o de status ainda mostrava um diagnóstico de
+   voz por cima do jogo. */
+['btnStatus', 'btnFalar'].forEach(id => {
+  const b = el(id);
+  if(b) b.style.display = 'none';
 });
 el('btnSumiu').addEventListener('click', ()=>{
   el('inicio').classList.add('escondida');
@@ -375,7 +312,6 @@ el('btnCasa').addEventListener('click', ()=>{
   travado = true;
   sTravado = true;
   limpaTimers();
-  if(TEM_VOZ) speechSynthesis.cancel();
   el('jogo').classList.add('escondida');
   el('sumiu').classList.add('escondida');
   el('inicio').classList.remove('escondida');
