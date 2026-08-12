@@ -86,6 +86,49 @@ body{
 @media (prefers-reduced-motion: reduce){
   *{ animation-duration:.01ms !important; transition-duration:.01ms !important; }
 }
+
+/* ---------- a amiga recebendo ela ---------- */
+.recepcao{
+  display:flex; align-items:center; gap:14px;
+  width:100%; max-width:340px; margin:0 auto 16px;
+  background:rgba(255,255,255,.82); border-radius:26px; padding:12px 16px 12px 12px;
+  box-shadow:0 5px 0 #D9C6F2, 0 10px 20px rgba(107,63,191,.18);
+}
+.recepcao .amiga{
+  flex:0 0 auto; width:76px; height:76px; border-radius:50%; overflow:hidden;
+  border:3px solid #FFD34A; background:#FFF6C9;
+  animation:balanca 3.6s ease-in-out infinite;
+}
+.recepcao .amiga img{ width:100%; height:100%; object-fit:cover; object-position:center 34%; }
+.recepcao .fala{ flex:1; min-width:0; }
+.recepcao .oi{ font-size:20px; font-weight:800; color:var(--roxo); line-height:1.1; }
+.recepcao .tarefa{ font-size:12px; font-weight:600; color:#9A83C4; margin:4px 0 5px; }
+
+/* ---------- primeira vez: quem é você? ---------- */
+#apresentacao{
+  position:fixed; inset:0; z-index:120; display:none;
+  align-items:center; justify-content:center; flex-direction:column; gap:14px;
+  padding:22px; text-align:center;
+  background:linear-gradient(160deg,#EFE3FF 0%,#FFE4F2 100%);
+  overflow-y:auto;
+}
+#apresentacao.visivel{ display:flex; }
+#apresentacao h2{ font-size:26px; color:var(--roxo); }
+#apresentacao p{ font-size:14px; color:#8A6FBF; max-width:320px; }
+#campoNome{
+  font-family:inherit; font-size:22px; font-weight:800; text-align:center;
+  color:var(--roxo); border:3px solid #D9C6F2; border-radius:18px;
+  padding:12px 16px; width:min(78vw,280px); background:#fff;
+}
+.escolhaAmigas{
+  display:grid; grid-template-columns:repeat(4,72px); gap:10px; justify-content:center;
+}
+.escolhaAmigas button{
+  border:3px solid #E4D8F5; background:#fff; border-radius:50%;
+  width:72px; height:72px; padding:0; overflow:hidden; cursor:pointer;
+}
+.escolhaAmigas button.marcada{ border-color:#FF6FB0; box-shadow:0 0 0 4px rgba(255,111,176,.3); }
+.escolhaAmigas img{ width:100%; height:100%; object-fit:cover; object-position:center 34%; }
 </style>
 <link rel="stylesheet" href="cenario.css">
 </head>
@@ -102,6 +145,15 @@ body{
 
 <h1 class="titulo">Jogos dos Pôneis</h1>
 <p class="subtitulo">Escolha uma brincadeira</p>
+
+<div class="recepcao" id="recepcao" style="display:none">
+  <span class="amiga" id="amigaFoto"></span>
+  <span class="fala">
+    <span class="oi" id="amigaOi">Oi!</span>
+    <span class="tarefa" id="amigaTarefa"></span>
+    <span id="fitaAqui"></span>
+  </span>
+</div>
 
 <div class="jogos">
 
@@ -158,7 +210,18 @@ body{
 
 </div>
 
+<div id="apresentacao">
+  <h2>Quem vai brincar?</h2>
+  <p>Escreva o nome dela. A voz vai chamar por ele durante os jogos.</p>
+  <input id="campoNome" maxlength="14" placeholder="nome" autocomplete="off">
+  <h2 style="margin-top:10px">Escolha a amiga</h2>
+  <p>Essa pônei acompanha ela em todos os jogos.</p>
+  <div class="escolhaAmigas" id="escolhaAmigas"></div>
+  <button class="botao" id="btnComecar" style="margin-top:10px">Começar</button>
+</div>
+
 <script src="voz.js"></script>
+<script src="perfil.js"></script>
 <script src="album.js"></script>
 <script>
 /* se a imagem do retrato não carregar, entra um emoji no lugar
@@ -190,6 +253,80 @@ if(!TEM_VOZJS){
   const b = document.getElementById("btnStatus");
   if(b){ b.textContent = "🔇 sem voz.js"; b.dataset.ok = "nao"; }
 }
+
+/* ===================================================================
+   PERFIL: primeira vez, e a recepção da amiga
+   =================================================================== */
+injetaEstiloPerfil();
+
+let amigaEscolhida = null;
+
+function montaEscolha(){
+  const cx = document.getElementById("escolhaAmigas");
+  cx.innerHTML = "";
+  AMIGAS.forEach(nome => {
+    const b = document.createElement("button");
+    b.innerHTML = '<img src="imagens/' + encodeURIComponent(nome) + '.png" alt="' + nome + '">';
+    b.addEventListener("click", () => {
+      amigaEscolhida = nome;
+      cx.querySelectorAll("button").forEach(x => x.classList.remove("marcada"));
+      b.classList.add("marcada");
+      if(typeof somToque === "function") somToque();
+      if(typeof fala === "function") fala(nome);
+    });
+    cx.appendChild(b);
+  });
+}
+
+function abreApresentacao(){
+  montaEscolha();
+  document.getElementById("apresentacao").classList.add("visivel");
+}
+
+document.getElementById("btnComecar").addEventListener("click", () => {
+  const nome = document.getElementById("campoNome").value.trim();
+  if(!nome){ document.getElementById("campoNome").focus(); return; }
+  if(!amigaEscolhida) amigaEscolhida = AMIGAS[0];
+
+  const p = perfil();
+  p.nome = nome;
+  p.amiga = amigaEscolhida;
+  salvaPerfil(p);
+
+  document.getElementById("apresentacao").classList.remove("visivel");
+  mostraRecepcao();
+  if(typeof fala === "function") fala("Oi " + nome + "! Eu sou " + amigaEscolhida + ". Vamos brincar!");
+});
+
+function mostraRecepcao(){
+  if(!temPerfil()) return;
+  const m = missao();
+  const feito = m.feitos >= DESAFIOS_POR_DIA;
+
+  document.getElementById("amigaFoto").innerHTML =
+    '<img src="' + imgDaAmiga() + '" alt="' + amigaDela() + '">';
+  document.getElementById("amigaOi").textContent = "Oi, " + nomeDela() + "!";
+  document.getElementById("amigaTarefa").textContent = feito
+    ? "Missão de hoje cumprida!"
+    : "Faltam " + (DESAFIOS_POR_DIA - m.feitos) + " brincadeiras hoje";
+  document.getElementById("fitaAqui").innerHTML = fitaDaMissao();
+  document.getElementById("recepcao").style.display = "flex";
+}
+
+if(temPerfil()) mostraRecepcao(); else abreApresentacao();
+
+/* a amiga fala no primeiro toque da tela — antes disso o celular
+   não deixa sair som nenhum */
+let jaSaudou = false;
+addEventListener("pointerdown", () => {
+  if(jaSaudou || !temPerfil()) return;
+  jaSaudou = true;
+  const m = missao();
+  if(typeof fala !== "function") return;
+  fala(m.feitos >= DESAFIOS_POR_DIA
+    ? "Oi " + nomeDela() + "! Você já fez tudo hoje. Quer brincar mais?"
+    : "Oi " + nomeDela() + "! Faltam " + (DESAFIOS_POR_DIA - m.feitos) + " brincadeiras para terminar a missão de hoje.");
+}, { once:false });
 
 /* o menu mostra quantas ela já tem — o progresso fica visível na abertura */
 try{
