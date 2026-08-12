@@ -151,6 +151,7 @@ body{
 
 <script src="personagens.js"></script>
 <script src="voz.js"></script>
+<script src="album.js"></script>
 <script>
 /* ===================================================================
    LABIRINTO — "Leva o Pônei"
@@ -393,9 +394,9 @@ function chegou(){
 
   const quem = (amigaAtual && amigaAtual.nome) ? amigaAtual.nome : "a amiga";
   $("festaTitulo").textContent = "Achou " + quem + "!";
-  $("festa").classList.add("visivel");
-  setTimeout(() => dizer("Muito bem! Você levou o pônei até " + quem + "!"), 250);
+  dizer("Muito bem! Você levou o pônei até " + quem + "!");
   chuvaDeEstrelas();
+  setTimeout(() => premiar(() => $("festa").classList.add("visivel")), 1400);
 }
 
 $("btnProximo").addEventListener("click", () => { nivel++; novaRodada(); });
