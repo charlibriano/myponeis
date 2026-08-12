@@ -212,6 +212,7 @@ body{
 
 <script src="personagens.js"></script>
 <script src="voz.js"></script>
+<script src="perfil.js"></script>
 <script src="album.js"></script>
 <script>
 /* ===================================================================
@@ -815,7 +816,7 @@ function chegou(){
 
   const quem = (amigaAtual && amigaAtual.nome) ? amigaAtual.nome : "a amiga";
   $("festaTitulo").textContent = "Achou " + quem + "!";
-  dizer("Muito bem! Você achou o caminho!");
+  dizer(comNome("Muito bem! Você achou o caminho"));
 
   poneiCaminha(() => {
     tocar(typeof somVitoria === "function" ? somVitoria : null);
@@ -824,7 +825,11 @@ function chegou(){
       ? "O pônei chegou até " + quem + ", e você pegou todas as " + cenario.oQuePl + "!"
       : "O pônei chegou até " + quem + "!");
     chuvaDeEstrelas();
-    setTimeout(() => premiar(() => $("festa").classList.add("visivel")), 1100);
+    const m = concluiuDesafio();
+    setTimeout(() => premiar(() => {
+      $("festa").classList.add("visivel");
+      if(m.completouAgora) festejaMissao();
+    }), 1100);
   });
 }
 
