@@ -53,14 +53,31 @@ body{
   border:0 solid var(--parede);
   background:rgba(255,255,255,.5);
 }
-.celula.pisada{ background:#FFF3B8; }        /* por onde ela já passou */
 .celula.chegada{ background:#D8F7F0; }
 
 #poneiz, #amiga{
   position:absolute; display:flex; align-items:center; justify-content:center;
   pointer-events:none; z-index:3;
 }
-#poneiz{ transition:left .16s ease, top .16s ease; z-index:4; }
+#poneiz{ z-index:4; }
+#poneiz.andando{ transition:left .28s ease, top .28s ease; }
+
+/* pegada de casco: fica na célula, com a ponta virada para onde ela foi */
+.pegada{
+  position:absolute; pointer-events:none; z-index:2;
+  background-repeat:no-repeat; background-position:center; background-size:contain;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 60'%3E%3Cpath fill='%237B57C9' d='M30 6c11 0 19 8 19 19 0 12-8 21-19 29C19 46 11 37 11 25 11 14 19 6 30 6z' opacity='.28'/%3E%3Cpath fill='%237B57C9' d='M30 15c6.6 0 11 4.6 11 10.6 0 6.4-4.4 11.6-11 17.4-6.6-5.8-11-11-11-17.4C19 19.6 23.4 15 30 15z' opacity='.55'/%3E%3C/svg%3E");
+  animation:pegadaSurge .28s ease-out both;
+}
+@keyframes pegadaSurge{
+  from{ transform:scale(.4); opacity:0; }
+  to  { transform:scale(1);  opacity:1; }
+}
+.pegada.atual{ animation:pegadaPulsa 1.2s ease-in-out infinite; }
+@keyframes pegadaPulsa{
+  0%,100%{ opacity:.75; }
+  50%    { opacity:1; }
+}
 #poneiz img, #amiga img{ width:100%; height:100%; object-fit:contain; }
 #poneiz .emoji, #amiga .emoji{ font-size:26px; }
 
@@ -280,22 +297,37 @@ function desenha(){
   p.id = "poneiz";
   p.style.width = lado + "px"; p.style.height = lado + "px";
   p.innerHTML = retratoDe(poneiAtual);
+  // o pônei fica na largada; a amiga, na chegada. Nenhum dos dois anda.
+  p.style.left = (caminho[0][1] * lado) + "px";
+  p.style.top  = (caminho[0][0] * lado) + "px";
   cx.appendChild(p);
 
-  posicionaPonei();
-  marcaPisada();
+  desenhaRastro();
 }
 
-function posicionaPonei(){
-  const p = $("poneiz");
-  if(!p) return;
-  p.style.left = (pc * lado) + "px";
-  p.style.top  = (pr * lado) + "px";
-}
+/* ---------- rastro de pegadas ----------
+   caminho guarda a rota atual, da largada até onde ela está.
+   O pônei e a amiga não saem do lugar: quem anda é o rastro. */
+let caminho = [[0, 0]];
+const GIRO = { cima:0, dir:90, baixo:180, esq:270 };
 
-function marcaPisada(){
-  const c = document.querySelector('.celula[data-r="' + pr + '"][data-c="' + pc + '"]');
-  if(c && !c.classList.contains("chegada")) c.classList.add("pisada");
+function desenhaRastro(){
+  const cx = $("labirinto");
+  cx.querySelectorAll(".pegada").forEach(e => e.remove());
+  const tam = Math.round(lado * 0.46);
+
+  caminho.forEach((passo, i) => {
+    if(i === 0) return;                       // a largada é o próprio pônei
+    const [r, c, dir] = passo;
+    const p = document.createElement("div");
+    p.className = "pegada" + (i === caminho.length - 1 ? " atual" : "");
+    p.style.width = tam + "px";
+    p.style.height = tam + "px";
+    p.style.left = (c * lado + (lado - tam) / 2) + "px";
+    p.style.top  = (r * lado + (lado - tam) / 2) + "px";
+    p.style.rotate = (GIRO[dir] || 0) + "deg";
+    cx.appendChild(p);
+  });
 }
 
 /* ===================================================================
@@ -315,9 +347,14 @@ function move(dir){
   if(dir === "esq")   pc--;
   if(dir === "dir")   pc++;
 
+  // voltou para a casa anterior? então desfaz a pegada em vez de empilhar.
+  // assim o rastro mostra o caminho atual, não tudo que ela já pisou.
+  const anterior = caminho[caminho.length - 2];
+  if(anterior && anterior[0] === pr && anterior[1] === pc) caminho.pop();
+  else caminho.push([pr, pc, dir]);
+
   tocar(typeof somToque === "function" ? somToque : null);
-  posicionaPonei();
-  marcaPisada();
+  desenhaRastro();
   cancelaDica();
 
   if(pr === linhas - 1 && pc === colunas - 1) setTimeout(chegou, 220);
@@ -374,6 +411,7 @@ function novaRodada(){
   const t = tamanhoDoNivel(nivel);
   linhas = colunas = t;
   pr = pc = 0;
+  caminho = [[0, 0]];
 
   if(TEM_ELENCO){
     poneiAtual = sorteia(PERSONAGENS);
@@ -391,18 +429,47 @@ function novaRodada(){
   agendaDica();
 }
 
+/* o pônei só anda no fim: percorre o rastro que ela desenhou até a amiga.
+   É a recompensa de ter achado o caminho — ela vê a rota dela funcionando. */
+function poneiCaminha(aoFim){
+  const p = $("poneiz");
+  p.classList.add("andando");
+  let i = 0;
+  const passo = () => {
+    i++;
+    if(i >= caminho.length){
+      p.classList.remove("andando");
+      if(typeof aoFim === "function") aoFim();
+      return;
+    }
+    const [r, c] = caminho[i];
+    p.style.left = (c * lado) + "px";
+    p.style.top  = (r * lado) + "px";
+    tocar(typeof somToque === "function" ? somToque : null);
+    // apaga a pegada que ele acabou de pisar
+    const pe = $("labirinto").querySelectorAll(".pegada")[0];
+    if(pe) pe.remove();
+    setTimeout(passo, 300);
+  };
+  setTimeout(passo, 260);
+}
+
 function chegou(){
   travado = true;
   cancelaDica();
   estrelas++;
   $("mEstrelas").textContent = estrelas;
-  tocar(typeof somVitoria === "function" ? somVitoria : null);
 
   const quem = (amigaAtual && amigaAtual.nome) ? amigaAtual.nome : "a amiga";
   $("festaTitulo").textContent = "Achou " + quem + "!";
-  dizer("Muito bem! Você levou o pônei até " + quem + "!");
-  chuvaDeEstrelas();
-  setTimeout(() => premiar(() => $("festa").classList.add("visivel")), 1400);
+  dizer("Muito bem! Você achou o caminho!");
+
+  poneiCaminha(() => {
+    tocar(typeof somVitoria === "function" ? somVitoria : null);
+    dizer("O pônei chegou até " + quem + "!");
+    chuvaDeEstrelas();
+    setTimeout(() => premiar(() => $("festa").classList.add("visivel")), 1100);
+  });
 }
 
 $("btnProximo").addEventListener("click", () => { nivel++; novaRodada(); });
