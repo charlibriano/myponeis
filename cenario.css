@@ -1,0 +1,179 @@
+/* ============================================================
+   CENÁRIO  —  a camada visual compartilhada por todas as páginas
+
+   Tudo aqui é CSS e SVG embutido: nenhuma imagem nova, nada para
+   baixar, nada que possa faltar no servidor. As animações usam só
+   transform e opacity, que o celular resolve na placa de vídeo —
+   animar posição ou tamanho travaria em aparelho fraco.
+
+   As camadas ficam em position:fixed atrás do conteúdo, então
+   nenhuma página precisou mudar de estrutura: basta a linha
+   <link rel="stylesheet" href="cenario.css"> depois do estilo próprio.
+   ============================================================ */
+
+:root{
+  --ceu-alto:  #7FCFF2;
+  --ceu-baixo: #C8EEFF;
+  --morro:     #86D68F;
+  --morro-fundo:#5FBF7A;
+  --sol:       #FFF0B8;
+}
+
+/* ---------- 1. o céu ---------- */
+html{
+  background:
+    radial-gradient(60vw 40vw at 82% 6%, var(--sol) 0%, rgba(255,240,184,0) 62%),
+    linear-gradient(180deg, var(--ceu-alto) 0%, var(--ceu-baixo) 62%, #E8F8E9 100%);
+  background-attachment:fixed;
+}
+body{ background:transparent !important; }
+
+/* ---------- 2. arco-íris ao fundo ---------- */
+/* faixas concentricas com máscara: só a parte de cima do anel aparece */
+body::before{
+  content:"";
+  position:fixed; left:50%; top:22vh;
+  width:150vmax; height:150vmax; transform:translate(-50%,0);
+  border-radius:50%;
+  background:
+    repeating-conic-gradient(from 180deg at 50% 50%,
+      rgba(255,105,120,.30) 0deg 0deg);
+  box-shadow:
+    inset 0 0 0 1.4vmax rgba(255,110,120,.34),
+    inset 0 0 0 2.8vmax rgba(255,178,90,.32),
+    inset 0 0 0 4.2vmax rgba(255,228,120,.30),
+    inset 0 0 0 5.6vmax rgba(140,220,150,.28),
+    inset 0 0 0 7.0vmax rgba(120,190,240,.28),
+    inset 0 0 0 8.4vmax rgba(170,150,230,.26);
+  background:none;
+  opacity:.75;
+  pointer-events:none; z-index:-3;
+  animation:arcoRespira 9s ease-in-out infinite;
+}
+@keyframes arcoRespira{
+  0%,100%{ opacity:.62; }
+  50%    { opacity:.85; }
+}
+
+/* ---------- 3. nuvens ---------- */
+/* duas faixas em velocidades diferentes dão sensação de profundidade */
+body::after{
+  content:"";
+  position:fixed; inset:0;
+  pointer-events:none; z-index:-2;
+  background-repeat:repeat-x, repeat-x;
+  background-position:0 12vh, 0 30vh;
+  background-size:70vmax 16vmax, 46vmax 10vmax;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 700 160'%3E%3Cg fill='%23ffffff' opacity='.92'%3E%3Cellipse cx='120' cy='96' rx='78' ry='40'/%3E%3Cellipse cx='176' cy='74' rx='54' ry='40'/%3E%3Cellipse cx='226' cy='98' rx='62' ry='34'/%3E%3Cellipse cx='470' cy='58' rx='60' ry='30'/%3E%3Cellipse cx='516' cy='42' rx='42' ry='30'/%3E%3Cellipse cx='558' cy='60' rx='48' ry='26'/%3E%3C/g%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 700 160'%3E%3Cg fill='%23ffffff' opacity='.6'%3E%3Cellipse cx='330' cy='88' rx='66' ry='32'/%3E%3Cellipse cx='378' cy='70' rx='46' ry='32'/%3E%3Cellipse cx='424' cy='90' rx='52' ry='28'/%3E%3C/g%3E%3C/svg%3E");
+  animation:nuvensAndam 90s linear infinite;
+}
+@keyframes nuvensAndam{
+  from{ background-position:   0   12vh,    0   30vh; }
+  to  { background-position: -70vmax 12vh, -46vmax 30vh; }
+}
+
+/* ---------- 4. colinas ---------- */
+.cenario-chao{
+  position:fixed; left:0; right:0; bottom:0; height:26vh;
+  pointer-events:none; z-index:-1;
+  background-repeat:no-repeat, no-repeat;
+  background-position:bottom, bottom;
+  background-size:100% 100%, 100% 78%;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 300' preserveAspectRatio='none'%3E%3Cpath fill='%2386D68F' d='M0 150 C 150 90 260 190 420 150 C 580 110 700 200 860 156 C 1000 118 1110 176 1200 148 L1200 300 L0 300 Z'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 300' preserveAspectRatio='none'%3E%3Cpath fill='%235FBF7A' opacity='.85' d='M0 190 C 180 120 300 210 480 178 C 660 146 800 216 980 180 C 1090 158 1150 196 1200 182 L1200 300 L0 300 Z'/%3E%3C/svg%3E");
+}
+
+/* ---------- 5. brilhinhos flutuando ---------- */
+.cenario-brilho{
+  position:fixed; pointer-events:none; z-index:-1;
+  font-size:18px; opacity:.75;
+  animation:flutua 7s ease-in-out infinite;
+}
+@keyframes flutua{
+  0%,100%{ transform:translateY(0) rotate(0deg);   opacity:.35; }
+  50%    { transform:translateY(-22px) rotate(14deg); opacity:.9; }
+}
+
+/* ============================================================
+   6. REALCE DOS ELEMENTOS QUE JÁ EXISTEM
+   Só melhora o que as páginas já usam — nada de estrutura nova.
+   ============================================================ */
+
+/* título com contorno branco: destaca sobre qualquer fundo */
+.titulo{
+  -webkit-text-stroke:3px #fff;
+  paint-order:stroke fill;
+  letter-spacing:-.01em;
+  filter:drop-shadow(0 5px 0 rgba(74,42,135,.22)) drop-shadow(0 12px 18px rgba(74,42,135,.28));
+  animation:tituloPula 4.5s ease-in-out infinite;
+}
+@keyframes tituloPula{
+  0%,100%{ transform:translateY(0) rotate(-1deg); }
+  50%    { transform:translateY(-6px) rotate(1deg); }
+}
+
+/* brilho de vidro em cima dos botões — o truque que dá cara de app */
+.botao, .nivel, .jogo, .seta, .ficha{
+  position:relative;
+  overflow:hidden;
+  isolation:isolate;
+}
+.botao::before, .nivel::before, .jogo::before, .seta::before{
+  content:"";
+  position:absolute; left:0; right:0; top:0; height:46%;
+  border-radius:inherit;
+  background:linear-gradient(180deg, rgba(255,255,255,.42) 0%, rgba(255,255,255,0) 100%);
+  pointer-events:none;
+}
+
+/* varredura de luz atravessando o botão de tempos em tempos */
+.jogo::after, .botao::after{
+  content:"";
+  position:absolute; top:-60%; bottom:-60%; width:36%;
+  left:-50%;
+  background:linear-gradient(100deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.55) 50%, rgba(255,255,255,0) 100%);
+  transform:skewX(-18deg);
+  pointer-events:none;
+  animation:varre 5.5s ease-in-out infinite;
+}
+@keyframes varre{
+  0%, 62%{ left:-50%; }
+  86%, 100%{ left:130%; }
+}
+
+/* as opções do menu entram deslizando, uma depois da outra */
+.jogos .jogo{ animation:entraDeBaixo .5s cubic-bezier(.2,1.3,.4,1) both; }
+.jogos .jogo:nth-child(1){ animation-delay:.05s; }
+.jogos .jogo:nth-child(2){ animation-delay:.13s; }
+.jogos .jogo:nth-child(3){ animation-delay:.21s; }
+.jogos .jogo:nth-child(4){ animation-delay:.29s; }
+.jogos .jogo:nth-child(5){ animation-delay:.37s; }
+@keyframes entraDeBaixo{
+  from{ transform:translateY(26px) scale(.94); opacity:0; }
+  to  { transform:translateY(0) scale(1); opacity:1; }
+}
+
+/* o retrato do menu ganha vida própria */
+.jogo .retrato{ animation:balanca 3.6s ease-in-out infinite; }
+.jogo:nth-child(even) .retrato{ animation-delay:.9s; }
+@keyframes balanca{
+  0%,100%{ transform:rotate(-3deg) scale(1); }
+  50%    { transform:rotate(3deg) scale(1.05); }
+}
+
+/* cartas do álbum que ela ainda não tem: um leve pulsar de mistério */
+.ficha.falta .foto img{ animation:misterio 3.2s ease-in-out infinite; }
+@keyframes misterio{
+  0%,100%{ opacity:.22; }
+  50%    { opacity:.4; }
+}
+
+/* respeita quem prefere menos movimento (e poupa bateria) */
+@media (prefers-reduced-motion: reduce){
+  html *, body::before, body::after{
+    animation:none !important;
+  }
+}
