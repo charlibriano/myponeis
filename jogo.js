@@ -34,6 +34,9 @@ function avisa(txt){
 el('recado').addEventListener('click', ()=>avisa(''));
 
 function fala(texto){
+  // o áudio gravado tem prioridade; frases.js fornece o tocador
+  if(typeof falaGravada === "function" && falaGravada(texto)) return;
+
   if(!TEM_VOZ){
     marcaStatus('🔇 sem voz','nao');
     avisa('Este navegador não tem voz. Abra o jogo no Chrome ou no Safari.');
