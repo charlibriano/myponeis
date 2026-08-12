@@ -236,8 +236,8 @@ body{
     <span class="seta" aria-hidden="true">▶</span>
   </button>
 
-  <button class="jogo" data-cor="rosa" data-pagina="poneis.html"
-          data-fala="Cadê o pônei? Eu falo o nome e você acha!">
+  <button class="jogo" data-cor="rosa" data-pagina="poneis.html?modo=cade"
+          data-fala="Cadê o pônei?">
     <span class="retrato"><img src="imagens/Trixie.png" alt=""></span>
     <span class="texto">
       <span class="nome">Cadê o Pônei?</span>
@@ -246,8 +246,8 @@ body{
     <span class="seta" aria-hidden="true">▶</span>
   </button>
 
-  <button class="jogo" data-cor="turq" data-pagina="poneis.html"
-          data-fala="Quem sumiu? Olha bem e descubra qual pônei foi embora.">
+  <button class="jogo" data-cor="turq" data-pagina="poneis.html?modo=sumiu"
+          data-fala="Quem sumiu?">
     <span class="retrato"><img src="imagens/Princesa Celestia.png" alt=""></span>
     <span class="texto">
       <span class="nome">Quem Sumiu?</span>
@@ -422,21 +422,12 @@ try{
 document.querySelectorAll(".jogo").forEach(b => {
   b.addEventListener("click", () => {
     const destino = b.dataset.pagina;
-    let espera = 0;
 
-    // o toque é real, então é aqui que o áudio do celular destrava.
-    // se falhar, segue mesmo assim: abrir o jogo é mais importante que a voz.
-    if(TEM_VOZJS){
-      try{
-        somToque();
-        fala(b.dataset.fala);
-        espera = 900;   // dá tempo da frase começar antes de trocar de página
-      }catch(e){
-        espera = 0;
-      }
-    }
+    // a espera de 900ms existia para a fala começar antes de trocar de
+    // página. Sem falas, era só lentidão no toque.
+    try{ if(typeof somToque === "function") somToque(); }catch(e){}
 
-    setTimeout(() => { location.href = destino; }, espera);
+    setTimeout(() => { location.href = destino; }, 120);
   });
 });
 </script>
