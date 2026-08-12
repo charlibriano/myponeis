@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Meu Álbum de Pôneis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --lilas:#EFE3FF; --rosa-claro:#FFE4F2;
+  --roxo:#6B3FBF; --roxo-escuro:#4A2A87;
+  --rosa:#FF6FB0; --turquesa:#35CFC9; --amarelo:#FFD34A;
+}
+*{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+body{
+  font-family:'Baloo 2','Segoe UI Rounded','SF Pro Rounded',system-ui,sans-serif;
+  color:#40276E; min-height:100vh;
+  background:
+    radial-gradient(1200px 600px at 20% -10%, #FFF6C9 0%, transparent 55%),
+    linear-gradient(160deg, var(--lilas) 0%, var(--rosa-claro) 100%);
+  padding:calc(10px + env(safe-area-inset-top)) 12px calc(24px + env(safe-area-inset-bottom));
+  user-select:none;
+}
+
+.topo{ display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+.icone{
+  border:none; background:rgba(255,255,255,.8); color:var(--roxo);
+  font-family:inherit; font-weight:800; font-size:20px;
+  width:44px; height:44px; border-radius:14px; cursor:pointer;
+  box-shadow:0 2px 6px rgba(107,63,191,.14);
+}
+.titulo{ font-size:26px; font-weight:800; color:var(--roxo); line-height:1; }
+.titulo small{ display:block; font-size:13px; font-weight:600; color:#9A83C4; margin-top:2px; }
+
+/* barra de progresso: ela não lê o número, mas entende a barra enchendo */
+.progresso{
+  height:18px; border-radius:12px; background:rgba(255,255,255,.7);
+  overflow:hidden; margin-bottom:18px; box-shadow:inset 0 2px 5px rgba(107,63,191,.15);
+}
+.progresso i{
+  display:block; height:100%; width:0;
+  background:linear-gradient(90deg, var(--turquesa), var(--amarelo), var(--rosa));
+  transition:width .6s ease;
+}
+
+.grade{
+  display:grid; gap:10px;
+  grid-template-columns:repeat(auto-fill, minmax(92px, 1fr));
+}
+
+.ficha{
+  border:none; padding:0; cursor:pointer; font-family:inherit;
+  background:#fff; border-radius:18px; overflow:hidden;
+  border:3px solid #E4D8F5;
+  box-shadow:0 3px 0 #D9C6F2;
+  display:flex; flex-direction:column;
+}
+.ficha .foto{ aspect-ratio:1; display:flex; align-items:center; justify-content:center; background:#FBF6FF; }
+.ficha .foto img{ width:100%; height:100%; object-fit:contain; padding:5px; }
+.ficha .rotulo{
+  font-size:10px; font-weight:800; padding:4px 3px 5px; color:var(--roxo);
+  background:#FFF6C9; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+
+/* quem ela ainda não tem vira silhueta — é o que cria vontade */
+.ficha.falta{ border-color:#DCD2EA; box-shadow:0 3px 0 #CFC2E2; }
+.ficha.falta .foto{ background:#EFE9F7; }
+.ficha.falta .foto img{ filter:brightness(0) opacity(.22); }
+.ficha.falta .rotulo{ background:#E7DEF3; color:#A794C4; }
+
+.ficha.tem{ border-color:var(--amarelo); box-shadow:0 3px 0 #E0B93C; }
+.ficha:active{ transform:translateY(2px); }
+
+.rodape{ margin-top:20px; text-align:center; }
+.botao{
+  border:none; border-radius:22px; cursor:pointer; font-family:inherit;
+  font-weight:800; font-size:19px; color:#fff; padding:15px 28px;
+  background:linear-gradient(180deg,#8B5CE0 0%, var(--roxo) 100%);
+  box-shadow:0 5px 0 var(--roxo-escuro);
+}
+.botao:active{ transform:translateY(4px); box-shadow:0 1px 0 var(--roxo-escuro); }
+
+#recado{
+  background:#3B1220; color:#FFE6EE; border:2px solid var(--rosa); border-radius:14px;
+  padding:10px 12px; font-size:13px; line-height:1.45; margin-bottom:14px; cursor:pointer;
+}
+#recado.escondida{ display:none; }
+</style>
+</head>
+<body>
+
+<div class="topo">
+  <button class="icone" id="btnCasa" aria-label="Voltar aos jogos">🏠</button>
+  <div class="titulo">Meu Álbum<small id="contagem">—</small></div>
+</div>
+
+<div id="recado" class="escondida"></div>
+
+<div class="progresso"><i id="barra"></i></div>
+
+<div class="grade" id="grade"></div>
+
+<div class="rodape">
+  <button class="botao" id="btnJogar">Ganhar mais pôneis</button>
+</div>
+
+<script src="voz.js"></script>
+<script src="album.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+
+addEventListener("error", e => {
+  $("recado").textContent = "Erro: " + e.message + (e.lineno ? " (linha " + e.lineno + ")" : "");
+  $("recado").classList.remove("escondida");
+});
+$("recado").addEventListener("click", () => $("recado").classList.add("escondida"));
+
+const minhas = colecao();
+
+$("contagem").textContent = minhas.length + " de " + totalDoAlbum() + " pôneis";
+$("barra").style.width = Math.round(minhas.length / totalDoAlbum() * 100) + "%";
+
+ALBUM.forEach(nome => {
+  const tem = minhas.includes(nome);
+  const b = document.createElement("button");
+  b.className = "ficha " + (tem ? "tem" : "falta");
+  b.innerHTML =
+    '<span class="foto"><img src="' + imgDoAlbum(nome) + '" alt=""></span>' +
+    '<span class="rotulo">' + (tem ? nome : "? ? ?") + '</span>';
+  // tocar na ficha fala o nome: quem ela tem, ela ouve; quem falta, fica em segredo
+  b.addEventListener("click", () => {
+    if(typeof somToque === "function") somToque();
+    if(typeof fala === "function") fala(tem ? nome : "Essa você ainda não ganhou!");
+  });
+  $("grade").appendChild(b);
+});
+
+$("btnCasa").addEventListener("click", () => { location.href = "index.html"; });
+$("btnJogar").addEventListener("click", () => { location.href = "index.html"; });
+
+/* se o navegador bloquear o armazenamento, o álbum nunca enche — melhor avisar */
+try{
+  localStorage.setItem("poneis.teste", "1");
+  localStorage.removeItem("poneis.teste");
+}catch(e){
+  $("recado").textContent = "Este navegador está com o armazenamento bloqueado, então o álbum não fica guardado. Costuma acontecer na navegação anônima.";
+  $("recado").classList.remove("escondida");
+}
+</script>
+</body>
+</html>
