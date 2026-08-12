@@ -100,6 +100,16 @@ const sorteia = arr => arr[Math.floor(Math.random()*arr.length)];
    em SVG (útil enquanto faltarem imagens de personagens que ela ama). */
 const SO_COM_IMAGEM = true;
 
+/* Um acerto solto é curto demais para valer um desafio da missão.
+   A cada 5 acertos o jogo credita um, o que dá tempo de brincadeira
+   parecido com uma rodada de memória ou um labirinto. */
+function contaDesafio(){
+  if(typeof concluiuDesafio !== "function") return;
+  if(estrelas === 0 || estrelas % 5 !== 0) return;
+  const m = concluiuDesafio();
+  if(m.completouAgora && typeof festejaMissao === "function") setTimeout(festejaMissao, 900);
+}
+
 function elenco(){
   const n = estrelas < 6 ? 1 : (estrelas < 16 ? 2 : 3);
   const grupo = PONEIS.filter(p => p.nivel <= n);
@@ -151,6 +161,7 @@ function responde(p, botao){
     travado = true;
     estrelas++;
     el('placar').textContent = estrelas;
+    contaDesafio();
     botao.classList.add('certa');
     [...document.querySelectorAll('.carta')].forEach(c=>{ if(c!==botao) c.classList.add('apagada'); });
     bip([660,880,1180],.11);
@@ -286,6 +297,7 @@ function respondeSumiu(p, botao){
     sTravado = true;
     estrelas++;
     el('placar').textContent = estrelas;
+    contaDesafio();
     botao.classList.add('certa');
     [...document.querySelectorAll('#opcoes .carta')].forEach(c=>{ if(c!==botao) c.classList.add('apagada'); });
     const vazia = document.querySelector('#tabuleiro .vazia');
