@@ -84,6 +84,37 @@ body{
 #poneiz .emoji, #amiga .emoji{ font-size:26px; }
 
 @keyframes pulsa{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.12); } }
+
+/* itens espalhados pelo labirinto */
+.item{
+  position:absolute; z-index:3; pointer-events:none;
+  display:flex; align-items:center; justify-content:center;
+  animation:itemFlutua 2.2s ease-in-out infinite;
+  filter:drop-shadow(0 3px 4px rgba(60,40,110,.45));
+}
+@keyframes itemFlutua{
+  0%,100%{ transform:translateY(0)    scale(1); }
+  50%    { transform:translateY(-14%) scale(1.08); }
+}
+.item.sumindo{ animation:itemPego .45s ease-out forwards; }
+@keyframes itemPego{
+  0%  { transform:scale(1)   translateY(0);     opacity:1; }
+  100%{ transform:scale(1.9) translateY(-90%);  opacity:0; }
+}
+
+/* portão: fecha a chegada até ela achar a chave */
+.portao{
+  position:absolute; inset:0; z-index:3; pointer-events:none;
+  display:flex; align-items:center; justify-content:center;
+  border-radius:9px;
+  background:repeating-linear-gradient(45deg,
+    rgba(120,90,60,.85) 0 7px, rgba(150,115,75,.85) 7px 14px);
+  box-shadow:inset 0 0 0 3px rgba(90,65,40,.9);
+}
+.portao.abrindo{ animation:portaoAbre .5s ease-in forwards; }
+@keyframes portaoAbre{
+  to{ transform:scaleY(0); opacity:0; }
+}
 #amiga{ animation:pulsa 1.6s ease-in-out infinite; }
 
 /* ---------- setas ---------- */
@@ -156,6 +187,7 @@ body{
   <button class="icone" id="btnCasa" aria-label="Voltar aos jogos">🏠</button>
   <div class="marcador"><span>Estrelas</span><b id="mEstrelas">0</b></div>
   <div class="marcador"><span>Labirinto</span><b id="mNivel">1</b></div>
+  <div class="marcador" id="caixaMacas"><span>Maçãs</span><b id="mMacas">0/0</b></div>
   <button id="btnTrocaVoz">trocar voz</button>
   <button id="btnStatus" data-ok="?">🔈 voz</button>
 </div>
@@ -304,7 +336,43 @@ function desenha(){
   p.style.top  = (caminho[0][0] * lado) + "px";
   cx.appendChild(p);
 
+  desenhaItens();
   desenhaRastro();
+}
+
+function desenhaItens(){
+  const cx = $("labirinto");
+  cx.querySelectorAll(".item, .portao").forEach(e => e.remove());
+  const tam = Math.round(lado * 0.52);
+
+  const poe = (r, c, emoji, classe) => {
+    const d = document.createElement("div");
+    d.className = "item " + classe;
+    d.style.width = tam + "px"; d.style.height = tam + "px";
+    d.style.left = (c * lado + (lado - tam) / 2) + "px";
+    d.style.top  = (r * lado + (lado - tam) / 2) + "px";
+    d.style.fontSize = Math.round(tam * 0.8) + "px";
+    d.textContent = emoji;
+    cx.appendChild(d);
+  };
+
+  macas.forEach((m, i) => { if(!m.pego) poe(m.r, m.c, "🍎", "maca-" + i); });
+  if(chave && !chave.pego) poe(chave.r, chave.c, "🔑", "chave");
+
+  // portão barrando a chegada enquanto a chave não aparecer
+  if(chave && !chave.pego){
+    const p = document.createElement("div");
+    p.className = "portao";
+    p.style.position = "absolute";
+    p.style.width = lado + "px"; p.style.height = lado + "px";
+    p.style.left = ((colunas - 1) * lado) + "px";
+    p.style.top  = ((linhas - 1) * lado) + "px";
+    p.style.fontSize = Math.round(lado * 0.45) + "px";
+    p.textContent = "🔒";
+    cx.appendChild(p);
+  }
+
+  $("mMacas").textContent = macas.filter(m => m.pego).length + "/" + macas.length;
 }
 
 /* ---------- rastro de pegadas ----------
@@ -312,6 +380,95 @@ function desenha(){
    O pônei e a amiga não saem do lugar: quem anda é o rastro. */
 let caminho = [[0, 0]];
 const GIRO = { cima:0, dir:90, baixo:180, esq:270 };
+
+/* itens do labirinto */
+let macas = [];          // [{r, c, pego}]
+let chave = null;        // {r, c, pego} ou null nos níveis iniciais
+let temChave = false;
+
+/* Os itens ficam em becos sem saída — casas com três paredes.
+   É o que transforma o desvio em escolha: hoje ela passa reto por eles.
+   O beco da largada e o da chegada ficam de fora. */
+function becosSemSaida(){
+  const lista = [];
+  for(let r = 0; r < linhas; r++){
+    for(let c = 0; c < colunas; c++){
+      if(r === 0 && c === 0) continue;
+      if(r === linhas - 1 && c === colunas - 1) continue;
+      const g = grade[r][c];
+      const paredes = (g.cima?1:0) + (g.baixo?1:0) + (g.esq?1:0) + (g.dir?1:0);
+      if(paredes === 3) lista.push([r, c]);
+    }
+  }
+  return lista;
+}
+
+/* Casas que ela consegue alcançar SEM entrar na chegada.
+
+   Isto não é preciosismo: a chegada fica trancada até achar a chave, e
+   entrar nela encerra a rodada. Então qualquer item que só se alcance
+   atravessando a chegada é inalcançável — e se for a chave, o labirinto
+   fica impossível. Testando 12 mil mapas, isso acontecia em um terço deles.
+
+   Busca em largura a partir da largada, tratando a chegada como parede. */
+function casasAlcancaveis(){
+  const D = { cima:[-1,0], baixo:[1,0], esq:[0,-1], dir:[0,1] };
+  const fim = (linhas - 1) + "," + (colunas - 1);
+  const vistas = new Set(["0,0"]);
+  const fila = [[0, 0]];
+
+  while(fila.length){
+    const [r, c] = fila.shift();
+    for(const d in D){
+      if(grade[r][c][d]) continue;
+      const nr = r + D[d][0], nc = c + D[d][1];
+      const id = nr + "," + nc;
+      if(id === fim) continue;                       // a chegada é barreira
+      if(nr < 0 || nc < 0 || nr >= linhas || nc >= colunas) continue;
+      if(vistas.has(id)) continue;
+      vistas.add(id);
+      fila.push([nr, nc]);
+    }
+  }
+  vistas.delete("0,0");                              // a largada é do pônei
+  return vistas;
+}
+
+function espalhaItens(){
+  macas = []; chave = null; temChave = false;
+
+  const ok = casasAlcancaveis();
+  let becos = becosSemSaida().filter(([r, c]) => ok.has(r + "," + c));
+
+  // mapa pequeno pode não ter becos suficientes: usa qualquer casa alcançável
+  if(becos.length < 3){
+    const extras = [];
+    ok.forEach(id => {
+      const [r, c] = id.split(",").map(Number);
+      if(!becos.some(b => b[0] === r && b[1] === c)) extras.push([r, c]);
+    });
+    becos = becos.concat(extras);
+  }
+
+  for(let i = becos.length - 1; i > 0; i--){        // embaralha
+    const j = Math.floor(Math.random() * (i + 1));
+    [becos[i], becos[j]] = [becos[j], becos[i]];
+  }
+
+  // a chave só entra a partir do 4º labirinto: antes disso é regra demais
+  const usaChave = (nivel >= 4 && becos.length >= 2);
+  let k = 0;
+  if(usaChave){
+    chave = { r: becos[0][0], c: becos[0][1], pego:false };
+    k = 1;
+  }
+
+  const quantas = Math.min(becos.length - k, nivel <= 2 ? 2 : 3);
+  for(let i = 0; i < quantas; i++){
+    macas.push({ r: becos[k + i][0], c: becos[k + i][1], pego:false });
+  }
+  temChave = !usaChave;      // sem chave no mapa, o portão nem existe
+}
 
 /* Um cavalo tem quatro cascos e anda alternando os lados, então uma
    marca sozinha no meio da casa parece carimbo, não passada.
@@ -378,6 +535,17 @@ function move(dir){
   if(dir === "esq")   pc--;
   if(dir === "dir")   pc++;
 
+  // portão trancado: não deixa entrar na chegada sem a chave
+  if(!temChave && pr === linhas - 1 && pc === colunas - 1){
+    if(dir === "cima")  pr++;
+    if(dir === "baixo") pr--;
+    if(dir === "esq")   pc++;
+    if(dir === "dir")   pc--;
+    tocar(typeof somErrou === "function" ? somErrou : null);
+    dizer("Está trancado! Acha a chavinha primeiro.");
+    return;
+  }
+
   // voltou para a casa anterior? então desfaz a pegada em vez de empilhar.
   // assim o rastro mostra o caminho atual, não tudo que ela já pisou.
   const anterior = caminho[caminho.length - 2];
@@ -387,9 +555,37 @@ function move(dir){
   tocar(typeof somToque === "function" ? somToque : null);
   desenhaRastro();
   cancelaDica();
+  recolhe();
 
   if(pr === linhas - 1 && pc === colunas - 1) setTimeout(chegou, 220);
   else agendaDica();
+}
+
+/* pegou alguma coisa na casa em que parou? */
+function recolhe(){
+  const cx = $("labirinto");
+
+  macas.forEach((m, i) => {
+    if(m.pego || m.r !== pr || m.c !== pc) return;
+    m.pego = true;
+    const el = cx.querySelector(".maca-" + i);
+    if(el){ el.classList.add("sumindo"); setTimeout(() => el.remove(), 450); }
+    tocar(typeof somAchou === "function" ? somAchou : null);
+    const faltam = macas.filter(x => !x.pego).length;
+    dizer(faltam ? "Pegou uma maçã! Faltam " + faltam + "." : "Pegou todas as maçãs!");
+    $("mMacas").textContent = macas.filter(x => x.pego).length + "/" + macas.length;
+  });
+
+  if(chave && !chave.pego && chave.r === pr && chave.c === pc){
+    chave.pego = true;
+    temChave = true;
+    const el = cx.querySelector(".chave");
+    if(el){ el.classList.add("sumindo"); setTimeout(() => el.remove(), 450); }
+    const portao = cx.querySelector(".portao");
+    if(portao){ portao.classList.add("abrindo"); setTimeout(() => portao.remove(), 500); }
+    tocar(typeof somVitoria === "function" ? somVitoria : null);
+    dizer("Achou a chavinha! O portão abriu.");
+  }
 }
 
 /* setas */
@@ -450,13 +646,16 @@ function novaRodada(){
   }
 
   geraLabirinto(linhas, colunas);
+  espalhaItens();
   desenha();
   $("mNivel").textContent = nivel;
   $("festa").classList.remove("visivel");
 
   tocar(typeof somComeco === "function" ? somComeco : null);
   const quem = (amigaAtual && amigaAtual.nome) ? amigaAtual.nome : "a amiga";
-  setTimeout(() => dizer("Leva o pônei até " + quem + "! Arraste o dedo pelo caminho."), 400);
+  setTimeout(() => dizer(chave
+      ? "Acha a chavinha para abrir o portão, e leva o pônei até " + quem + "!"
+      : "Leva o pônei até " + quem + "! Pega as maçãs pelo caminho."), 400);
   agendaDica();
 }
 
@@ -496,7 +695,10 @@ function chegou(){
 
   poneiCaminha(() => {
     tocar(typeof somVitoria === "function" ? somVitoria : null);
-    dizer("O pônei chegou até " + quem + "!");
+    const todas = macas.length && macas.every(m => m.pego);
+    dizer(todas
+      ? "O pônei chegou até " + quem + ", e você pegou todas as maçãs!"
+      : "O pônei chegou até " + quem + "!");
     chuvaDeEstrelas();
     setTimeout(() => premiar(() => $("festa").classList.add("visivel")), 1100);
   });
