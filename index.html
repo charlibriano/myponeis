@@ -29,39 +29,58 @@ body{
 }
 
 .titulo{
-  font-size:clamp(32px,10vw,52px); font-weight:800; line-height:.95;
-  color:var(--roxo); text-align:center; margin-top:26px;
+  font-size:clamp(26px,7.5vw,40px); font-weight:800; line-height:.95;
+  color:var(--roxo); text-align:center; margin-top:10px;
   text-shadow:0 3px 0 #fff, 0 6px 14px rgba(107,63,191,.25);
 }
-.subtitulo{ font-size:16px; font-weight:600; color:#8A6FBF; margin:6px 0 24px; text-align:center; }
+.subtitulo{ font-size:13px; font-weight:600; color:#8A6FBF; margin:3px 0 12px; text-align:center; }
 
-.jogos{ display:flex; flex-direction:column; gap:16px; width:100%; max-width:340px; }
+/* ---------- grade de jogos ----------
+   Antes eram sete cartões largos empilhados, o que dava um scroll
+   enorme no celular. Duas colunas cabem seis jogos em três fileiras. */
+.jogos{
+  display:grid; grid-template-columns:1fr 1fr; gap:10px;
+  width:100%; max-width:400px;
+}
 
 .jogo{
-  display:flex; align-items:center; gap:14px;
-  width:100%; padding:12px 16px 12px 12px; border:none; border-radius:26px;
-  cursor:pointer; font-family:inherit; text-align:left;
+  display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
+  gap:6px; padding:12px 8px 10px; border:none; border-radius:22px;
+  cursor:pointer; font-family:inherit; text-align:center;
   background:linear-gradient(180deg,#FFFFFF 0%,#F8F0FF 100%);
-  box-shadow:0 6px 0 #D9C6F2, 0 12px 22px rgba(107,63,191,.2);
+  box-shadow:0 5px 0 #D9C6F2, 0 10px 18px rgba(107,63,191,.18);
   transition:transform .1s ease, box-shadow .1s ease;
 }
-.jogo:active{ transform:translateY(5px); box-shadow:0 1px 0 #D9C6F2; }
+.jogo:active{ transform:translateY(4px); box-shadow:0 1px 0 #D9C6F2; }
 
-.retrato{
-  flex:0 0 auto; width:82px; height:82px; border-radius:20px;
-  display:flex; align-items:center; justify-content:center; overflow:hidden;
-  border:3px solid var(--amarelo); background:#FFF6C9;
+/* o ícone é a identidade do jogo: ela não lê, então a figura precisa
+   dizer sozinha qual brincadeira é */
+.jogo .icone{
+  width:100%; max-width:78px; aspect-ratio:1;
+  display:flex; align-items:center; justify-content:center;
+  border-radius:20px; padding:8px;
+  background:#F3ECFF;
 }
-.retrato img{ width:100%; height:100%; object-fit:contain; padding:4px; }
-.retrato .fallback{ font-size:38px; }
+.jogo .icone svg{ width:100%; height:100%; }
+.jogo .nome{ font-size:15px; font-weight:800; color:var(--roxo); line-height:1.1; }
+.jogo .como{ display:none; }          /* a legenda escrita não serve para ela */
 
-.jogo .texto{ flex:1; min-width:0; }
-.jogo .nome{ display:block; font-size:23px; font-weight:800; color:var(--roxo); line-height:1.05; }
-.jogo .como{ display:block; font-size:13px; font-weight:600; color:#9A83C4; margin-top:3px; }
-.jogo .seta{ font-size:26px; color:var(--rosa); flex:0 0 auto; }
+.jogo[data-cor="rosa"] .icone{ background:#FFE4F2; }
+.jogo[data-cor="turq"] .icone{ background:#D8F7F0; }
+.jogo[data-cor="amar"] .icone{ background:#FFF3CC; }
+.jogo[data-cor="verde"] .icone{ background:#E0F5DF; }
 
-.jogo[data-cor="rosa"] .retrato{ border-color:var(--rosa); background:#FFE4F2; }
-.jogo[data-cor="turq"] .retrato{ border-color:var(--turquesa); background:#D8F7F0; }
+/* o álbum ocupa a largura toda: é o painel de progresso, não um jogo */
+.jogo.largo{
+  grid-column:1 / -1;
+  flex-direction:row; align-items:center; gap:12px;
+  padding:10px 14px; text-align:left;
+}
+.jogo.largo .icone{ width:56px; max-width:56px; flex:0 0 auto; }
+.jogo.largo .nome{ font-size:18px; }
+.jogo.largo .como{ display:block; font-size:12px; font-weight:600; color:#9A83C4; margin-top:2px; }
+.jogo.largo .seta{ margin-left:auto; font-size:22px; color:var(--rosa); }
+.jogo .seta{ display:none; }
 
 /* voz */
 #btnStatus, #btnTrocaVoz{
@@ -83,26 +102,39 @@ body{
 }
 #recado.escondida{ display:none; }
 
+/* telas baixas (iPhone SE e parecidos): aperta o cabeçalho e os ícones
+   para os seis jogos caberem sem rolagem */
+@media (max-height: 720px){
+  .titulo{ font-size:24px; margin-top:4px; }
+  .subtitulo{ display:none; }
+  .recepcao{ padding:6px 12px 6px 6px; margin-bottom:8px; }
+  .recepcao .amiga{ width:48px; height:48px; }
+  .jogo{ padding:8px 6px 8px; gap:4px; }
+  .jogo .icone{ max-width:58px; padding:6px; }
+  .jogo .nome{ font-size:14px; }
+  .jogo.largo .icone{ width:46px; max-width:46px; }
+}
+
 @media (prefers-reduced-motion: reduce){
   *{ animation-duration:.01ms !important; transition-duration:.01ms !important; }
 }
 
 /* ---------- a amiga recebendo ela ---------- */
 .recepcao{
-  display:flex; align-items:center; gap:14px;
-  width:100%; max-width:340px; margin:0 auto 16px;
-  background:rgba(255,255,255,.82); border-radius:26px; padding:12px 16px 12px 12px;
+  display:flex; align-items:center; gap:12px;
+  width:100%; max-width:400px; margin:0 auto 10px;
+  background:rgba(255,255,255,.82); border-radius:22px; padding:8px 14px 8px 8px;
   box-shadow:0 5px 0 #D9C6F2, 0 10px 20px rgba(107,63,191,.18);
 }
 .recepcao .amiga{
-  flex:0 0 auto; width:76px; height:76px; border-radius:50%; overflow:hidden;
+  flex:0 0 auto; width:56px; height:56px; border-radius:50%; overflow:hidden;
   border:3px solid #FFD34A; background:#FFF6C9;
   animation:balanca 3.6s ease-in-out infinite;
 }
 .recepcao .amiga img{ width:100%; height:100%; object-fit:cover; object-position:center 34%; }
 .recepcao .fala{ flex:1; min-width:0; }
-.recepcao .oi{ font-size:20px; font-weight:800; color:var(--roxo); line-height:1.1; }
-.recepcao .tarefa{ font-size:12px; font-weight:600; color:#9A83C4; margin:4px 0 5px; }
+.recepcao .oi{ font-size:17px; font-weight:800; color:var(--roxo); line-height:1.1; }
+.recepcao .tarefa{ font-size:11px; font-weight:600; color:#9A83C4; margin:2px 0 3px; }
 
 /* ---------- primeira vez: quem vai brincar? ---------- */
 #apresentacao{
@@ -215,9 +247,8 @@ body{
 
 <div class="jogos">
 
-  <button class="jogo" data-cor="turq" data-pagina="album.html"
-          data-fala="Seu álbum de pôneis!">
-    <span class="retrato"><img src="imagens/Princesa Cadance.png" alt=""></span>
+  <button class="jogo largo" data-cor="turq" data-pagina="album.html">
+    <span class="icone"><svg viewBox="0 0 60 60"><rect x="8" y="7" width="44" height="46" rx="7" fill="#8B5CE0"/><rect x="13" y="12" width="34" height="36" rx="4" fill="#fff"/><g fill="#FFC93C"><path d="M22 20l2.2 4.6 5 .6-3.7 3.4 1 5-4.5-2.5L17.5 33.6l1-5-3.7-3.4 5-.6z" transform="translate(2 0)"/></g><g fill="#E4D8F5"><circle cx="38" cy="24" r="5"/><circle cx="24" cy="40" r="5"/><circle cx="38" cy="40" r="5"/></g></svg></span>
     <span class="texto">
       <span class="nome">Meu Álbum</span>
       <span class="como" id="quantasTenho">Suas pôneis</span>
@@ -225,55 +256,29 @@ body{
     <span class="seta" aria-hidden="true">▶</span>
   </button>
 
-
-  <button class="jogo" data-cor="roxo" data-pagina="memoria.html"
-          data-fala="Jogo da memória! Ache os dois pôneis iguais.">
-    <span class="retrato"><img src="imagens/Rarity.png" alt=""></span>
-    <span class="texto">
-      <span class="nome">Jogo da Memória</span>
-      <span class="como">Ache os dois iguais</span>
-    </span>
-    <span class="seta" aria-hidden="true">▶</span>
+  <button class="jogo" data-cor="roxo" data-pagina="memoria.html">
+    <span class="icone"><svg viewBox="0 0 60 60"><rect x="6" y="12" width="22" height="32" rx="5" fill="#8B5CE0" transform="rotate(-8 17 28)"/><rect x="32" y="12" width="22" height="32" rx="5" fill="#FF6FB0" transform="rotate(8 43 28)"/><g fill="#FFF6C9"><path d="M17 22l1.8 3.8 4.2.5-3.1 2.9.8 4.1L17 31.3 13.3 33.3l.8-4.1-3.1-2.9 4.2-.5z" transform="rotate(-8 17 28)"/><path d="M43 22l1.8 3.8 4.2.5-3.1 2.9.8 4.1L43 31.3l-3.7 2 .8-4.1-3.1-2.9 4.2-.5z" transform="rotate(8 43 28)"/></g></svg></span>
+    <span class="nome">Jogo da<br>Memória</span>
   </button>
 
-  <button class="jogo" data-cor="rosa" data-pagina="poneis.html?modo=cade"
-          data-fala="Cadê o pônei?">
-    <span class="retrato"><img src="imagens/Trixie.png" alt=""></span>
-    <span class="texto">
-      <span class="nome">Cadê o Pônei?</span>
-      <span class="como">Eu falo, você acha</span>
-    </span>
-    <span class="seta" aria-hidden="true">▶</span>
+  <button class="jogo" data-cor="rosa" data-pagina="poneis.html?modo=cade">
+    <span class="icone"><svg viewBox="0 0 60 60"><circle cx="26" cy="25" r="15" fill="none" stroke="#8B5CE0" stroke-width="5"/><circle cx="26" cy="25" r="11" fill="#FFE4F2"/><path d="M22 24c0-3 2-5 4-5s4 2 4 5-2 6-4 8c-2-2-4-5-4-8z" fill="#FF6FB0"/><rect x="36" y="36" width="16" height="7" rx="3.5" fill="#8B5CE0" transform="rotate(42 44 39)"/></svg></span>
+    <span class="nome">Cadê o<br>Pônei?</span>
   </button>
 
-  <button class="jogo" data-cor="turq" data-pagina="poneis.html?modo=sumiu"
-          data-fala="Quem sumiu?">
-    <span class="retrato"><img src="imagens/Princesa Celestia.png" alt=""></span>
-    <span class="texto">
-      <span class="nome">Quem Sumiu?</span>
-      <span class="como">Descubra quem foi embora</span>
-    </span>
-    <span class="seta" aria-hidden="true">▶</span>
+  <button class="jogo" data-cor="amar" data-pagina="poneis.html?modo=sumiu">
+    <span class="icone"><svg viewBox="0 0 60 60"><circle cx="16" cy="22" r="9" fill="#35CFC9"/><circle cx="44" cy="22" r="9" fill="#FFC93C"/><circle cx="30" cy="41" r="9" fill="#FF6FB0"/><circle cx="30" cy="20" r="10" fill="#EDE4FA" stroke="#8B5CE0" stroke-width="3" stroke-dasharray="4 3"/><text x="30" y="26" font-family="system-ui" font-size="14" font-weight="800" fill="#8B5CE0" text-anchor="middle">?</text></svg></span>
+    <span class="nome">Quem<br>Sumiu?</span>
   </button>
 
-  <button class="jogo" data-cor="roxo" data-pagina="labirinto.html"
-          data-fala="Leva o pônei! Arraste o dedo pelo caminho até a amiga.">
-    <span class="retrato"><img src="imagens/Apple Bloom.png" alt=""></span>
-    <span class="texto">
-      <span class="nome">Leva o Pônei</span>
-      <span class="como">Ache o caminho até a amiga</span>
-    </span>
-    <span class="seta" aria-hidden="true">▶</span>
+  <button class="jogo" data-cor="verde" data-pagina="labirinto.html">
+    <span class="icone"><svg viewBox="0 0 60 60"><rect x="6" y="6" width="48" height="48" rx="8" fill="#EFE7DA"/><g stroke="#4E9E5E" stroke-width="5" stroke-linecap="round" fill="none"><path d="M6 20h26"/><path d="M20 34h34"/><path d="M6 44h20"/><path d="M40 6v16"/></g><circle cx="13" cy="13" r="5" fill="#FF6FB0"/><circle cx="47" cy="47" r="5" fill="#35CFC9"/></svg></span>
+    <span class="nome">Leva o<br>Pônei</span>
   </button>
 
-  <button class="jogo" data-cor="rosa" data-pagina="nome.html"
-          data-fala="Balões do nome! Estoura os balões e escreve o seu nome.">
-    <span class="retrato"><img src="imagens/Sweetie Belle.png" alt=""></span>
-    <span class="texto">
-      <span class="nome">Balões do Nome</span>
-      <span class="como">Estoure na ordem certa</span>
-    </span>
-    <span class="seta" aria-hidden="true">▶</span>
+  <button class="jogo" data-cor="rosa" data-pagina="nome.html">
+    <span class="icone"><svg viewBox="0 0 60 60"><path d="M30 44c-2 0-3 3-3 6h6c0-3-1-6-3-6z" fill="#C4B4E0"/><ellipse cx="20" cy="22" rx="11" ry="13" fill="#FF6FB0"/><ellipse cx="41" cy="26" rx="9" ry="11" fill="#5FC4E8"/><path d="M20 35v9M41 37v7" stroke="#C4B4E0" stroke-width="2"/><text x="20" y="28" font-family="system-ui" font-size="15" font-weight="800" fill="#fff" text-anchor="middle">A</text><text x="41" y="31" font-family="system-ui" font-size="13" font-weight="800" fill="#fff" text-anchor="middle">B</text></svg></span>
+    <span class="nome">Balões do<br>Nome</span>
   </button>
 
 </div>
@@ -299,118 +304,8 @@ body{
 <script src="perfil.js"></script>
 <script src="album.js"></script>
 <script>
-/* se a imagem do retrato não carregar, entra um emoji no lugar
-   (mesma ideia do relatório de imagens: nada quebra pela metade) */
-const RESERVA = ["📖", "🃏", "🔍", "❓", "🌀", "🎈"];
-document.querySelectorAll(".retrato img").forEach((img, i) => {
-  img.addEventListener("error", () => {
-    const s = document.createElement("span");
-    s.className = "fallback";
-    s.textContent = RESERVA[i] || "🦄";
-    img.replaceWith(s);
-  });
-});
-
-/* qualquer erro de código aparece na tela, sem precisar de dev tools */
-addEventListener("error", e => {
-  const r = document.getElementById("recado");
-  if(!r) return;
-  r.textContent = "Erro: " + e.message + (e.filename ? "  (" + e.filename.split("/").pop() + ":" + e.lineno + ")" : "");
-  r.classList.remove("escondida");
-});
-
-/* aviso sobre o voz.js removido: ele falava de voz, que não existe
-   mais, e apontava para um caminho que nem é mais usado */
-
-/* ===================================================================
-   PERFIL: primeira vez, e a recepção da amiga
-   =================================================================== */
-injetaEstiloPerfil();
-
-let amigaEscolhida = null;
-
-function montaEscolha(){
-  const cx = document.getElementById("escolhaAmigas");
-  cx.innerHTML = "";
-  AMIGAS.forEach(nome => {
-    const b = document.createElement("button");
-    b.innerHTML = '<img src="imagens/' + encodeURIComponent(nome) + '.png" alt="' + nome + '">';
-    b.addEventListener("click", () => {
-      amigaEscolhida = nome;
-      cx.querySelectorAll("button").forEach(x => x.classList.remove("marcada"));
-      b.classList.add("marcada");
-      // ela não lê ainda, mas o pai precisa saber quem escolheu
-      document.getElementById("nomeDaAmiga").textContent = nome;
-      if(typeof somToque === "function") somToque();
-      confereBotao();
-    });
-    cx.appendChild(b);
-  });
-}
-
-/* o botão só ganha cor quando há nome e amiga escolhidos — assim ele
-   não parece quebrado quando o toque não faz nada */
-function confereBotao(){
-  const pronto = document.getElementById("campoNome").value.trim() !== "" && amigaEscolhida;
-  document.getElementById("btnComecar").classList.toggle("esperando", !pronto);
-}
-
-function abreApresentacao(){
-  montaEscolha();
-  document.getElementById("campoNome").addEventListener("input", confereBotao);
-  document.getElementById("apresentacao").classList.add("visivel");
-}
-
-document.getElementById("btnComecar").addEventListener("click", () => {
-  const nome = document.getElementById("campoNome").value.trim();
-  if(!nome){ document.getElementById("campoNome").focus(); return; }
-  if(!amigaEscolhida) amigaEscolhida = AMIGAS[0];
-
-  const p = perfil();
-  p.nome = nome;
-  p.amiga = amigaEscolhida;
-  salvaPerfil(p);
-
-  document.getElementById("apresentacao").classList.remove("visivel");
-  mostraRecepcao();
-  if(typeof somVitoria === "function") somVitoria();
-});
-
-function mostraRecepcao(){
-  if(!temPerfil()) return;
-  const m = missao();
-  const feito = m.feitos >= DESAFIOS_POR_DIA;
-
-  document.getElementById("amigaFoto").innerHTML =
-    '<img src="' + imgDaAmiga() + '" alt="' + amigaDela() + '">';
-  document.getElementById("amigaOi").textContent = "Oi, " + nomeDela() + "!";
-  document.getElementById("amigaTarefa").textContent = feito
-    ? "Missão de hoje cumprida!"
-    : "Faltam " + (DESAFIOS_POR_DIA - m.feitos) + " brincadeiras hoje";
-  document.getElementById("fitaAqui").innerHTML = fitaDaMissao();
-  document.getElementById("recepcao").style.display = "flex";
-}
-
-if(temPerfil()) mostraRecepcao(); else abreApresentacao();
-
-/* a amiga fala no primeiro toque da tela — antes disso o celular
-   não deixa sair som nenhum */
-let jaSaudou = false;
-addEventListener("pointerdown", () => {
-  if(jaSaudou || !temPerfil()) return;
-  jaSaudou = true;
-  const m = missao();
-  if(typeof fala !== "function") return;
-  fala(m.feitos >= DESAFIOS_POR_DIA
-    ? "Oi " + nomeDela() + "! Você já fez tudo hoje. Quer brincar mais?"
-    : "Oi " + nomeDela() + "! Faltam " + (DESAFIOS_POR_DIA - m.feitos) + " brincadeiras para terminar a missão de hoje.");
-}, { once:false });
-
-/* o menu mostra quantas ela já tem — o progresso fica visível na abertura */
-try{
-  const q = document.getElementById("quantasTenho");
-  if(q && typeof quantasTem === "function") q.textContent = quantasTem() + " de " + totalDoAlbum() + " pôneis";
-}catch(e){}
+/* os cartões agora usam ícones desenhados, não fotos — não há
+   imagem que possa falhar */
 
 document.querySelectorAll(".jogo").forEach(b => {
   b.addEventListener("click", () => {
