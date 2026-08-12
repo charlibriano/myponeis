@@ -107,3 +107,104 @@ function chaveDeVoz(txt){
 function idDeNome(nome){ return "nome-" + chaveDeVoz(nome).replace(/ /g, "-"); }
 function idDeLetra(L){ return "letra-" + chaveDeVoz(L); }
 function idDeNumero(n){ return "num-" + n; }
+
+
+/* ============================================================
+   VOZ GRAVADA  (audio/*.mp3)
+
+   Quando existe arquivo para a frase, ele é tocado. Só quando não
+   existe é que cai na voz do aparelho. Assim a voz é a mesma em
+   qualquer celular, mesmo sem nenhuma voz instalada.
+
+   Mora aqui, e não no voz.js, porque o "Cadê o Pônei?" usa a camada
+   de voz antiga que vive no jogo.js e não carrega o voz.js. Como todas
+   as páginas carregam o frases.js, o tocador fica disponível para as
+   duas camadas sem duplicar código.
+   ============================================================ */
+
+const AUDIO_PASTA = "audio/";
+let audioNaFila = [], audioTocando = null, audioDisponivel = null;
+
+/* Descobre uma vez se a pasta de áudio existe. Enquanto não sabe,
+   usa a voz do aparelho — nunca fica mudo esperando resposta. */
+function testaAudio(){
+  if(typeof FRASES === "undefined") { audioDisponivel = false; return; }
+  const tenta = ext => {
+    const a = new Audio(AUDIO_PASTA + "vamos-brincar" + ext);
+    a.addEventListener("canplaythrough", () => { audioDisponivel = true; }, { once:true });
+    a.addEventListener("error", () => {
+      if(ext === ".mp3") tenta(".wav"); else audioDisponivel = false;
+    }, { once:true });
+    a.load();
+  };
+  tenta(".mp3");
+}
+
+/* Quebra a frase pedida na lista de arquivos que a reproduzem.
+   Devolve null quando algum pedaço não existe — melhor cair inteiro
+   na voz sintética que falar metade. */
+function pedacosDaFrase(texto){
+  if(typeof FRASES === "undefined") return null;
+  const alvo = chaveDeVoz(texto);
+
+  for(const id in FRASES){
+    if(chaveDeVoz(FRASES[id]) === alvo) return [id];
+  }
+
+  for(const molde of MOLDES){
+    const partes = chaveDeVoz(molde.texto).split(/\{(nome|letra|n)\}/);
+    const antes = partes[0].trim(), tipo = partes[1], depois = (partes[2] || "").trim();
+    if(!alvo.startsWith(antes) || !alvo.endsWith(depois)) continue;
+
+    let meio = alvo.slice(antes.length, alvo.length - depois.length).trim();
+    if(!meio) continue;
+
+    if(tipo === "nome"){
+      const achado = NOMES_VOZ.concat(LUGARES_VOZ).find(n => chaveDeVoz(n) === meio);
+      if(achado) return [molde.id + "-ini", idDeNome(achado), molde.id + "-fim"];
+    }else if(tipo === "letra"){
+      const L = LETRAS_VOZ.find(x => chaveDeVoz(x) === meio);
+      if(L) return [molde.id + "-ini", idDeLetra(L), molde.id + "-fim"];
+    }else if(tipo === "n"){
+      if(NUMEROS_VOZ.includes(meio)) return [molde.id + "-ini", idDeNumero(meio), molde.id + "-fim"];
+    }
+  }
+  return null;
+}
+
+function paraAudio(){
+  audioNaFila = [];
+  if(audioTocando){ try{ audioTocando.pause(); }catch(e){} audioTocando = null; }
+}
+
+/* Aceita .mp3 e .wav: o gerador do Windows produz WAV, e converter
+   para MP3 exigiria instalar mais um programa. Tenta MP3 primeiro,
+   cai para WAV, e só então desiste daquele pedaço. */
+function tocaArquivo(id, ext, aoFalhar){
+  const a = new Audio(AUDIO_PASTA + id + ext);
+  audioTocando = a;
+  a.addEventListener("ended", tocaFila, { once:true });
+  a.addEventListener("error", aoFalhar, { once:true });
+  a.play().catch(aoFalhar);
+}
+
+function tocaFila(){
+  if(!audioNaFila.length){ audioTocando = null; return; }
+  const id = audioNaFila.shift();
+  // pedaço faltando não pode travar a fila: pula e segue
+  tocaArquivo(id, ".mp3", () => tocaArquivo(id, ".wav", tocaFila));
+}
+
+/* devolve true quando conseguiu tocar por arquivo */
+function falaGravada(texto){
+  if(audioDisponivel === false) return false;
+  const ids = pedacosDaFrase(texto);
+  if(!ids) return false;
+  paraAudio();
+  audioNaFila = ids.filter(Boolean);
+  tocaFila();
+  return true;
+}
+
+addEventListener("DOMContentLoaded", testaAudio);
+
