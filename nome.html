@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Balões do Nome</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --lilas:#EFE3FF; --rosa-claro:#FFE4F2;
+  --roxo:#6B3FBF; --roxo-escuro:#4A2A87;
+  --rosa:#FF6FB0; --turquesa:#35CFC9; --amarelo:#FFD34A;
+}
+*{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+html,body{ height:100%; overflow:hidden; }
+body{
+  font-family:'Baloo 2','Segoe UI Rounded','SF Pro Rounded',system-ui,sans-serif;
+  color:#40276E;
+  display:flex; flex-direction:column;
+  padding:calc(8px + env(safe-area-inset-top)) 10px calc(10px + env(safe-area-inset-bottom));
+  user-select:none; touch-action:manipulation;
+}
+
+.barra{ display:flex; align-items:center; gap:8px; flex:0 0 auto; margin-bottom:6px; }
+.icone{
+  border:none; background:rgba(255,255,255,.8); color:var(--roxo);
+  font-family:inherit; font-weight:800; font-size:20px;
+  width:44px; height:44px; border-radius:14px; cursor:pointer;
+  box-shadow:0 2px 6px rgba(107,63,191,.14);
+}
+#btnStatus, #btnTrocaVoz{
+  border:none; border-radius:12px; cursor:pointer; margin-left:auto;
+  font-family:inherit; font-weight:800; font-size:12px; padding:6px 10px;
+  background:rgba(255,255,255,.8); color:#8A6FBF;
+  box-shadow:0 2px 6px rgba(107,63,191,.14);
+}
+#btnTrocaVoz{ margin-left:0; }
+#btnStatus[data-ok="sim"]{ background:#D8F7F0; color:#12786F; }
+#btnStatus[data-ok="nao"]{ background:#FFDDE6; color:#B02A4A; }
+#recado{
+  position:fixed; left:8px; right:8px; bottom:8px; z-index:80;
+  background:#3B1220; color:#FFE6EE; border:2px solid var(--rosa); border-radius:14px;
+  padding:10px 12px; font-size:13px; line-height:1.45; cursor:pointer;
+  box-shadow:0 8px 24px rgba(0,0,0,.3);
+}
+#recado.escondida{ display:none; }
+
+/* ---------- o varal: onde o nome vai se formando ---------- */
+#varal{
+  flex:0 0 auto; display:flex; justify-content:center; align-items:flex-end;
+  gap:6px; padding:8px 4px 12px; flex-wrap:wrap;
+}
+.vaga{
+  width:var(--vaga, 44px); height:calc(var(--vaga, 44px) * 1.25);
+  border-radius:12px;
+  border:3px dashed rgba(107,63,191,.35);
+  background:rgba(255,255,255,.55);
+  display:flex; align-items:center; justify-content:center;
+  font-size:calc(var(--vaga, 44px) * 0.6); font-weight:800; color:transparent;
+  transition:color .2s ease;
+}
+.vaga.cheia{
+  border-style:solid; border-color:#fff; color:#fff;
+  background:linear-gradient(180deg,#FF8FC0 0%,#E3488F 100%);
+  box-shadow:0 4px 0 #C43A79;
+  animation:vagaEnche .45s cubic-bezier(.2,1.6,.4,1) both;
+}
+.vaga.dica{ animation:vagaPisca 1.2s ease-in-out infinite; }
+@keyframes vagaEnche{
+  0%  { transform:scale(.3) rotate(-18deg); }
+  100%{ transform:scale(1) rotate(0); }
+}
+@keyframes vagaPisca{
+  0%,100%{ border-color:rgba(107,63,191,.35); }
+  50%    { border-color:var(--amarelo); }
+}
+
+/* ---------- o céu com os balões ---------- */
+#ceu{ flex:1; min-height:0; position:relative; overflow:hidden; }
+
+.balao{
+  position:absolute; cursor:pointer; border:none; padding:0;
+  background:none; font-family:inherit;
+  will-change:transform;
+}
+.balao .corpo{
+  width:100%; height:82%;
+  border-radius:50% 50% 46% 46%;
+  display:flex; align-items:center; justify-content:center;
+  font-weight:800; color:#fff;
+  text-shadow:0 3px 5px rgba(0,0,0,.28);
+  box-shadow:inset -8px -10px 18px rgba(0,0,0,.16), inset 8px 8px 16px rgba(255,255,255,.4);
+  position:relative;
+}
+.balao .corpo::after{           /* brilho de balão */
+  content:""; position:absolute; left:22%; top:14%;
+  width:22%; height:16%; border-radius:50%;
+  background:rgba(255,255,255,.65);
+}
+.balao .cordinha{
+  width:2px; height:18%; margin:0 auto;
+  background:rgba(255,255,255,.75);
+}
+.balao.subindo{ animation:sobe linear forwards; }
+@keyframes sobe{
+  from{ transform:translate3d(0,0,0); }
+  to  { transform:translate3d(0,-135vh,0); }
+}
+.balao.estourou{ animation:estoura .32s ease-out forwards; pointer-events:none; }
+@keyframes estoura{
+  0%  { transform:scale(1);   opacity:1; }
+  40% { transform:scale(1.35); opacity:.9; }
+  100%{ transform:scale(.2);  opacity:0; }
+}
+.balao.errou{ animation:balanca .4s ease-in-out; }
+@keyframes balanca{
+  0%,100%{ transform:translate3d(0,0,0); }
+  25%    { transform:translate3d(-8px,0,0); }
+  75%    { transform:translate3d(8px,0,0); }
+}
+
+.faisca{ position:absolute; pointer-events:none; font-size:20px;
+  animation:faiscaVoa .6s ease-out forwards; }
+@keyframes faiscaVoa{
+  from{ transform:translate3d(0,0,0) scale(.6); opacity:1; }
+  to  { transform:translate3d(var(--fx,0), var(--fy,-40px),0) scale(1.3); opacity:0; }
+}
+
+/* ---------- prêmio ---------- */
+#festa{
+  position:fixed; inset:0; z-index:100; display:none;
+  align-items:center; justify-content:center; flex-direction:column; gap:12px;
+  padding:22px; text-align:center;
+  background:radial-gradient(circle at 50% 40%, #FFF9DC 0%, #FFE9F4 55%, #EFE0FF 100%);
+}
+#festa.visivel{ display:flex; }
+#festa .nomeGrande{
+  font-size:clamp(38px,13vw,68px); font-weight:800; color:var(--roxo);
+  -webkit-text-stroke:3px #fff; paint-order:stroke fill;
+  text-shadow:0 5px 0 rgba(74,42,135,.2);
+}
+#festa .amiga{
+  width:min(50vw,180px); aspect-ratio:1; border-radius:50%; overflow:hidden;
+  border:6px solid var(--amarelo); background:#fff;
+  box-shadow:0 10px 26px rgba(107,63,191,.3);
+}
+#festa .amiga img{ width:100%; height:100%; object-fit:cover; object-position:center 34%; }
+#festa .botao{
+  border:none; border-radius:24px; cursor:pointer; font-family:inherit;
+  font-weight:800; font-size:21px; color:#fff; padding:16px 30px;
+  background:linear-gradient(180deg,var(--rosa),#E3488F); box-shadow:0 5px 0 #C43A79;
+}
+</style>
+<link rel="stylesheet" href="cenario.css">
+</head>
+<body>
+<div class="cenario-chao"></div>
+<div class="cenario-brilho" style="left:8%;  top:30%; animation-delay:0s">✨</div>
+<div class="cenario-brilho" style="left:86%; top:44%; animation-delay:1.6s">⭐</div>
+
+<div id="recado" class="escondida"></div>
+
+<div class="barra">
+  <button class="icone" id="btnCasa" aria-label="Voltar aos jogos">🏠</button>
+  <button id="btnTrocaVoz">trocar voz</button>
+  <button id="btnStatus" data-ok="?">🔈 voz</button>
+</div>
+
+<div id="varal"></div>
+<div id="ceu"></div>
+
+<div id="festa">
+  <div class="amiga" id="festaAmiga"></div>
+  <div class="nomeGrande" id="festaNome"></div>
+  <button class="botao" id="btnDeNovo">Brincar de novo</button>
+</div>
+
+<script src="voz.js"></script>
+<script src="perfil.js"></script>
+<script src="album.js"></script>
+<script>
+/* ===================================================================
+   BALÕES DO NOME
+
+   Não é exercício de alfabetização: é estourar balão. A letra é o que
+   está escrito no balão, e o acerto é o que faz ele estourar.
+
+   Três decisões que separam brincadeira de lição:
+
+   1. Nada de errado acontece. Tocar no balão errado faz ele balançar
+      e a voz dizer qual é a letra da vez. Sem perder, sem voltar.
+
+   2. Os balões sobem sozinhos. Se ela demora, o balão escapa pelo topo
+      e outro igual entra depois — a letra certa nunca some de vez.
+      A pressa vem do movimento, não de cronômetro.
+
+   3. O nome dela aparece se formando no varal, letra por letra. É o
+      prêmio acontecendo em tempo real, não só no fim.
+   =================================================================== */
+
+const $ = id => document.getElementById(id);
+
+addEventListener("error", e => {
+  const r = $("recado");
+  if(!r) return;
+  r.textContent = "Erro: " + e.message + (e.lineno ? " (linha " + e.lineno + ")" : "");
+  r.classList.remove("escondida");
+});
+$("recado").addEventListener("click", () => $("recado").classList.add("escondida"));
+
+const dizer = t => { if(typeof fala === "function") try{ fala(t); }catch(e){} };
+const som   = f => { if(typeof f === "function") try{ f(); }catch(e){} };
+
+/* cores alegres para os balões, sorteadas sem repetir a da vizinha */
+const CORES = ["#FF6FB0","#5FC4E8","#FFC93C","#8B5CE0","#4FCB8B","#FF8A5C","#E85D9C","#3FBFC4"];
+
+let nome = "", letras = [], posicao = 0, rodando = false;
+let relogioSolta = null, contadorId = 0;
+
+function letrasDoNome(){
+  const n = (typeof nomeDela === "function") ? nomeDela() : "";
+  return n.toUpperCase().replace(/[^A-ZÀ-Ú]/g, "").split("");
+}
+
+/* ---------- o varal ---------- */
+function montaVaral(){
+  const v = $("varal");
+  v.innerHTML = "";
+  // as vagas encolhem conforme o nome cresce, para caber sem quebrar linha
+  const largura = Math.min(56, Math.max(26, Math.floor((v.clientWidth - 20) / letras.length) - 6));
+  v.style.setProperty("--vaga", largura + "px");
+
+  letras.forEach((L, i) => {
+    const d = document.createElement("div");
+    d.className = "vaga";
+    d.dataset.i = i;
+    d.textContent = L;
+    v.appendChild(d);
+  });
+  atualizaVaral();
+}
+
+function atualizaVaral(){
+  document.querySelectorAll(".vaga").forEach((d, i) => {
+    d.classList.toggle("cheia", i < posicao);
+    d.classList.toggle("dica", i === posicao);
+  });
+}
+
+/* ---------- balões ---------- */
+function soltaBalao(letra, forcada){
+  const ceu = $("ceu");
+  const L = ceu.clientWidth, A = ceu.clientHeight;
+  if(L < 40) return;
+
+  const tam = Math.max(54, Math.min(92, Math.round(L / 5.2)));
+  const b = document.createElement("button");
+  b.className = "balao";
+  b.style.width = tam + "px";
+  b.style.height = Math.round(tam * 1.25) + "px";
+  b.style.left = Math.round(Math.random() * (L - tam)) + "px";
+  b.style.top  = A + "px";
+  b.dataset.letra = letra;
+  b.dataset.id = ++contadorId;
+
+  const cor = CORES[Math.floor(Math.random() * CORES.length)];
+  b.innerHTML =
+    '<div class="corpo" style="background:' + cor + '; font-size:' + Math.round(tam * .52) + 'px">' +
+      letra +
+    '</div><div class="cordinha"></div>';
+
+  // subida mais lenta quando é a letra da vez, para ela ter tempo de mirar
+  const segundos = forcada ? 9 : (7 + Math.random() * 3);
+  b.style.animationDuration = segundos + "s";
+  b.classList.add("subindo");
+
+  b.addEventListener("click", () => tocaBalao(b));
+  b.addEventListener("animationend", e => {
+    if(e.animationName === "sobe") b.remove();
+  });
+
+  ceu.appendChild(b);
+}
+
+function letraDaVez(){ return letras[posicao]; }
+
+/* Garante que a letra certa esteja sempre no céu. Sem isso ela pode
+   ficar olhando balões que não servem, e a brincadeira trava. */
+function garanteLetraCerta(){
+  const alvo = letraDaVez();
+  if(!alvo) return;
+  const existe = Array.from(document.querySelectorAll(".balao"))
+    .some(b => b.dataset.letra === alvo && !b.classList.contains("estourou"));
+  if(!existe) soltaBalao(alvo, true);
+}
+
+function proximoBalao(){
+  if(!rodando) return;
+  const alvo = letraDaVez();
+  if(!alvo) return;
+
+  // metade das vezes solta a letra certa; o resto são distrações
+  const outras = letras.filter(x => x !== alvo);
+  const usaCerta = Math.random() < 0.5 || !outras.length;
+  soltaBalao(usaCerta ? alvo : outras[Math.floor(Math.random() * outras.length)]);
+  garanteLetraCerta();
+
+  relogioSolta = setTimeout(proximoBalao, 1100 + Math.random() * 700);
+}
+
+/* ---------- toque ---------- */
+function tocaBalao(b){
+  if(!rodando || b.classList.contains("estourou")) return;
+  const alvo = letraDaVez();
+
+  if(b.dataset.letra !== alvo){
+    // errar não custa nada: só um empurrãozinho e a dica falada
+    b.classList.remove("errou");
+    void b.offsetWidth;
+    b.classList.add("errou");
+    som(typeof somErrou === "function" ? somErrou : null);
+    dizer("Agora é a letra " + alvo + "!");
+    return;
+  }
+
+  b.classList.add("estourou");
+  setTimeout(() => b.remove(), 320);
+  faiscas(b);
+  som(typeof somAchou === "function" ? somAchou : null);
+
+  posicao++;
+  atualizaVaral();
+
+  if(posicao >= letras.length){ terminou(); return; }
+  dizer("Letra " + alvo + "!");
+  garanteLetraCerta();
+}
+
+function faiscas(b){
+  const ceu = $("ceu");
+  const x = parseFloat(b.style.left) + b.offsetWidth / 2;
+  const y = parseFloat(b.style.top) + b.offsetHeight / 2;
+  const t = b.getBoundingClientRect();
+  const c = ceu.getBoundingClientRect();
+  const px = t.left - c.left + t.width / 2;
+  const py = t.top - c.top + t.height / 2;
+
+  for(let i = 0; i < 7; i++){
+    const f = document.createElement("div");
+    f.className = "faisca";
+    f.textContent = ["✨","⭐","💖"][i % 3];
+    f.style.left = px + "px";
+    f.style.top  = py + "px";
+    f.style.setProperty("--fx", (Math.random() * 80 - 40) + "px");
+    f.style.setProperty("--fy", (-30 - Math.random() * 50) + "px");
+    ceu.appendChild(f);
+    setTimeout(() => f.remove(), 650);
+  }
+}
+
+/* ---------- fim ---------- */
+function terminou(){
+  rodando = false;
+  clearTimeout(relogioSolta);
+  document.querySelectorAll(".balao").forEach(b => b.remove());
+
+  const foto = (typeof imgDaAmiga === "function") ? imgDaAmiga() : null;
+  $("festaAmiga").innerHTML = foto ? '<img src="' + foto + '" alt="">' : "🦄";
+  $("festaNome").textContent = nome;
+  $("festa").classList.add("visivel");
+
+  som(typeof somVitoria === "function" ? somVitoria : null);
+  setTimeout(() => dizer("Você escreveu " + nome + "! Todinho, sozinha!"), 300);
+
+  if(typeof concluiuDesafio === "function"){
+    const m = concluiuDesafio();
+    setTimeout(() => {
+      if(typeof premiar === "function"){
+        premiar(() => { if(m.completouAgora && typeof festejaMissao === "function") festejaMissao(); });
+      }
+    }, 2200);
+  }
+}
+
+/* ---------- início ---------- */
+function comeca(){
+  letras = letrasDoNome();
+  nome = (typeof nomeDela === "function") ? nomeDela() : "";
+
+  if(letras.length < 2){
+    $("recado").textContent = "Nenhum nome está gravado neste aparelho. Abra a tela inicial (🏠) e preencha o nome dela em \"Quem vai brincar?\".";
+    $("recado").classList.remove("escondida");
+    return;
+  }
+
+  posicao = 0;
+  rodando = true;
+  $("festa").classList.remove("visivel");
+  montaVaral();
+  document.querySelectorAll(".balao").forEach(b => b.remove());
+
+  som(typeof somComeco === "function" ? somComeco : null);
+  setTimeout(() => dizer("Estoura os balões e escreve o seu nome! Comece pela letra " + letras[0] + "."), 400);
+
+  clearTimeout(relogioSolta);
+  proximoBalao();
+}
+
+$("btnCasa").addEventListener("click", () => { location.href = "index.html"; });
+$("btnDeNovo").addEventListener("click", comeca);
+addEventListener("resize", () => { if(letras.length) montaVaral(); });
+
+comeca();
+</script>
+</body>
+</html>
