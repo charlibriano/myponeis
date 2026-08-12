@@ -100,6 +100,18 @@ body{
   0%,100%{ transform:translate3d(0,0,0)    scale(1); }
   50%    { transform:translate3d(0,-14%,0) scale(1.08); }
 }
+.item.letra{
+  font-family:'Baloo 2', system-ui, sans-serif;
+  font-weight:800;
+  color:#fff;
+  background:linear-gradient(180deg,#FF8FC0 0%,#E3488F 100%);
+  border:3px solid #fff;
+  border-radius:14px;
+  box-shadow:0 3px 0 #C43A79;
+  text-shadow:0 2px 3px rgba(120,20,70,.5);
+}
+.item.letra.proxima{ box-shadow:0 3px 0 #C43A79, 0 0 0 4px rgba(255,201,60,.85); }
+
 .item.sumindo{ animation:itemPego .45s ease-out forwards; }
 @keyframes itemPego{
   0%  { transform:translate3d(0,0,0)     scale(1);   opacity:1; }
@@ -458,6 +470,7 @@ function desenha(){
   cx.appendChild(p);
 
   desenhaItens();
+  marcaProximaLetra();
   desenhaRastro();
 }
 
@@ -477,7 +490,10 @@ function desenhaItens(){
     cx.appendChild(d);
   };
 
-  macas.forEach((m, i) => { if(!m.pego) poe(m.r, m.c, cenario.item, "maca-" + i); });
+  macas.forEach((m, i) => {
+    if(m.pego) return;
+    poe(m.r, m.c, m.letra || cenario.item, "maca-" + i + (m.letra ? " letra" : ""));
+  });
   if(chave && !chave.pego) poe(chave.r, chave.c, "🔑", "chave");
 
   // portão barrando a chegada enquanto a chave não aparecer
@@ -504,6 +520,8 @@ const GIRO = { cima:0, dir:90, baixo:180, esq:270 };
 
 /* itens do labirinto */
 let macas = [];          // [{r, c, pego}]
+let rodadaDeLetras = false;   // nesta rodada os itens são as letras do nome dela
+let letras = [];              // as letras em ordem, ex.: ['A','L','E']
 let chave = null;        // {r, c, pego} ou null nos níveis iniciais
 let temChave = false;
 
@@ -555,8 +573,28 @@ function casasAlcancaveis(){
   return vistas;
 }
 
+/* Ela já sabe escrever o nome, e reconhecer letra solta é o passo
+   seguinte. A cada três labirintos, os itens deixam de ser maçãs e
+   viram as letras do nome dela, para pegar na ordem certa. A voz diz
+   cada letra e, no fim, lê o nome inteiro.
+
+   Não é rodada de treino: continua sendo labirinto. A letra só ocupa
+   o lugar da fruta. */
+function nomeEmLetras(){
+  const n = (typeof nomeDela === "function") ? nomeDela() : "";
+  return n.toUpperCase().replace(/[^A-ZÀ-Ú]/g, "").split("").slice(0, 6);
+}
+
 function espalhaItens(){
   macas = []; chave = null; temChave = false;
+  letras = [];
+  rodadaDeLetras = false;
+
+  const doNome = nomeEmLetras();
+  if(doNome.length >= 2 && nivel % 3 === 0){   // 3º, 6º, 9º labirinto...
+    rodadaDeLetras = true;
+    letras = doNome;
+  }
 
   const ok = casasAlcancaveis();
   let becos = becosSemSaida().filter(([r, c]) => ok.has(r + "," + c));
@@ -584,9 +622,21 @@ function espalhaItens(){
     k = 1;
   }
 
-  const quantas = Math.min(becos.length - k, nivel <= 2 ? 2 : 3);
+  const quantas = rodadaDeLetras
+    ? Math.min(becos.length - k, letras.length)
+    : Math.min(becos.length - k, nivel <= 2 ? 2 : 3);
+
   for(let i = 0; i < quantas; i++){
-    macas.push({ r: becos[k + i][0], c: becos[k + i][1], pego:false });
+    macas.push({
+      r: becos[k + i][0], c: becos[k + i][1], pego:false,
+      letra: rodadaDeLetras ? letras[i] : null
+    });
+  }
+
+  // numa rodada de letras, o nome não pode ficar incompleto por falta de beco
+  if(rodadaDeLetras && macas.length < letras.length){
+    rodadaDeLetras = false;
+    macas.forEach(m => m.letra = null);
   }
   temChave = !usaChave;      // sem chave no mapa, o portão nem existe
 }
@@ -688,15 +738,35 @@ function recolhe(){
 
   macas.forEach((m, i) => {
     if(m.pego || m.r !== pr || m.c !== pc) return;
+
+    // na rodada de letras a ordem importa: o nome se escreve da esquerda para a direita
+    if(rodadaDeLetras){
+      const esperada = macas.findIndex(x => !x.pego);
+      if(i !== esperada){
+        tocar(typeof somErrou === "function" ? somErrou : null);
+        dizer("Essa não! Primeiro a letra " + macas[esperada].letra + ".");
+        return;
+      }
+    }
+
     m.pego = true;
     const el = cx.querySelector(".maca-" + i);
     if(el){ el.classList.add("sumindo"); setTimeout(() => el.remove(), 450); }
     tocar(typeof somAchou === "function" ? somAchou : null);
+
     const faltam = macas.filter(x => !x.pego).length;
-    dizer(faltam
-      ? "Pegou uma " + cenario.oQue + "! " + (faltam === 1 ? "Falta uma." : "Faltam " + faltam + ".")
-      : "Pegou todas as " + cenario.oQuePl + "!");
+    if(rodadaDeLetras){
+      const escrito = macas.filter(x => x.pego).map(x => x.letra).join("");
+      dizer(faltam
+        ? "Letra " + m.letra + "! Já temos " + escrito.split("").join(", ") + "."
+        : "Você escreveu o seu nome: " + escrito + "!");
+    }else{
+      dizer(faltam
+        ? "Pegou uma " + cenario.oQue + "! " + (faltam === 1 ? "Falta uma." : "Faltam " + faltam + ".")
+        : "Pegou todas as " + cenario.oQuePl + "!");
+    }
     $("mMacas").textContent = macas.filter(x => x.pego).length + "/" + macas.length;
+    marcaProximaLetra();
   });
 
   if(chave && !chave.pego && chave.r === pr && chave.c === pc){
@@ -709,6 +779,17 @@ function recolhe(){
     tocar(typeof somVitoria === "function" ? somVitoria : null);
     dizer("Achou a chavinha! O portão abriu.");
   }
+}
+
+/* a próxima letra da vez ganha um halo dourado, para ela saber qual buscar */
+function marcaProximaLetra(){
+  const cx = $("labirinto");
+  cx.querySelectorAll(".item.letra").forEach(e => e.classList.remove("proxima"));
+  if(!rodadaDeLetras) return;
+  const i = macas.findIndex(x => !x.pego);
+  if(i < 0) return;
+  const el = cx.querySelector(".maca-" + i);
+  if(el) el.classList.add("proxima");
 }
 
 /* setas */
@@ -769,7 +850,7 @@ function novaRodada(){
   }
 
   proximoCenario();
-  $("rotuloItem").textContent = cenario.oQuePl;
+  $("rotuloItem").textContent = rodadaDeLetras ? "Letras" : cenario.oQuePl;
   geraLabirinto(linhas, colunas);
   espalhaItens();
   desenha();
@@ -778,9 +859,16 @@ function novaRodada(){
 
   tocar(typeof somComeco === "function" ? somComeco : null);
   const quem = (amigaAtual && amigaAtual.nome) ? amigaAtual.nome : "a amiga";
-  setTimeout(() => dizer("Agora vamos para " + cenario.nome + "! " + (chave
-      ? "Acha a chavinha para abrir o portão, e leva o pônei até " + quem + "."
-      : "Leva o pônei até " + quem + ", e pega as " + cenario.oQuePl + " pelo caminho.")), 400);
+  setTimeout(() => {
+    if(rodadaDeLetras){
+      dizer("Agora vamos para " + cenario.nome + "! Pegue as letras do seu nome, na ordem certa. "
+          + "Comece pela letra " + letras[0] + ".");
+    }else{
+      dizer("Agora vamos para " + cenario.nome + "! " + (chave
+        ? "Acha a chavinha para abrir o portão, e leva o pônei até " + quem + "."
+        : "Leva o pônei até " + quem + ", e pega as " + cenario.oQuePl + " pelo caminho."));
+    }
+  }, 400);
   agendaDica();
 }
 
@@ -821,9 +909,13 @@ function chegou(){
   poneiCaminha(() => {
     tocar(typeof somVitoria === "function" ? somVitoria : null);
     const todas = macas.length && macas.every(m => m.pego);
-    dizer(todas
-      ? "O pônei chegou até " + quem + ", e você pegou todas as " + cenario.oQuePl + "!"
-      : "O pônei chegou até " + quem + "!");
+    if(todas && rodadaDeLetras){
+      dizer("O pônei chegou até " + quem + ", e você escreveu " + nomeDela() + " inteirinho!");
+    }else{
+      dizer(todas
+        ? "O pônei chegou até " + quem + ", e você pegou todas as " + cenario.oQuePl + "!"
+        : "O pônei chegou até " + quem + "!");
+    }
     chuvaDeEstrelas();
     const m = concluiuDesafio();
     setTimeout(() => premiar(() => {
