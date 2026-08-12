@@ -343,6 +343,7 @@ body{
 </div>
 
 <script src="voz.js"></script>
+<script src="perfil.js"></script>
 <script src="album.js"></script>
 <script>
 /* ===================================================================
@@ -747,7 +748,7 @@ function virar(btn){
     if(achados === totalPares){
       setTimeout(terminar, 700);
     }else{
-      setTimeout(() => fala(escolhe(ELOGIOS) + ' ' + a.dataset.nome + '!'), 500);
+      setTimeout(() => fala(comNome(escolhe(ELOGIOS)) + ' ' + a.dataset.nome + '!'), 500);
       agendaDica();
     }
   }else{
@@ -778,8 +779,10 @@ function agendaDica(){
 function terminar(){
   $("fim-detalhe").textContent = totalPares + " pares em " + jogadas + " jogadas";
   cancelaDica();
+  const m = concluiuDesafio();
   // o prêmio vem primeiro: é ele que faz ela querer jogar de novo
   premiar(() => {
+    if(m.completouAgora) festejaMissao();
     mostrarTela("tela-fim");
     chuvaDeEstrelas();
   });
