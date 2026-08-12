@@ -200,8 +200,13 @@ body::before{
 }
 
 /* respeita quem prefere menos movimento (e poupa bateria) */
+/* Respeita "Reduzir movimento" do sistema — mas o pai pode forçar as
+   animações pela chave na barra de aviso, que põe .animar-sempre no <html>.
+   Quem ligou a preferência foi ele, no aparelho, não a criança. */
 @media (prefers-reduced-motion: reduce){
-  html *, body::before, body::after{
+  html:not(.animar-sempre) *,
+  html:not(.animar-sempre) body::before,
+  html:not(.animar-sempre) body::after{
     animation:none !important;
   }
 }
