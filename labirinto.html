@@ -209,7 +209,24 @@ body{
   background:rgba(255,246,201,.92); text-align:center; padding:20px;
 }
 #festa.visivel{ display:flex; }
-#festa .titulo{ font-size:clamp(30px,10vw,48px); font-weight:800; color:var(--roxo); text-shadow:0 3px 0 #fff; }
+#festa .titulo{ font-size:clamp(26px,8vw,40px); font-weight:800; color:var(--roxo); text-shadow:0 3px 0 #fff; }
+#festa .retratoPremio{
+  position:relative; width:min(52vw,190px); aspect-ratio:1;
+  border-radius:50%; overflow:visible;
+  border:6px solid var(--amarelo); background:#fff;
+  box-shadow:0 10px 26px rgba(107,63,191,.3);
+  animation:premioPula .6s cubic-bezier(.2,1.5,.4,1) both;
+}
+#festa .retratoPremio > img{
+  width:100%; height:100%; border-radius:50%;
+  object-fit:cover; object-position:center 34%;
+}
+@keyframes premioPula{
+  0%  { transform:scale(.3) rotate(-20deg); opacity:0; }
+  100%{ transform:scale(1) rotate(0); opacity:1; }
+}
+#festa .nomeEnfeite{ font-size:20px; font-weight:800; color:var(--rosa); }
+#festa .contaEnfeite{ font-size:13px; font-weight:600; color:#8A6FBF; }
 #festa .botao{
   border:none; border-radius:22px; cursor:pointer; font-family:inherit;
   font-weight:800; font-size:22px; color:#fff; padding:16px 30px;
@@ -285,6 +302,9 @@ body{
 
 <div id="festa">
   <div class="titulo" id="festaTitulo">Chegou!</div>
+  <div class="retratoPremio" id="retratoPremio"></div>
+  <div class="nomeEnfeite" id="nomeEnfeite"></div>
+  <div class="contaEnfeite" id="contaEnfeite"></div>
   <button class="botao" id="btnProximo">Outro labirinto</button>
 </div>
 
@@ -292,6 +312,7 @@ body{
 <script src="frases.js"></script>
 <script src="voz.js"></script>
 <script src="perfil.js"></script>
+<script src="enfeites.js"></script>
 <script src="album.js"></script>
 <script>
 /* ===================================================================
@@ -928,10 +949,23 @@ function chegou(){
       : "O pônei chegou até " + quem + "!");
     chuvaDeEstrelas();
     const m = concluiuDesafio();
-    setTimeout(() => premiar(() => {
+
+    /* O prêmio de cada labirinto é um enfeite novo para a pônei amiga:
+       ela passa a usá-lo, e isso aparece no menu toda vez que o jogo
+       abre. A figurinha do álbum ficou para cada terceiro labirinto,
+       senão as 32 acabam rápido e o prêmio perde a graça. */
+    const enfeite = (typeof ganhaEnfeite === "function") ? ganhaEnfeite() : null;
+    mostraPremioDoLabirinto(enfeite);
+
+    setTimeout(() => {
       $("festa").classList.add("visivel");
-      if(m.completouAgora) festejaMissao();
-    }), 1100);
+      const daFigurinha = (nivel % 3 === 0) && typeof premiar === "function";
+      if(daFigurinha){
+        premiar(() => { if(m.completouAgora) festejaMissao(); });
+      }else if(m.completouAgora){
+        festejaMissao();
+      }
+    }, 1100);
   });
 }
 
@@ -969,6 +1003,23 @@ document.querySelectorAll(".nivelBtn").forEach(b => {
 });
 
 $("btnNivel").addEventListener("click", abreEscolha);
+
+/* monta a tela de prêmio: a amiga usando o enfeite conquistado */
+function mostraPremioDoLabirinto(enfeite){
+  const caixa = $("retratoPremio");
+  const foto = (typeof imgDaAmiga === "function") ? imgDaAmiga() : null;
+  caixa.innerHTML = foto ? '<img src="' + foto + '" alt="">' : "";
+
+  if(enfeite && typeof poeEnfeite === "function"){
+    poeEnfeite(caixa, enfeite);
+    $("nomeEnfeite").textContent = "Ganhou: " + enfeite.nome + "!";
+    $("contaEnfeite").textContent = quantosEnfeites() + " de " + totalEnfeites() + " enfeites";
+  }else{
+    if(typeof poeEnfeite === "function") poeEnfeite(caixa);
+    $("nomeEnfeite").textContent = "Você já tem todos os enfeites!";
+    $("contaEnfeite").textContent = "";
+  }
+}
 
 function chuvaDeEstrelas(){
   const s = ["⭐","✨","🌈","💖","🦄"];
