@@ -184,45 +184,131 @@ function novaRodadaSumiu(){
   el('opcoes').innerHTML = '';
 
   const mesa = el('tabuleiro');
+  desenhaMesa(sMesa);
+
+  /* ANTES: aqui o jogo disparava faíscas e um som em cima do pônei
+     escolhido, um instante antes de ele sumir. Era só olhar onde
+     brilhou. Agora nada distingue o alvo enquanto todos estão à vista. */
+
+  depois(()=>{
+    fechaCortina(()=>{
+      // a nuvem cobre a mesa; a troca acontece escondida
+      const restantes = sMesa.filter(p => p !== sAlvo);
+      restantes.sort(()=>Math.random()-.5);   // embaralha: o buraco entregaria a posição
+      desenhaMesa(restantes);
+    }, ()=>{
+      el('balaoSumiu').textContent = 'Quem sumiu?';
+      el('rotuloOpcoes').textContent = 'Toque no pônei que faltou';
+      montaOpcoes();
+      sTravado = false;
+    });
+  }, 4200);
+}
+
+/* desenha os pôneis da mesa */
+function desenhaMesa(lista){
+  const mesa = el('tabuleiro');
   mesa.innerHTML = '';
-  sMesa.forEach(p=>{
+  lista.forEach(p=>{
     const d = document.createElement('div');
     d.className = 'carta fixa';
     d.dataset.nome = p.nome;
     d.innerHTML = retrato(p);
     mesa.appendChild(d);
   });
-
-  fala('Olha bem nos pôneis!');
-
-  depois(()=>{
-    const alvoEl = [...mesa.children].find(c => c.dataset.nome === sAlvo.nome);
-    if(alvoEl){
-      bip([520,380],.12);
-      festa(alvoEl);
-      alvoEl.classList.add('sumindo');
-      depois(()=>{
-        alvoEl.classList.remove('sumindo','fixa');
-        alvoEl.classList.add('vazia');
-        alvoEl.innerHTML = '<span class="interrogacao">?</span>';
-      }, 520);
-    }
-    depois(()=>{
-      el('balaoSumiu').textContent = 'Quem sumiu?';
-      el('rotuloOpcoes').textContent = 'Toque no pônei que faltou';
-      fala('Quem sumiu?');
-      montaOpcoes();
-      sTravado = false;
-    }, 900);
-  }, 4500);
 }
 
+/* ---------- a nuvem que cobre a mesa ----------
+   Some com todos ao mesmo tempo, e não com um só. Assim o momento do
+   sumiço não denuncia quem sumiu, e a mesa pode ser reorganizada por
+   trás sem que ela veja de onde o buraco saiu. */
+function fechaCortina(duranteEscondido, aoAbrir){
+  const mesa = el('tabuleiro');
+  if(getComputedStyle(mesa).position === 'static') mesa.style.position = 'relative';
+
+  const c = document.createElement('div');
+  c.className = 'cortina';
+  c.innerHTML =
+    '<div class="nuvem n1"></div><div class="nuvem n2"></div><div class="nuvem n3"></div>' +
+    '<div class="magia">✨</div>';
+  mesa.appendChild(c);
+
+  bip([440, 560], .12);
+
+  depois(()=>{
+    c.classList.add('cheia');
+    if(typeof duranteEscondido === 'function') duranteEscondido();
+    depois(()=>{
+      c.classList.add('abrindo');
+      bip([660, 880], .12);
+      depois(()=>{
+        c.remove();
+        if(typeof aoAbrir === 'function') aoAbrir();
+      }, 620);
+    }, 700);
+  }, 60);
+}
+
+/* estilos da nuvem, injetados daqui para não precisar mexer no CSS */
+(function estiloCortina(){
+  if(document.getElementById('estiloCortina')) return;
+  const st = document.createElement('style');
+  st.id = 'estiloCortina';
+  st.textContent = `
+    .cortina{ position:absolute; inset:-8px; z-index:20; pointer-events:none; overflow:hidden; }
+    .cortina .nuvem{
+      position:absolute; border-radius:50%;
+      background:radial-gradient(circle at 40% 34%, #fff 0%, #EEF6FF 70%);
+      box-shadow:0 6px 20px rgba(80,110,160,.28);
+      opacity:0; transform:scale(.2);
+      transition:opacity .5s ease, transform .6s cubic-bezier(.2,1.3,.4,1);
+    }
+    .cortina .n1{ left:-8%;  top:-16%; width:74%; height:96%; }
+    .cortina .n2{ left:28%;  top:-26%; width:78%; height:112%; transition-delay:.08s; }
+    .cortina .n3{ left:8%;   top:14%;  width:88%; height:96%;  transition-delay:.16s; }
+    .cortina.cheia .nuvem{ opacity:1; transform:scale(1); }
+    .cortina .magia{
+      position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+      font-size:44px; opacity:0; transition:opacity .3s ease, transform .5s ease;
+      transform:scale(.4) rotate(-25deg);
+    }
+    .cortina.cheia .magia{ opacity:1; transform:scale(1) rotate(0); }
+    .cortina.abrindo .nuvem{ opacity:0; transform:scale(1.5) translateY(-14%); }
+    .cortina.abrindo .magia{ opacity:0; transform:scale(2) rotate(20deg); }
+    .carta.voltando{ animation:poneiVolta .55s cubic-bezier(.2,1.6,.4,1) both; }
+    @keyframes poneiVolta{
+      0%  { transform:scale(.2) rotate(-25deg); opacity:0; }
+      100%{ transform:scale(1) rotate(0); opacity:1; }
+    }
+  `;
+  document.head.appendChild(st);
+})();
+
 function montaOpcoes(){
+  /* Os pôneis errados agora vêm de QUEM ESTAVA NA MESA e continua lá.
+
+     Antes eram sorteados entre os que nunca apareceram — então bastava
+     apontar o único conhecido, sem lembrar de nada. Com todos vindos da
+     mesa, ela precisa olhar quem sobrou e achar o ausente. É esse o
+     jogo.
+
+     Quantidade cresce com a rodada: 3 opções no começo, 4 depois. */
   const escolhas = [sAlvo];
-  const fora = sGrupo.filter(p => !sMesa.includes(p));
-  while(escolhas.length < 3 && escolhas.length - 1 < fora.length){
-    const p = sorteia(fora);
+  const aindaNaMesa = sMesa.filter(p => p !== sAlvo);
+  const quantas = sRodada <= 3 ? 3 : 4;
+
+  while(escolhas.length < quantas && escolhas.length - 1 < aindaNaMesa.length){
+    const p = sorteia(aindaNaMesa);
     if(!escolhas.includes(p)) escolhas.push(p);
+  }
+
+  // mesa pequena demais para encher as opções: completa com os de fora
+  if(escolhas.length < 3){
+    const fora = sGrupo.filter(p => !sMesa.includes(p));
+    while(escolhas.length < 3 && fora.length){
+      const p = sorteia(fora);
+      if(!escolhas.includes(p)) escolhas.push(p);
+    }
   }
   escolhas.sort(()=>Math.random()-.5);
 
@@ -247,10 +333,19 @@ function respondeSumiu(p, botao){
     contaDesafio();
     botao.classList.add('certa');
     [...document.querySelectorAll('#opcoes .carta')].forEach(c=>{ if(c!==botao) c.classList.add('apagada'); });
-    const vazia = document.querySelector('#tabuleiro .vazia');
-    if(vazia){ vazia.classList.remove('vazia'); vazia.classList.add('fixa','certa'); vazia.innerHTML = retrato(sAlvo); }
+    /* o pônei volta para a mesa, entrando com destaque. A lacuna com "?"
+       não existe mais: a mesa é redesenhada sem buraco, senão a posição
+       vazia entregaria a resposta. */
+    const mesa = el('tabuleiro');
+    const d = document.createElement('div');
+    d.className = 'carta fixa certa voltando';
+    d.dataset.nome = sAlvo.nome;
+    d.innerHTML = retrato(sAlvo);
+    mesa.appendChild(d);
+
     bip([660,880,1180],.11);
     festa(botao);
+    festa(d);
     fala(sorteia(['Isso!','Muito bem!','Boa!','Acertou!']) + ' ' + (sAlvo.art==='a'?'Era a ':'Era o ') + sAlvo.nome + '!');
     depois(novaRodadaSumiu, 2600);
   }else{
