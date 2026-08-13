@@ -343,6 +343,98 @@ body{
 /* os cartões agora usam ícones desenhados, não fotos — não há
    imagem que possa falhar */
 
+/* ===================================================================
+   PERFIL: primeira vez, e a recepção da amiga
+   =================================================================== */
+injetaEstiloPerfil();
+
+let amigaEscolhida = null;
+
+function montaEscolha(){
+  const cx = document.getElementById("escolhaAmigas");
+  cx.innerHTML = "";
+  AMIGAS.forEach(nome => {
+    const b = document.createElement("button");
+    b.innerHTML = '<img src="imagens/' + encodeURIComponent(nome) + '.png" alt="' + nome + '">';
+    b.addEventListener("click", () => {
+      amigaEscolhida = nome;
+      cx.querySelectorAll("button").forEach(x => x.classList.remove("marcada"));
+      b.classList.add("marcada");
+      // ela não lê ainda, mas o pai precisa saber quem escolheu
+      document.getElementById("nomeDaAmiga").textContent = nome;
+      if(typeof somToque === "function") somToque();
+      confereBotao();
+    });
+    cx.appendChild(b);
+  });
+}
+
+/* o botão só ganha cor quando há nome e amiga escolhidos — assim ele
+   não parece quebrado quando o toque não faz nada */
+function confereBotao(){
+  const pronto = document.getElementById("campoNome").value.trim() !== "" && amigaEscolhida;
+  document.getElementById("btnComecar").classList.toggle("esperando", !pronto);
+}
+
+function abreApresentacao(){
+  montaEscolha();
+  document.getElementById("campoNome").addEventListener("input", confereBotao);
+  document.getElementById("apresentacao").classList.add("visivel");
+}
+
+document.getElementById("btnComecar").addEventListener("click", () => {
+  const nome = document.getElementById("campoNome").value.trim();
+  if(!nome){ document.getElementById("campoNome").focus(); return; }
+  if(!amigaEscolhida) amigaEscolhida = AMIGAS[0];
+
+  const p = perfil();
+  p.nome = nome;
+  p.amiga = amigaEscolhida;
+  salvaPerfil(p);
+
+  document.getElementById("apresentacao").classList.remove("visivel");
+  mostraRecepcao();
+  if(typeof somVitoria === "function") somVitoria();
+});
+
+function mostraRecepcao(){
+  if(!temPerfil()) return;
+  const m = missao();
+  const feito = m.feitos >= DESAFIOS_POR_DIA;
+
+  const foto = document.getElementById("amigaFoto");
+  foto.innerHTML = '<img src="' + imgDaAmiga() + '" alt="' + amigaDela() + '">';
+  // é AQUI que o enfeite ganho nos labirintos aparece, todo dia
+  if(typeof poeEnfeite === "function") poeEnfeite(foto);
+  document.getElementById("amigaOi").textContent = "Oi, " + nomeDela() + "!";
+  document.getElementById("amigaTarefa").textContent = feito
+    ? "Missão de hoje cumprida!"
+    : "Faltam " + (DESAFIOS_POR_DIA - m.feitos) + " brincadeiras hoje";
+  document.getElementById("fitaAqui").innerHTML = fitaDaMissao();
+  document.getElementById("recepcao").style.display = "flex";
+}
+
+if(temPerfil()) mostraRecepcao(); else abreApresentacao();
+
+/* a amiga fala no primeiro toque da tela — antes disso o celular
+   não deixa sair som nenhum */
+let jaSaudou = false;
+addEventListener("pointerdown", () => {
+  if(jaSaudou || !temPerfil()) return;
+  jaSaudou = true;
+  const m = missao();
+  if(typeof fala !== "function") return;
+  fala(m.feitos >= DESAFIOS_POR_DIA
+    ? "Oi " + nomeDela() + "! Você já fez tudo hoje. Quer brincar mais?"
+    : "Oi " + nomeDela() + "! Faltam " + (DESAFIOS_POR_DIA - m.feitos) + " brincadeiras para terminar a missão de hoje.");
+}, { once:false });
+
+/* o menu mostra quantas ela já tem — o progresso fica visível na abertura */
+try{
+  const q = document.getElementById("quantasTenho");
+  if(q && typeof quantasTem === "function") q.textContent = quantasTem() + " de " + totalDoAlbum() + " pôneis";
+}catch(e){}
+
 function faiscasNoToque(b){
   const r = b.getBoundingClientRect();
   const simbolos = ["✨", "⭐", "💖"];
