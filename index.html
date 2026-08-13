@@ -62,6 +62,38 @@ body{
   background:#F3ECFF;
 }
 .jogo .icone svg{ width:100%; height:100%; }
+
+/* os ícones balançam sozinhos, cada um no seu tempo, para o menu não
+   parecer uma tabela parada */
+.jogo .icone{ animation:iconeBoia 3.6s ease-in-out infinite; }
+.jogo:nth-child(2) .icone{ animation-delay:.0s; }
+.jogo:nth-child(3) .icone{ animation-delay:.5s; }
+.jogo:nth-child(4) .icone{ animation-delay:1.0s; }
+.jogo:nth-child(5) .icone{ animation-delay:1.5s; }
+.jogo:nth-child(6) .icone{ animation-delay:2.0s; }
+@keyframes iconeBoia{
+  0%,100%{ transform:translateY(0)    rotate(-2deg); }
+  50%    { transform:translateY(-5px) rotate(2deg); }
+}
+
+/* ao tocar, o ícone dá um pulo antes de trocar de página */
+.jogo.tocado .icone{ animation:iconePula .42s cubic-bezier(.2,1.6,.4,1); }
+@keyframes iconePula{
+  0%  { transform:scale(1)    rotate(0); }
+  40% { transform:scale(1.28) rotate(-9deg); }
+  70% { transform:scale(.94)  rotate(5deg); }
+  100%{ transform:scale(1)    rotate(0); }
+}
+.jogo.tocado{ box-shadow:0 2px 0 #D9C6F2, 0 0 0 4px rgba(255,111,176,.35); }
+
+.faiscaMenu{
+  position:fixed; pointer-events:none; z-index:60; font-size:20px;
+  animation:faiscaMenuVoa .55s ease-out forwards;
+}
+@keyframes faiscaMenuVoa{
+  from{ transform:translate3d(0,0,0) scale(.5); opacity:1; }
+  to  { transform:translate3d(var(--fx,0), var(--fy,-40px),0) scale(1.25); opacity:0; }
+}
 .jogo .nome{ font-size:15px; font-weight:800; color:var(--roxo); line-height:1.1; }
 .jogo .como{ display:none; }          /* a legenda escrita não serve para ela */
 
@@ -311,15 +343,34 @@ body{
 /* os cartões agora usam ícones desenhados, não fotos — não há
    imagem que possa falhar */
 
+function faiscasNoToque(b){
+  const r = b.getBoundingClientRect();
+  const simbolos = ["✨", "⭐", "💖"];
+  for(let i = 0; i < 6; i++){
+    const f = document.createElement("div");
+    f.className = "faiscaMenu";
+    f.textContent = simbolos[i % 3];
+    f.style.left = (r.left + r.width / 2 - 10) + "px";
+    f.style.top  = (r.top + r.height / 2 - 10) + "px";
+    f.style.setProperty("--fx", (Math.random() * 90 - 45) + "px");
+    f.style.setProperty("--fy", (-25 - Math.random() * 45) + "px");
+    document.body.appendChild(f);
+    setTimeout(() => f.remove(), 600);
+  }
+}
+
 document.querySelectorAll(".jogo").forEach(b => {
   b.addEventListener("click", () => {
     const destino = b.dataset.pagina;
 
-    // a espera de 900ms existia para a fala começar antes de trocar de
-    // página. Sem falas, era só lentidão no toque.
     try{ if(typeof somToque === "function") somToque(); }catch(e){}
 
-    setTimeout(() => { location.href = destino; }, 120);
+    // o pulo do ícone e as faíscas dão retorno ao toque; 300ms é o
+    // tempo da animação, não espera inventada
+    b.classList.add("tocado");
+    faiscasNoToque(b);
+
+    setTimeout(() => { location.href = destino; }, 300);
   });
 });
 </script>
