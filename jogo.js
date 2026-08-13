@@ -179,13 +179,16 @@ function quantosNaMesa(){
    prêmio — o mesmo mecanismo do esconde-esconde de verdade.
    =================================================================== */
 
+/* Os esconderijos. Cada um tem sombra no chão, camadas de tom e um
+   destaque de luz — sem isso viravam manchas chapadas. Renderizei
+   todos antes de aplicar, para conferir a leitura de cada forma. */
 const ESCONDERIJOS = [
-  { id:"moita",  svg:'<ellipse cx="50" cy="66" rx="42" ry="30" fill="#4E9E5E"/><ellipse cx="30" cy="52" rx="24" ry="20" fill="#63BC72"/><ellipse cx="66" cy="50" rx="26" ry="21" fill="#5AAF69"/>' },
-  { id:"arvore", svg:'<rect x="43" y="52" width="14" height="42" rx="4" fill="#8B5A2B"/><circle cx="50" cy="40" r="30" fill="#4E9E5E"/><circle cx="30" cy="50" r="19" fill="#63BC72"/><circle cx="70" cy="48" r="20" fill="#5AAF69"/>' },
-  { id:"pedra",  svg:'<ellipse cx="50" cy="70" rx="40" ry="26" fill="#A9A5B8"/><ellipse cx="40" cy="58" rx="24" ry="18" fill="#C0BCCC"/>' },
-  { id:"barril", svg:'<rect x="24" y="38" width="52" height="54" rx="10" fill="#C08A4A"/><rect x="24" y="50" width="52" height="8" fill="#8B5A2B"/><rect x="24" y="72" width="52" height="8" fill="#8B5A2B"/>' },
-  { id:"feno",   svg:'<circle cx="50" cy="62" r="34" fill="#E8C46A"/><path d="M22 56q28-14 56 0M20 70q30-12 60 0" stroke="#C9A44A" stroke-width="4" fill="none"/>' },
-  { id:"casa",   svg:'<path d="M50 14 96 52H4Z" fill="#E0614F"/><rect x="16" y="52" width="68" height="42" rx="5" fill="#F6E7C8" stroke="#C9A87A" stroke-width="3"/><rect x="40" y="64" width="20" height="30" rx="9" fill="#8B5A2B"/>' }
+  { id:"moita", svg:'<ellipse cx="50" cy="90" rx="38" ry="7" fill="#3F8A4C" opacity=".35"/> <ellipse cx="28" cy="66" rx="22" ry="19" fill="#3F8F4E"/> <ellipse cx="72" cy="66" rx="22" ry="19" fill="#3F8F4E"/> <ellipse cx="50" cy="58" rx="27" ry="24" fill="#4EA75E"/> <ellipse cx="34" cy="60" rx="15" ry="13" fill="#5CBB6C"/> <ellipse cx="64" cy="56" rx="13" ry="11" fill="#63C674"/> <ellipse cx="44" cy="48" rx="9" ry="7" fill="#7BD98A" opacity=".8"/> <circle cx="70" cy="72" r="3.4" fill="#FF6FB0"/> <circle cx="30" cy="76" r="3" fill="#FFD34A"/> <ellipse cx="50" cy="88" rx="40" ry="6" fill="#4EA75E"/>' },
+  { id:"arvore", svg:'<ellipse cx="50" cy="92" rx="30" ry="6" fill="#3F8A4C" opacity=".35"/> <path d="M44 92 V62 q0-6 6-6 t6 6 V92Z" fill="#8B5A2B"/> <path d="M50 74 L38 64" stroke="#8B5A2B" stroke-width="5" stroke-linecap="round"/> <circle cx="50" cy="38" r="26" fill="#4EA75E"/> <circle cx="29" cy="48" r="17" fill="#3F8F4E"/> <circle cx="71" cy="47" r="18" fill="#45994F"/> <circle cx="43" cy="30" r="13" fill="#63C674"/> <circle cx="60" cy="34" r="9" fill="#7BD98A" opacity=".85"/> <circle cx="34" cy="55" r="4" fill="#E0614F"/> <circle cx="66" cy="58" r="3.6" fill="#E0614F"/>' },
+  { id:"pedra", svg:'<ellipse cx="50" cy="90" rx="36" ry="6" fill="#6B6478" opacity=".3"/> <path d="M12 86 L20 54 L36 40 L58 38 L76 50 L88 86Z" fill="#9B95AC"/> <path d="M20 54 L36 40 L58 38 L46 60Z" fill="#B7B2C6"/> <path d="M58 38 L76 50 L88 86 L64 78Z" fill="#8A849C"/> <path d="M12 86 L20 54 L46 60 L38 86Z" fill="#A79FB8"/> <ellipse cx="34" cy="50" rx="6" ry="3" fill="#CFCBDA" opacity=".85"/> <ellipse cx="50" cy="86" rx="40" ry="5" fill="#4EA75E"/>' },
+  { id:"barril", svg:'<ellipse cx="50" cy="92" rx="30" ry="6" fill="#6B4A24" opacity=".3"/> <path d="M26 38 q24-7 48 0 q6 24 0 50 q-24 7-48 0 q-6-26 0-50Z" fill="#C08A4A"/> <path d="M26 38 q24-7 48 0 q2 8 3 18 q-27-8-54 0 q1-10 3-18Z" fill="#D29B5A"/> <rect x="23" y="50" width="54" height="7" rx="3" fill="#7A4E21"/> <rect x="23" y="72" width="54" height="7" rx="3" fill="#7A4E21"/> <ellipse cx="50" cy="36" rx="24" ry="6" fill="#E0B27A"/> <path d="M34 44 q0 26 2 40" stroke="#A5713A" stroke-width="2" fill="none"/>' },
+  { id:"feno", svg:'<ellipse cx="50" cy="90" rx="34" ry="6" fill="#9C7A2E" opacity=".3"/> <circle cx="50" cy="58" r="32" fill="#E8C46A"/> <path d="M20 46 q30-12 60 0" stroke="#CFA84C" stroke-width="4" fill="none"/> <path d="M18 60 q32-12 64 0" stroke="#CFA84C" stroke-width="4" fill="none"/> <path d="M22 74 q28-12 56 0" stroke="#CFA84C" stroke-width="4" fill="none"/> <path d="M26 34 q10 4 14 10" stroke="#F2DA9A" stroke-width="4" fill="none" stroke-linecap="round"/> <ellipse cx="50" cy="86" rx="36" ry="5" fill="#4EA75E"/>' },
+  { id:"casa", svg:'<ellipse cx="50" cy="92" rx="34" ry="6" fill="#8A6A44" opacity=".3"/> <rect x="20" y="50" width="60" height="40" rx="5" fill="#F6E7C8"/> <rect x="20" y="50" width="60" height="40" rx="5" fill="none" stroke="#C9A87A" stroke-width="3"/> <path d="M50 12 L92 52 H8Z" fill="#E0614F"/> <path d="M50 12 L92 52 H70Z" fill="#C94F3E"/> <rect x="41" y="64" width="18" height="26" rx="8" fill="#8B5A2B"/> <circle cx="55" cy="78" r="2" fill="#E8C46A"/> <rect x="24" y="58" width="13" height="13" rx="3" fill="#9BD8F0" stroke="#C9A87A" stroke-width="2"/> <rect x="63" y="58" width="13" height="13" rx="3" fill="#9BD8F0" stroke="#C9A87A" stroke-width="2"/>' }
 ];
 
 let sEsconderijo = null;
@@ -203,12 +206,20 @@ let sEsconderijo = null;
     }
     #tabuleiro.campo .ceuCampo{
       position:absolute; inset:0;
-      background:linear-gradient(180deg,#BFE8FF 0%, #E6F6FF 100%);
+      background:
+        radial-gradient(50% 34% at 82% 12%, #FFF3B8 0%, rgba(255,243,184,0) 70%),
+        radial-gradient(26% 18% at 22% 20%, rgba(255,255,255,.95) 0%, rgba(255,255,255,0) 72%),
+        radial-gradient(20% 14% at 52% 14%, rgba(255,255,255,.85) 0%, rgba(255,255,255,0) 72%),
+        linear-gradient(180deg,#BFE8FF 0%, #E6F6FF 100%);
     }
     #tabuleiro.campo .grama{
       position:absolute; left:0; right:0; bottom:0; height:56%;
-      background:linear-gradient(180deg,#8FD68F 0%, #64B96A 100%);
-      border-top:4px solid #5FAE63; border-radius:0 0 20px 20px;
+      background:
+        radial-gradient(circle at 18% 30%, rgba(255,255,255,.16) 0 8%, transparent 9%),
+        radial-gradient(circle at 62% 52%, rgba(0,60,20,.08) 0 7%, transparent 8%),
+        radial-gradient(circle at 86% 26%, rgba(255,255,255,.14) 0 6%, transparent 7%),
+        linear-gradient(180deg,#8FD68F 0%, #64B96A 100%);
+      border-top:5px solid #5FAE63; border-radius:0 0 20px 20px;
     }
 
     /* os esconderijos ficam na linha do chão */
@@ -236,10 +247,13 @@ let sEsconderijo = null;
     }
     #tabuleiro.campo .rabinho{ display:none; }
     #tabuleiro.campo .esconderijo.temPonei .rabinho{
-      display:block; position:absolute; right:4%; bottom:26%;
-      width:22%; height:12%; border-radius:0 60% 60% 0;
+      display:block; position:absolute; right:2%; bottom:38%;
+      width:20%; height:14%;
+      /* forma de cauda: ponta arredondada saindo de trás do esconderijo */
+      clip-path:polygon(0% 20%, 62% 0%, 100% 45%, 62% 100%, 0% 78%);
       background:var(--corRabo, #FF6FB0);
-      box-shadow:0 2px 4px rgba(40,80,60,.35);
+      filter:drop-shadow(0 1px 2px rgba(40,80,60,.4));
+      transform-origin:left center;
       animation:raboAbana 2.6s ease-in-out infinite;
       z-index:2;
     }
