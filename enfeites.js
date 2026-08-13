@@ -113,7 +113,18 @@ function poeEnfeite(caixa, enfeite){
   const d = document.createElement("div");
   d.className = "enfeite";
   d.style.cssText = "position:absolute; inset:0; pointer-events:none; z-index:3";
-  d.innerHTML = '<svg viewBox="0 0 100 100" style="width:100%;height:100%;overflow:visible">' + e.svg + '</svg>';
+  /* Aumenta o enfeite em 1,55x em torno de um ponto acima do centro.
+     No tamanho original ocupava um quinto do retrato e se perdia sobre
+     a foto do pônei, que é cheia de detalhe. O contorno branco e a
+     sombra garantem contraste em qualquer cor de fundo. */
+  d.innerHTML =
+    '<svg viewBox="0 0 100 100" style="width:100%;height:100%;overflow:visible">' +
+      '<g transform="translate(50,42) scale(1.55) translate(-50,-42)" ' +
+         'stroke="#fff" stroke-width="1.6" paint-order="stroke" ' +
+         'style="filter:drop-shadow(0 2px 3px rgba(60,40,110,.45))">' +
+        e.svg +
+      '</g>' +
+    '</svg>';
   if(getComputedStyle(caixa).position === "static") caixa.style.position = "relative";
   caixa.appendChild(d);
 }
