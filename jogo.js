@@ -166,6 +166,17 @@ function quantosNaMesa(){
   return 6;
 }
 
+/* ===================================================================
+   QUEM SUMIU  —  encenação
+
+   Antes eram figuras paradas num quadrado, sumindo: a mesma
+   experiência do jogo da memória, com outro enunciado.
+
+   Agora tem história. Os pôneis entram andando, brincam um pouco,
+   entram na casinha, a porta fecha, e quando reabre eles voltam —
+   menos um. O sumiço vira acontecimento, não troca de imagem.
+   =================================================================== */
+
 function novaRodadaSumiu(){
   limpaTimers();
   sTravado = true;
@@ -179,107 +190,176 @@ function novaRodadaSumiu(){
   }
   sAlvo = sorteia(sMesa);
 
-  el('balaoSumiu').textContent = 'Olha bem…';
+  el('balaoSumiu').textContent = 'Olha os pôneis!';
   el('rotuloOpcoes').textContent = '';
   el('opcoes').innerHTML = '';
 
-  const mesa = el('tabuleiro');
-  desenhaMesa(sMesa);
+  montaPalco(sMesa);
 
-  /* ANTES: aqui o jogo disparava faíscas e um som em cima do pônei
-     escolhido, um instante antes de ele sumir. Era só olhar onde
-     brilhou. Agora nada distingue o alvo enquanto todos estão à vista. */
+  // 1. entram andando, um atrás do outro
+  depois(()=> entramEmCena(), 60);
 
+  // 2. brincam à vista dela
+  depois(()=>{ el('balaoSumiu').textContent = 'Olha bem…'; }, 1800);
+
+  // 3. entram na casinha
   depois(()=>{
-    fechaCortina(()=>{
-      // a nuvem cobre a mesa; a troca acontece escondida
-      const restantes = sMesa.filter(p => p !== sAlvo);
-      restantes.sort(()=>Math.random()-.5);   // embaralha: o buraco entregaria a posição
-      desenhaMesa(restantes);
-    }, ()=>{
-      el('balaoSumiu').textContent = 'Quem sumiu?';
-      el('rotuloOpcoes').textContent = 'Toque no pônei que faltou';
-      montaOpcoes();
-      sTravado = false;
-    });
+    el('balaoSumiu').textContent = 'Foram na casinha!';
+    entramNaCasa();
   }, 4200);
+
+  // 4. a porta fecha e sacode: é a hora em que alguém fica para trás
+  depois(()=>{ el('casinha').classList.add('fechada'); bip([420,340],.14); }, 5600);
+
+  // 5. voltam, menos um, e em ordem trocada
+  depois(()=>{
+    el('casinha').classList.remove('fechada');
+    bip([620,820],.12);
+    const restantes = sMesa.filter(p => p !== sAlvo).sort(()=>Math.random()-.5);
+    montaPalco(restantes, true);
+    depois(()=> entramEmCena(), 60);
+  }, 6600);
+
+  // 6. a pergunta
+  depois(()=>{
+    el('balaoSumiu').textContent = 'Quem sumiu?';
+    el('rotuloOpcoes').textContent = 'Toque no pônei que faltou';
+    montaOpcoes();
+    sTravado = false;
+  }, 8400);
 }
 
-/* desenha os pôneis da mesa */
-function desenhaMesa(lista){
+/* monta o cenário: chão de grama, casinha à direita, pôneis fora de cena */
+function montaPalco(lista, semCasa){
   const mesa = el('tabuleiro');
   mesa.innerHTML = '';
-  lista.forEach(p=>{
+  mesa.classList.add('palco');
+
+  if(!semCasa || !el('casinha')){
+    mesa.insertAdjacentHTML('beforeend',
+      '<div class="chao"></div>' +
+      '<div class="casinha" id="casinha">' +
+        '<div class="telhado"></div>' +
+        '<div class="parede"><div class="porta"></div></div>' +
+      '</div>');
+  }else{
+    mesa.insertAdjacentHTML('beforeend', '<div class="chao"></div>');
+    const c = document.createElement('div');
+    c.className = 'casinha'; c.id = 'casinha';
+    c.innerHTML = '<div class="telhado"></div><div class="parede"><div class="porta"></div></div>';
+    mesa.appendChild(c);
+  }
+
+  const trilha = document.createElement('div');
+  trilha.className = 'trilha';
+  lista.forEach((p, i) => {
     const d = document.createElement('div');
-    d.className = 'carta fixa';
+    d.className = 'poneiPalco fora';
     d.dataset.nome = p.nome;
-    d.innerHTML = retrato(p);
-    mesa.appendChild(d);
+    d.style.setProperty('--atraso', (i * 0.18) + 's');
+    d.innerHTML = '<div class="anda">' + retrato(p) + '</div>';
+    trilha.appendChild(d);
+  });
+  mesa.appendChild(trilha);
+}
+
+function entramEmCena(){
+  document.querySelectorAll('#tabuleiro .poneiPalco').forEach(d => d.classList.remove('fora'));
+}
+
+function entramNaCasa(){
+  document.querySelectorAll('#tabuleiro .poneiPalco').forEach((d, i) => {
+    depois(()=>{ d.classList.add('entrando'); bip([700],.06); }, i * 200);
   });
 }
 
-/* ---------- a nuvem que cobre a mesa ----------
-   Some com todos ao mesmo tempo, e não com um só. Assim o momento do
-   sumiço não denuncia quem sumiu, e a mesa pode ser reorganizada por
-   trás sem que ela veja de onde o buraco saiu. */
-function fechaCortina(duranteEscondido, aoAbrir){
-  const mesa = el('tabuleiro');
-  if(getComputedStyle(mesa).position === 'static') mesa.style.position = 'relative';
-
-  const c = document.createElement('div');
-  c.className = 'cortina';
-  c.innerHTML =
-    '<div class="nuvem n1"></div><div class="nuvem n2"></div><div class="nuvem n3"></div>' +
-    '<div class="magia">✨</div>';
-  mesa.appendChild(c);
-
-  bip([440, 560], .12);
-
-  depois(()=>{
-    c.classList.add('cheia');
-    if(typeof duranteEscondido === 'function') duranteEscondido();
-    depois(()=>{
-      c.classList.add('abrindo');
-      bip([660, 880], .12);
-      depois(()=>{
-        c.remove();
-        if(typeof aoAbrir === 'function') aoAbrir();
-      }, 620);
-    }, 700);
-  }, 60);
-}
-
-/* estilos da nuvem, injetados daqui para não precisar mexer no CSS */
-(function estiloCortina(){
-  if(document.getElementById('estiloCortina')) return;
+/* estilos da encenação, injetados daqui para não mexer no CSS do projeto */
+(function estiloPalco(){
+  if(document.getElementById('estiloPalco')) return;
   const st = document.createElement('style');
-  st.id = 'estiloCortina';
+  st.id = 'estiloPalco';
   st.textContent = `
-    .cortina{ position:absolute; inset:-8px; z-index:20; pointer-events:none; overflow:hidden; }
-    .cortina .nuvem{
-      position:absolute; border-radius:50%;
-      background:radial-gradient(circle at 40% 34%, #fff 0%, #EEF6FF 70%);
-      box-shadow:0 6px 20px rgba(80,110,160,.28);
-      opacity:0; transform:scale(.2);
-      transition:opacity .5s ease, transform .6s cubic-bezier(.2,1.3,.4,1);
+    #tabuleiro.palco{
+      position:relative; display:block; overflow:hidden;
+      min-height:190px; border-radius:22px;
+      background:linear-gradient(180deg,#CDEEFF 0%, #E8F7FF 62%, #DFF3DC 62%, #CDEBC6 100%);
+      box-shadow:inset 0 3px 10px rgba(80,120,160,.18);
     }
-    .cortina .n1{ left:-8%;  top:-16%; width:74%; height:96%; }
-    .cortina .n2{ left:28%;  top:-26%; width:78%; height:112%; transition-delay:.08s; }
-    .cortina .n3{ left:8%;   top:14%;  width:88%; height:96%;  transition-delay:.16s; }
-    .cortina.cheia .nuvem{ opacity:1; transform:scale(1); }
-    .cortina .magia{
-      position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-      font-size:44px; opacity:0; transition:opacity .3s ease, transform .5s ease;
-      transform:scale(.4) rotate(-25deg);
+    #tabuleiro.palco .chao{
+      position:absolute; left:0; right:0; bottom:0; height:38%;
+      background:linear-gradient(180deg,#8FD68F 0%, #6EBE72 100%);
+      border-top:4px solid #5FAE63;
     }
-    .cortina.cheia .magia{ opacity:1; transform:scale(1) rotate(0); }
-    .cortina.abrindo .nuvem{ opacity:0; transform:scale(1.5) translateY(-14%); }
-    .cortina.abrindo .magia{ opacity:0; transform:scale(2) rotate(20deg); }
-    .carta.voltando{ animation:poneiVolta .55s cubic-bezier(.2,1.6,.4,1) both; }
-    @keyframes poneiVolta{
-      0%  { transform:scale(.2) rotate(-25deg); opacity:0; }
-      100%{ transform:scale(1) rotate(0); opacity:1; }
+
+    /* casinha à direita: é para onde eles vão e de onde voltam */
+    #tabuleiro.palco .casinha{
+      position:absolute; right:4%; bottom:14%; width:86px; z-index:2;
+      transition:transform .3s ease;
     }
+    #tabuleiro.palco .telhado{
+      width:0; height:0; margin:0 auto;
+      border-left:47px solid transparent; border-right:47px solid transparent;
+      border-bottom:34px solid #E0614F;
+    }
+    #tabuleiro.palco .parede{
+      height:56px; background:#F6E7C8; border:3px solid #C9A87A;
+      border-radius:0 0 8px 8px; position:relative;
+    }
+    #tabuleiro.palco .porta{
+      position:absolute; left:50%; bottom:0; transform:translateX(-50%);
+      width:34px; height:40px; border-radius:17px 17px 3px 3px;
+      background:#8B5A2B;
+      transition:transform .35s ease, background .35s ease;
+      transform-origin:left center;
+    }
+    #tabuleiro.palco .casinha.fechada{ animation:casaSacode .5s ease-in-out; }
+    #tabuleiro.palco .casinha.fechada .porta{ background:#5E3A18; }
+    @keyframes casaSacode{
+      0%,100%{ transform:translateX(0) rotate(0); }
+      25%    { transform:translateX(-5px) rotate(-2deg); }
+      75%    { transform:translateX(5px)  rotate(2deg); }
+    }
+
+    /* a fila de pôneis andando */
+    #tabuleiro.palco .trilha{
+      position:absolute; left:3%; right:26%; bottom:16%;
+      display:flex; align-items:flex-end; gap:2%;
+      z-index:3;
+    }
+    #tabuleiro.palco .poneiPalco{
+      flex:1 1 0; max-width:78px; aspect-ratio:1;
+      transition:transform .7s cubic-bezier(.3,1.1,.5,1), opacity .5s ease;
+      transition-delay:var(--atraso, 0s);
+    }
+    /* fora de cena: esperando à esquerda */
+    #tabuleiro.palco .poneiPalco.fora{ transform:translateX(-140%) ; opacity:0; }
+    /* entrando na casinha: caminham para a direita e somem na porta */
+    /* saindo da casinha: aparece pequeno lá na porta e cresce vindo */
+    #tabuleiro.palco .poneiPalco.saindo{
+      transform:translateX(320%) scale(.25); opacity:0;
+    }
+    #tabuleiro.palco .poneiPalco.entrando{
+      transform:translateX(320%) scale(.25); opacity:0;
+      transition:transform .8s ease-in, opacity .5s ease-in .3s;
+      transition-delay:0s;
+    }
+
+    /* o gingado: quem anda balança */
+    #tabuleiro.palco .anda{
+      width:100%; height:100%;
+      animation:gingado .55s ease-in-out infinite alternate;
+    }
+    @keyframes gingado{
+      from{ transform:translateY(0)    rotate(-4deg); }
+      to  { transform:translateY(-14%) rotate(4deg); }
+    }
+    #tabuleiro.palco .poneiPalco img{
+      width:100%; height:100%; border-radius:50%;
+      object-fit:cover; object-position:center 34%;
+      border:3px solid #fff; box-sizing:border-box;
+      box-shadow:0 3px 8px rgba(40,80,60,.35);
+    }
+    #tabuleiro.palco .poneiPalco svg{ width:100%; height:100%; }
   `;
   document.head.appendChild(st);
 })();
@@ -333,19 +413,20 @@ function respondeSumiu(p, botao){
     contaDesafio();
     botao.classList.add('certa');
     [...document.querySelectorAll('#opcoes .carta')].forEach(c=>{ if(c!==botao) c.classList.add('apagada'); });
-    /* o pônei volta para a mesa, entrando com destaque. A lacuna com "?"
-       não existe mais: a mesa é redesenhada sem buraco, senão a posição
-       vazia entregaria a resposta. */
-    const mesa = el('tabuleiro');
-    const d = document.createElement('div');
-    d.className = 'carta fixa certa voltando';
-    d.dataset.nome = sAlvo.nome;
-    d.innerHTML = retrato(sAlvo);
-    mesa.appendChild(d);
+    /* o pônei que faltava sai da casinha e volta para a fila. Fecha a
+       história: ele estava lá dentro o tempo todo. */
+    const trilha = document.querySelector('#tabuleiro .trilha');
+    if(trilha){
+      const d = document.createElement('div');
+      d.className = 'poneiPalco saindo';
+      d.dataset.nome = sAlvo.nome;
+      d.innerHTML = '<div class="anda">' + retrato(sAlvo) + '</div>';
+      trilha.appendChild(d);
+      depois(()=>{ d.classList.remove('saindo'); festa(d); }, 60);
+    }
 
     bip([660,880,1180],.11);
     festa(botao);
-    festa(d);
     fala(sorteia(['Isso!','Muito bem!','Boa!','Acertou!']) + ' ' + (sAlvo.art==='a'?'Era a ':'Era o ') + sAlvo.nome + '!');
     depois(novaRodadaSumiu, 2600);
   }else{
