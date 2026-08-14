@@ -49,12 +49,34 @@ const SO_COM_IMAGEM = true;
 
 /* Um acerto solto é curto demais para valer um desafio da missão.
    A cada 5 acertos o jogo credita um, o que dá tempo de brincadeira
-   parecido com uma rodada de memória ou um labirinto. */
+   parecido com uma rodada de memória ou um labirinto.
+
+   A cada 5 acertos a rodada também TERMINA e entra o prêmio do álbum.
+   Antes isto só creditava a missão: o labirinto, a memória e o jogo do
+   nome chamavam premiar() ao vencer, e o quiz era o único que não
+   entregava figurinha nenhuma — justamente o jogo em que ela mais
+   acerta. E era o único sem fim, rodando até ela cansar.
+
+   Devolve true quando premiou, para quem chamou não marcar a próxima
+   rodada: ela começaria por trás da tela de prêmio e, ao fechar, o
+   jogo já estaria no meio de outra pergunta. */
 function contaDesafio(){
-  if(typeof concluiuDesafio !== "function") return;
-  if(estrelas === 0 || estrelas % 5 !== 0) return;
-  const m = concluiuDesafio();
-  if(m.completouAgora && typeof festejaMissao === "function") setTimeout(festejaMissao, 900);
+  if(estrelas === 0 || estrelas % 5 !== 0) return false;
+
+  let m = null;
+  if(typeof concluiuDesafio === "function") m = concluiuDesafio();
+
+  const proxima = () => {
+    if(m && m.completouAgora && typeof festejaMissao === "function") festejaMissao();
+    if(!el('jogo').classList.contains('escondida'))       novaRodada();
+    else if(!el('sumiu').classList.contains('escondida')) novaRodadaSumiu();
+  };
+
+  /* o atraso deixa a festa de estrelinhas do acerto acabar antes da tela
+     de prêmio subir; atropeladas, ela não liga uma coisa à outra */
+  if(typeof premiar !== "function"){ setTimeout(proxima, 1500); return true; }
+  setTimeout(() => premiar(proxima), 1400);
+  return true;
 }
 
 function elenco(){
@@ -108,14 +130,14 @@ function responde(p, botao){
     travado = true;
     estrelas++;
     el('placar').textContent = estrelas;
-    contaDesafio();
+    const premiando = contaDesafio();
     botao.classList.add('certa');
     [...document.querySelectorAll('.carta')].forEach(c=>{ if(c!==botao) c.classList.add('apagada'); });
     bip([660,880,1180],.11);
     festa(botao);
     const elogios = ['Isso!','Muito bem!','Boa!','Você acertou!'];
     fala(sorteia(elogios) + ' ' + (alvo.art==='a'?'Essa é a ':'Esse é o ') + alvo.nome + '!');
-    setTimeout(novaRodada, 2100);
+    if(!premiando) setTimeout(novaRodada, 2100);
   }else{
     botao.classList.remove('errada');
     void botao.offsetWidth;
@@ -447,7 +469,7 @@ function procura(botao){
     sTravado = true;
     estrelas++;
     el('placar').textContent = estrelas;
-    contaDesafio();
+    const premiando = contaDesafio();
 
     botao.classList.add('achou');
     const surge = document.createElement('div');
@@ -459,7 +481,7 @@ function procura(botao){
     festa(botao);
     el('balaoSumiu').textContent = 'Achou!';
     el('rotuloOpcoes').textContent = '';
-    depois(novaRodadaSumiu, 2600);
+    if(!premiando) depois(novaRodadaSumiu, 2600);
 
   }else{
     // errar não pune: sai uma borboleta e o esconderijo balança
