@@ -27,7 +27,7 @@ el('recado').addEventListener('click', ()=>avisa(''));
    Nada disso aparece para ela. O aviso de erro só surge se houver erro,
    e a confirmação de versão só com ?dev=1 no endereço.
    ------------------------------------------------------------------ */
-const JOGO_VERSAO = 'jogo.js v2 — prêmio do álbum a cada 5 acertos';
+const JOGO_VERSAO = 'jogo.js v3 — caminhada até o castelo';
 const MODO_TESTE  = location.search.includes('dev');
 
 addEventListener('error', e => {
@@ -36,11 +36,11 @@ addEventListener('error', e => {
 });
 
 if(MODO_TESTE){
-  const falta = ['premiar','concluiuDesafio','festejaMissao','colecao']
+  const falta = ['premiar','concluiuDesafio','festejaMissao','colecao','iniciaCaminho']
     .filter(f => typeof window[f] !== 'function');
   avisa(JOGO_VERSAO +
         (falta.length ? ' · FALTANDO: ' + falta.join(', ') : ' · dependências ok') +
-        ' · acertos para o prêmio: 5');
+        ' · passos até o castelo: ' + (typeof CAMINHO_PASSOS !== 'undefined' ? CAMINHO_PASSOS : 5));
 }
 
 /* As falas foram removidas do jogo. A função continua existindo, vazia,
@@ -88,14 +88,24 @@ const SO_COM_IMAGEM = true;
    rodada: ela começaria por trás da tela de prêmio e, ao fechar, o
    jogo já estaria no meio de outra pergunta. */
 function contaDesafio(){
-  if(estrelas === 0 || estrelas % 5 !== 0) return false;
+  /* Quem decide o fim da rodada agora é a caminhada: acabou quando a
+     amiga chega no castelo. Contar acertos soltos não dizia nada para
+     ela, porque não dava para ver o quanto faltava.
+     Sem o caminho.js carregado, cai na contagem antiga de 5. */
+  const chegou = (typeof andaCaminho === 'function')
+    ? andaCaminho()
+    : (estrelas !== 0 && estrelas % 5 === 0);
+  if(!chegou) return false;
 
   let m = null;
   if(typeof concluiuDesafio === "function") m = concluiuDesafio();
 
   const proxima = () => {
     if(m && m.completouAgora && typeof festejaMissao === "function") festejaMissao();
-    if(!el('jogo').classList.contains('escondida'))       novaRodada();
+    if(!el('jogo').classList.contains('escondida')){
+      if(typeof iniciaCaminho === 'function') iniciaCaminho(el('jogo'));
+      novaRodada();
+    }
     else if(!el('sumiu').classList.contains('escondida')) novaRodadaSumiu();
   };
 
@@ -543,6 +553,9 @@ el('btnJogar').addEventListener('click', ()=>{
   el('inicio').classList.add('escondida');
   el('jogo').classList.remove('escondida');
   el('btnCasa').classList.remove('escondida');
+  /* a trilha é montada antes da primeira pergunta: ela precisa ver o
+     castelo lá no fim desde o começo, senão não há para onde ir */
+  if(typeof iniciaCaminho === 'function') iniciaCaminho(el('jogo'));
   setTimeout(novaRodada, 600);   // 1400 era espera da fala de abertura
 });
 
