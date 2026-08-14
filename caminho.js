@@ -21,7 +21,9 @@
    Depende de: perfil.js (imgDaAmiga). Se faltar, usa uma estrela.
    ============================================================ */
 
-const CAMINHO_PASSOS = 6;
+/* 5 passos, não 6: era o número que já valia um prêmio antes, e mudar
+   isso junto com o resto só criou confusão no teste. */
+const CAMINHO_PASSOS = 5;
 
 /* Os cenários mudam só variáveis de cor. O desenho da trilha é o
    mesmo, então trocar de cenário não custa nada em desempenho. */
@@ -48,8 +50,13 @@ function injetaEstiloCaminho(){
   s.id = 'estiloCaminho';
   s.textContent = `
     #caminho{
-      position:relative; margin:0 auto 10px; max-width:560px;
-      height:104px; border-radius:22px; overflow:hidden;
+      /* O #jogo é .tela{flex:1;display:flex;flex-direction:column}, e todo
+         filho de flex encolhe por padrão. Só 'height' não segura: sem espaço
+         sobrando, o navegador espremia a faixa até dois pixels e ela sumia da
+         tela mesmo estando montada. flex:0 0 104px é o que reserva a altura. */
+      flex:0 0 104px;
+      position:relative; margin:0 auto 10px; width:100%; max-width:560px;
+      height:104px; min-height:104px; border-radius:22px; overflow:hidden;
       background:linear-gradient(180deg, var(--cam-ceu1) 0%, var(--cam-ceu2) 100%);
       box-shadow:inset 0 2px 8px rgba(74,42,135,.14), 0 4px 12px rgba(74,42,135,.16);
       transition:background .8s ease;
@@ -198,6 +205,20 @@ function iniciaCaminho(alvo){
 
   caminhoPasso = 0;
   posicionaViajante();
+
+  /* Autoverificação: se a faixa voltar a ser esmagada por algum estilo da
+     página, isso aparece escrito na tela em vez de simplesmente sumir sem
+     explicação — foi exatamente assim que o problema passou despercebido. */
+  setTimeout(() => {
+    if(cx.clientHeight >= 40) return;
+    cx.style.flex = '0 0 104px';
+    cx.style.minHeight = '104px';
+    posicionaViajante();
+    if(cx.clientHeight < 40 && typeof avisa === 'function'){
+      avisa('A trilha está sendo esmagada pelo layout (altura ' +
+            cx.clientHeight + 'px). Toque para fechar.');
+    }
+  }, 60);
 }
 
 /* A distância de cada passo é medida em pixels na hora, e não em
