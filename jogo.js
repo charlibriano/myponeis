@@ -16,6 +16,33 @@ function avisa(txt){
 }
 el('recado').addEventListener('click', ()=>avisa(''));
 
+/* ------------------------------------------------------------------
+   DIAGNÓSTICO NA TELA
+
+   Sem isto, quando algo falha aqui dentro simplesmente não acontece
+   nada: a criança acerta, some a festa e o jogo segue. Quem testa não
+   tem como saber se o arquivo certo carregou, se uma dependência
+   faltou ou se deu erro no meio.
+
+   Nada disso aparece para ela. O aviso de erro só surge se houver erro,
+   e a confirmação de versão só com ?dev=1 no endereço.
+   ------------------------------------------------------------------ */
+const JOGO_VERSAO = 'jogo.js v2 — prêmio do álbum a cada 5 acertos';
+const MODO_TESTE  = location.search.includes('dev');
+
+addEventListener('error', e => {
+  avisa('ERRO: ' + e.message + (e.lineno ? ' (linha ' + e.lineno + ')' : '') +
+        ' — toque para fechar');
+});
+
+if(MODO_TESTE){
+  const falta = ['premiar','concluiuDesafio','festejaMissao','colecao']
+    .filter(f => typeof window[f] !== 'function');
+  avisa(JOGO_VERSAO +
+        (falta.length ? ' · FALTANDO: ' + falta.join(', ') : ' · dependências ok') +
+        ' · acertos para o prêmio: 5');
+}
+
 /* As falas foram removidas do jogo. A função continua existindo, vazia,
    porque é chamada em dezenas de lugares — arrancar cada chamada daria
    mais risco de quebrar do que ganho. */
@@ -74,8 +101,18 @@ function contaDesafio(){
 
   /* o atraso deixa a festa de estrelinhas do acerto acabar antes da tela
      de prêmio subir; atropeladas, ela não liga uma coisa à outra */
-  if(typeof premiar !== "function"){ setTimeout(proxima, 1500); return true; }
-  setTimeout(() => premiar(proxima), 1400);
+  if(typeof premiar !== "function"){
+    avisa('O prêmio não saiu: premiar() não existe. O album.js não carregou nesta página.');
+    setTimeout(proxima, 1500);
+    return true;
+  }
+  setTimeout(() => {
+    try{ premiar(proxima); }
+    catch(err){
+      avisa('O prêmio falhou: ' + err.message + ' — toque para fechar');
+      proxima();
+    }
+  }, 1400);
   return true;
 }
 
