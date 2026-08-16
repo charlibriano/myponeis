@@ -88,22 +88,18 @@ const SO_COM_IMAGEM = true;
    rodada: ela começaria por trás da tela de prêmio e, ao fechar, o
    jogo já estaria no meio de outra pergunta. */
 function contaDesafio(){
-  /* Quem decide o fim da rodada é a caminhada, na tela do "Cadê o
-     Pônei?": acabou quando a amiga chega no castelo. Contar acertos
-     soltos não dizia nada para ela, porque não dava para ver o quanto
-     faltava.
+  /* UM ACERTO = UMA FASE, nos dois modos.
 
-     No "Quem Sumiu?" não existe caminhada, e o andaCaminho devolvia
-     false para sempre — a fase nunca terminava e ela ficava presa no
-     mesmo jogo. Lá uma rodada certa já é a fase inteira: achar quem
-     sumiu é uma tarefa fechada, não uma sequência.
+     Antes o "Cadê o Pônei?" exigia cinco acertos, porque a caminhada
+     até o castelo media a rodada por dentro do jogo. Com o mapa de
+     Ponyville isso virou duas contagens para a mesma coisa: quem
+     mostra o avanço agora é o mapa, e a criança voltava a jogar de
+     novo em vez de andar até a próxima parada.
 
-     Sem o caminho.js carregado, cai na contagem antiga de 5. */
-  const noQuiz = !el('jogo').classList.contains('escondida');
-  let chegou;
-  if(!noQuiz)                                  chegou = true;
-  else if(typeof andaCaminho === 'function')   chegou = andaCaminho();
-  else                                         chegou = (estrelas !== 0 && estrelas % 5 === 0);
+     Então a rodada termina no primeiro acerto. O prêmio entra, o
+     album.js devolve ela ao mapa e a pônei caminha até a fase
+     seguinte — que é onde o progresso deve ser visto. */
+  const chegou = true;
   if(!chegou) return false;
 
   let m = null;
@@ -111,10 +107,7 @@ function contaDesafio(){
 
   const proxima = () => {
     if(m && m.completouAgora && typeof festejaMissao === "function") festejaMissao();
-    if(!el('jogo').classList.contains('escondida')){
-      if(typeof iniciaCaminho === 'function') iniciaCaminho(el('jogo'));
-      novaRodada();
-    }
+    if(!el('jogo').classList.contains('escondida')) novaRodada();
     else if(!el('sumiu').classList.contains('escondida')) novaRodadaSumiu();
   };
 
@@ -519,9 +512,10 @@ function abreModo(modo){
 
   el('jogo').classList.remove('escondida');
   rodada = 0;
-  /* a trilha é montada antes da primeira pergunta: ela precisa ver o
-     castelo lá no fim desde o começo, senão não há para onde ir */
-  if(typeof iniciaCaminho === 'function') iniciaCaminho(el('jogo'));
+  /* a faixa da caminhada não é mais montada aqui: com uma fase por
+     acerto ela nunca passaria do primeiro passo, e o avanço quem
+     mostra é o mapa. O caminho.js continua carregado porque é ele
+     que desenha o campo onde os pôneis se espalham. */
   setTimeout(novaRodada, 500);
 }
 
