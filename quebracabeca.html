@@ -99,8 +99,10 @@ body{
   display:flex; flex-wrap:wrap; align-content:center; justify-content:center;
   gap:8px; padding:8px;
 }
+/* a peça encolhe conforme o desafio cresce: 16 peças no tamanho de
+   4 não caberiam na bandeja, e a criança teria que rolar a tela */
 .peca{
-  width:clamp(52px, 17vw, 76px); aspect-ratio:1;
+  width:var(--peca, clamp(52px, 17vw, 76px)); aspect-ratio:1;
   border:0; padding:0; cursor:pointer;
   border-radius:12px; background-repeat:no-repeat; background-color:#fff;
   box-shadow:0 0 0 3px #fff, 0 4px 10px rgba(62,42,92,.3);
@@ -117,6 +119,34 @@ body{
   animation:none; transform:scale(1.14);
   box-shadow:0 0 0 4px var(--amarelo), 0 0 20px rgba(255,201,60,.9);
 }
+
+/* ---------- a escolha do tamanho ----------
+   Igual ao jogo da memória: ela escolhe, e a escolha fica guardada
+   para a próxima vez. Deixar o contador de vitórias decidir sozinho
+   tirava dela a chance de repetir o que gosta. */
+#nivel{
+  position:fixed; inset:0; z-index:150; display:flex;
+  align-items:center; justify-content:center; flex-direction:column; gap:16px;
+  padding:24px; text-align:center;
+  background:radial-gradient(circle at 50% 38%, #FFF9DC 0%, #FFE9F4 55%, #EFE0FF 100%);
+}
+#nivel.escondida{ display:none; }
+#nivel h2{ font-size:clamp(24px,7vw,34px); color:var(--roxo); text-shadow:0 3px 0 #fff; }
+#nivel .opcoes{ display:flex; flex-direction:column; gap:12px; width:min(86vw,320px); }
+#nivel button{
+  display:flex; align-items:center; gap:14px;
+  border:0; cursor:pointer; font-family:inherit; text-align:left;
+  padding:12px 16px; border-radius:20px; background:#fff;
+  box-shadow:0 5px 0 #D9C6F2, 0 8px 16px rgba(107,63,191,.16);
+}
+#nivel button:active{ transform:translateY(4px); box-shadow:0 1px 0 #D9C6F2; }
+#nivel .amostra{
+  width:52px; height:52px; flex:0 0 52px; display:grid; gap:2px;
+  padding:4px; border-radius:12px; background:#F3ECFF;
+}
+#nivel .amostra i{ background:#C9A8EC; border-radius:3px; display:block; }
+#nivel .txt{ font-size:19px; font-weight:800; color:var(--roxo); line-height:1.15; }
+#nivel .txt small{ display:block; font-size:13px; font-weight:600; color:#9A83C4; }
 
 #pronto{
   position:fixed; inset:0; z-index:200; display:none;
@@ -166,6 +196,11 @@ body{
   <div id="pecas"></div>
 </div>
 
+<div id="nivel">
+  <h2>Quantas peças?</h2>
+  <div class="opcoes" id="opcoesNivel"></div>
+</div>
+
 <div id="pronto">
   <div class="moldura" id="prontoFoto"></div>
   <div class="nome" id="prontoNome"></div>
@@ -179,7 +214,7 @@ body{
    jeito e o botão de casa volta ao mapa.
    =================================================================== */
 (function(){
-  var VERSAO = 'v4';
+  var VERSAO = 'v5';
 
   /* Escrita aqui de propósito. Depender do album.js para saber QUAIS
      pôneis existem foi o que deixou a tela em branco duas vezes.
@@ -224,16 +259,29 @@ body{
   var ponei = pool[Math.floor(Math.random() * pool.length)];
   var foto  = caminho(ponei);
 
-  /* cresce com o que ela venceu, não com o relógio */
-  var col = 2, lin = 2;
-  try{
-    if(typeof vitorias === 'function'){
-      var v = vitorias();
-      if(v >= 4)  { col = 3; lin = 2; }
-      if(v >= 12) { col = 3; lin = 3; }
-    }
-  }catch(e){}
-  var TOTAL = col * lin;
+  /* ---------- os três tamanhos ----------
+     4 e 16 são quadrados; 8 é 4 por 2, que é o que dá oito peças sem
+     ficar comprido demais no celular. A peça encolhe junto, senão as
+     dezesseis não cabem na bandeja. */
+  var NIVEIS = [
+    { id:'facil',  col:2, lin:2, nome:'Fácil',  peca:'clamp(56px, 18vw, 82px)' },
+    { id:'medio',  col:4, lin:2, nome:'Médio',  peca:'clamp(46px, 15vw, 66px)' },
+    { id:'dificil',col:4, lin:4, nome:'Difícil',peca:'clamp(36px, 11vw, 52px)' }
+  ];
+  var NIVEL_CHAVE = 'poneis.quebracabeca.nivel';
+
+  function nivelGuardado(){
+    try{
+      var id = localStorage.getItem(NIVEL_CHAVE);
+      for(var i = 0; i < NIVEIS.length; i++) if(NIVEIS[i].id === id) return NIVEIS[i];
+    }catch(e){}
+    return null;
+  }
+  function guardaNivel(id){
+    try{ localStorage.setItem(NIVEL_CHAVE, id); }catch(e){}
+  }
+
+  var col = 2, lin = 2, TOTAL = 4;
 
   function recorte(i){
     var c = i % col, l = Math.floor(i / col);
@@ -246,57 +294,97 @@ body{
 
   var escolhida = null, postas = 0;
 
-  $('quem').textContent = ponei;
+  function monta(nivel){
+    col = nivel.col; lin = nivel.lin; TOTAL = col * lin;
+    escolhida = null; postas = 0;
+    document.documentElement.style.setProperty('--peca', nivel.peca);
 
-  var tab = $('tabuleiro');
-  tab.style.gridTemplateColumns = 'repeat(' + col + ', 1fr)';
-  tab.style.gridTemplateRows    = 'repeat(' + lin + ', 1fr)';
+    $('quem').textContent = ponei;
 
-  for(var i = 0; i < TOTAL; i++){
-    (function(i){
+    var tab = $('tabuleiro');
+    tab.innerHTML = '';
+    tab.style.gridTemplateColumns = 'repeat(' + col + ', 1fr)';
+    tab.style.gridTemplateRows    = 'repeat(' + lin + ', 1fr)';
+    /* com 8 peças o quadro é deitado; com 4 e 16 é quadrado */
+    tab.style.aspectRatio = col + ' / ' + lin;
+
+    for(var i = 0; i < TOTAL; i++){
+      (function(i){
+        var r = recorte(i);
+        var d = document.createElement('div');
+        d.className = 'lugar';
+        d.setAttribute('data-i', i);
+
+        var s = document.createElement('div');
+        s.className = 'sombra';
+        s.style.backgroundImage    = 'url("' + foto + '")';
+        s.style.backgroundSize     = r.size;
+        s.style.backgroundPosition = r.pos;
+        d.appendChild(s);
+
+        d.addEventListener('click', function(){ encaixa(d); });
+        tab.appendChild(d);
+      })(i);
+    }
+
+    var ordem = [];
+    for(var k = 0; k < TOTAL; k++) ordem.push(k);
+    ordem.sort(function(){ return Math.random() - 0.5; });
+
+    var caixa = $('pecas');
+    caixa.innerHTML = '';
+    ordem.forEach(function(i){
       var r = recorte(i);
-      var d = document.createElement('div');
-      d.className = 'lugar';
-      d.setAttribute('data-i', i);
+      var b = document.createElement('button');
+      b.className = 'peca';
+      b.setAttribute('data-i', i);
+      b.setAttribute('aria-label', 'Peça ' + (i + 1));
+      b.style.backgroundImage    = 'url("' + foto + '")';
+      b.style.backgroundSize     = r.size;
+      b.style.backgroundPosition = r.pos;
+      b.addEventListener('click', function(){ escolhe(b); });
+      caixa.appendChild(b);
+    });
 
-      var s = document.createElement('div');
-      s.className = 'sombra';
-      s.style.backgroundImage    = 'url("' + foto + '")';
-      s.style.backgroundSize     = r.size;
-      s.style.backgroundPosition = r.pos;
-      d.appendChild(s);
-
-      d.addEventListener('click', function(){ encaixa(d); });
-      tab.appendChild(d);
-    })(i);
+    /* A imagem é conferida DEPOIS, com o jogo já na tela. Se o arquivo
+       não vier, o aviso aparece e o tabuleiro continua ali — nunca uma
+       tela de espera sem fim. */
+    var teste = new Image();
+    teste.onerror = function(){
+      avisa('A imagem de ' + ponei + ' não carregou (' + foto + '). O jogo está montado, mas sem figura.');
+    };
+    teste.src = foto;
   }
 
-  var ordem = [];
-  for(var k = 0; k < TOTAL; k++) ordem.push(k);
-  ordem.sort(function(){ return Math.random() - 0.5; });
+  /* ---------- a tela de escolha ---------- */
+  function pedeNivel(){
+    var cx = $('opcoesNivel');
+    cx.innerHTML = '';
+    NIVEIS.forEach(function(n){
+      var b = document.createElement('button');
+      var amostra = '<span class="amostra" style="grid-template-columns:repeat(' + n.col +
+                    ',1fr); grid-template-rows:repeat(' + n.lin + ',1fr)">';
+      for(var i = 0; i < n.col * n.lin; i++) amostra += '<i></i>';
+      amostra += '</span>';
+      b.innerHTML = amostra +
+        '<span class="txt">' + n.nome +
+        '<small>' + (n.col * n.lin) + ' peças</small></span>';
+      b.addEventListener('click', function(){
+        if(typeof somToque === 'function'){ try{ somToque(); }catch(e){} }
+        guardaNivel(n.id);
+        $('nivel').classList.add('escondida');
+        monta(n);
+      });
+      cx.appendChild(b);
+    });
+    $('nivel').classList.remove('escondida');
+  }
 
-  var caixa = $('pecas');
-  ordem.forEach(function(i){
-    var r = recorte(i);
-    var b = document.createElement('button');
-    b.className = 'peca';
-    b.setAttribute('data-i', i);
-    b.setAttribute('aria-label', 'Peça ' + (i + 1));
-    b.style.backgroundImage    = 'url("' + foto + '")';
-    b.style.backgroundSize     = r.size;
-    b.style.backgroundPosition = r.pos;
-    b.addEventListener('click', function(){ escolhe(b); });
-    caixa.appendChild(b);
-  });
-
-  /* A imagem é conferida DEPOIS, com o jogo já na tela. Se o arquivo
-     não vier, o aviso aparece e o tabuleiro continua ali — nunca uma
-     tela de espera sem fim. */
-  var teste = new Image();
-  teste.onerror = function(){
-    avisa('A imagem de ' + ponei + ' não carregou (' + foto + '). O jogo está montado, mas sem figura.');
-  };
-  teste.src = foto;
+  /* Monta já no nível de sempre, com a tela de escolha por cima: se
+     ela só quiser jogar, toca em qualquer opção e está pronto; e se
+     fechar sem escolher, o jogo já está lá atrás. */
+  monta(nivelGuardado() || NIVEIS[0]);
+  pedeNivel();
 
   function escolhe(b){
     if(escolhida === b){ b.classList.remove('escolhida'); escolhida = null; return; }
