@@ -239,35 +239,42 @@ function candidatas(){
   return fila;
 }
 
-/* Carrega de verdade antes de montar. Sem isto, imagem que não existe
-   vira tabuleiro invisível e a criança olha para uma tela vazia. */
-function carrega(src){
-  return new Promise(ok => {
-    const img = new Image();
-    img.onload  = () => ok(img.naturalWidth > 0);
-    img.onerror = () => ok(false);
-    img.src = src;
-  });
+/* Verifica se o arquivo existe DE VERDADE. Sem callback nenhum de
+   Promise: erro dentro de função async não dispara o
+   addEventListener('error') da página — vira rejeição silenciosa, e
+   foi exatamente isso que deixou a tela parada em "preparando…".
+   Aqui tudo é callback simples, que o vigia consegue enxergar. */
+function carrega(src, resposta){
+  const img = new Image();
+  img.onload  = () => resposta(img.naturalWidth > 0);
+  img.onerror = () => resposta(false);
+  img.src = src;
 }
 
-async function escolhePonei(){
-  const fila = candidatas();
-  if(!fila.length){
-    avisa('Nenhuma pônei disponível: o album.js e o personagens.js carregaram?');
-    return null;
+/* Monta com a primeira candidata NA HORA, sem esperar nada. Se a
+   imagem não vier, troca pela seguinte e remonta. Assim a criança
+   nunca fica olhando para uma tela vazia à espera de uma
+   verificação: no pior caso ela vê o tabuleiro e um aviso. */
+function tentaCandidata(fila, i, tentados){
+  if(i >= fila.length || i >= 5){
+    avisa('Nenhuma imagem carregou. Caminhos tentados: ' + tentados.join(' · '));
+    return;
   }
 
-  /* embaralha só o começo da fila para não sortear sempre a mesma */
-  fila.sort(() => Math.random() - .5);
+  const c = fila[i];
+  tentados.push(c.src);
 
-  const tentados = [];
-  for(let i = 0; i < fila.length && i < 5; i++){
-    tentados.push(fila[i].src);
-    if(await carrega(fila[i].src)) return fila[i];
-  }
+  ponei = c.nome;
+  foto  = c.src;
+  const t = tamanho();
+  col = t.col; lin = t.lin; TOTAL = col * lin;
+  postas = 0; escolhida = null;
+  monta();
 
-  avisa('Nenhuma imagem carregou. Caminhos tentados: ' + tentados.join(' · '));
-  return null;
+  carrega(c.src, ok => {
+    if(ok) return;                       // era boa: fica como está
+    tentaCandidata(fila, i + 1, tentados);
+  });
 }
 
 /* ---------- o tamanho do desafio ----------
@@ -401,14 +408,31 @@ function terminou(){
   }, 1900);
 }
 
-(async function comeca(){
-  const escolha = await escolhePonei();
-  if(!escolha) return;            // o aviso já está na tela
-  ponei = escolha.nome;
-  foto  = escolha.src;
-  const t = tamanho();
-  col = t.col; lin = t.lin; TOTAL = col * lin;
-  monta();
+/* rejeição de Promise não passa pelo 'error': escutamos as duas */
+addEventListener('unhandledrejection', e => {
+  avisa('Falha silenciosa: ' + (e.reason && e.reason.message ? e.reason.message : e.reason));
+});
+
+/* O VIGIA. Se em 3 segundos o tabuleiro não tiver nascido, a página
+   conta na tela o que encontrou. Tela parada sem explicação é o pior
+   resultado possível — pior que erro, porque não dá o que consertar. */
+setTimeout(() => {
+  if(document.querySelector('#tabuleiro .lugar')) return;
+  avisa('O tabuleiro não montou. album.js: ' + (typeof colecao) +
+        ' · ALBUM: ' + (typeof ALBUM) +
+        ' · PERSONAGENS: ' + (typeof PERSONAGENS) +
+        ' · candidatas: ' + (function(){ try{ return candidatas().length; }catch(e){ return 'erro: ' + e.message; } })() +
+        ' · pônei: ' + ponei + ' · foto: ' + foto);
+}, 3000);
+
+(function comeca(){
+  const fila = candidatas();
+  if(!fila.length){
+    avisa('Nenhuma pônei disponível: o album.js e o personagens.js carregaram?');
+    return;
+  }
+  fila.sort(() => Math.random() - .5);
+  tentaCandidata(fila, 0, []);
 })();
 </script>
 </body>
