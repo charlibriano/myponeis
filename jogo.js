@@ -221,13 +221,6 @@ function festa(origem){
   }
 }
 
-/* --- vitrine da tela inicial --- */
-function montaVitrine(){
-  const p = sorteia(elenco());   // usa o mesmo filtro do jogo, senão a vitrine mostra SVG
-  el('vitrine').innerHTML = retrato(p);
-}
-montaVitrine();
-setInterval(()=>{ if(!el('inicio').classList.contains('escondida')) montaVitrine(); }, 2600);
 
 /* ============================================================
    MODO 2 — QUEM SUMIU?
@@ -499,76 +492,48 @@ function respondeSumiu(p, botao){
   if(!premiando) depois(novaRodadaSumiu, 2600);
 }
 
-/* --- botões --- */
-el('btnJogar').addEventListener('click', ()=>{
-  el('inicio').classList.add('escondida');
-  el('jogo').classList.remove('escondida');
-  el('btnCasa').classList.remove('escondida');
-  /* a trilha é montada antes da primeira pergunta: ela precisa ver o
-     castelo lá no fim desde o começo, senão não há para onde ir */
-  if(typeof iniciaCaminho === 'function') iniciaCaminho(el('jogo'));
-  setTimeout(novaRodada, 600);   // 1400 era espera da fala de abertura
-});
+/* ===================================================================
+   ABERTURA
 
-/* O botão de status da voz e o de repetir a fala não têm mais função:
-   as falas foram removidas. Some com os dois em vez de deixá-los na
-   tela sem fazer nada — o de status ainda mostrava um diagnóstico de
-   voz por cima do jogo. */
-['btnStatus', 'btnFalar'].forEach(id => {
-  const b = el(id);
-  if(b) b.style.display = 'none';
-});
-el('btnSumiu').addEventListener('click', ()=>{
-  el('inicio').classList.add('escondida');
-  el('sumiu').classList.remove('escondida');
-  el('btnCasa').classList.remove('escondida');
-  sRodada = 0;
-  testaVoz();
-  depois(novaRodadaSumiu, 1400);
-});
+   Havia uma tela intermediária aqui — título, vitrine girando e dois
+   botões — que o menu já tornara inútil: o endereço dizia qual modo
+   abrir, então ela era montada e pulada por um clique programático.
+   Aparecia por um instante em toda abertura, e quem entrasse direto
+   pelo endereço via o piscar de uma tela que não servia para nada.
 
-/* ---------- entrada direta a partir do menu ----------
-   O menu tem um botão para cada modo, e antes os dois caíam nesta
-   tela de escolha, obrigando a criança a escolher duas vezes.
-   Agora o endereço diz qual modo abrir: ?modo=cade ou ?modo=sumiu.
-
-   Guardamos se veio assim para o botão de casa devolver ao menu dos
-   jogos, e não a esta tela intermediária que ela nunca viu. */
-const modoDireto = new URLSearchParams(location.search).get('modo');
-
-if(modoDireto === 'cade' || modoDireto === 'sumiu'){
-  // o clique programático reusa exatamente o mesmo caminho do botão
-  setTimeout(()=>{
-    el(modoDireto === 'cade' ? 'btnJogar' : 'btnSumiu').click();
-  }, 60);
-}
-
-el('btnCasa').addEventListener('click', ()=>{
-  // veio direto do menu? então casa é o menu, não a tela de escolha
-  if(modoDireto === 'cade' || modoDireto === 'sumiu'){
-    location.href = 'index.html';
-    return;
-  }
-  travado = true;
-  sTravado = true;
+   Foi removida do HTML. Agora o modo vem do endereço e o jogo começa
+   nele, sem intermediária. Sem modo no endereço, abre o "Cadê o
+   Pônei?", que é o principal.
+   =================================================================== */
+function abreModo(modo){
   limpaTimers();
   el('jogo').classList.add('escondida');
   el('sumiu').classList.add('escondida');
-  el('inicio').classList.remove('escondida');
-  el('btnCasa').classList.add('escondida');
+
+  if(modo === 'sumiu'){
+    el('sumiu').classList.remove('escondida');
+    sRodada = 0;
+    depois(novaRodadaSumiu, 500);
+    return;
+  }
+
+  el('jogo').classList.remove('escondida');
   rodada = 0;
-  sRodada = 0;
+  /* a trilha é montada antes da primeira pergunta: ela precisa ver o
+     castelo lá no fim desde o começo, senão não há para onde ir */
+  if(typeof iniciaCaminho === 'function') iniciaCaminho(el('jogo'));
+  setTimeout(novaRodada, 500);
+}
+
+const modoDireto = new URLSearchParams(location.search).get('modo') === 'sumiu'
+  ? 'sumiu' : 'cade';
+
+abreModo(modoDireto);
+
+/* casa é sempre o mapa: não há mais tela intermediária para voltar */
+el('btnCasa').addEventListener('click', ()=>{
+  travado = true;
+  sTravado = true;
+  limpaTimers();
+  location.href = 'index.html';
 });
-
-
-/* --- aviso discreto de quais pôneis ainda estão sem imagem --- */
-(function mostraRelatorio(){
-  const alvo = el('relatorio');
-  if(!alvo) return;
-  const r = relatorioImagens();
-  if(r.com === 0){ alvo.textContent = 'Desenhos em SVG (nenhuma imagem carregada ainda)'; return; }
-  if(r.sem.length === 0){ alvo.textContent = r.com + ' pôneis com imagem'; return; }
-  alvo.textContent = r.com + '/' + r.total + ' com imagem — toque para ver quem falta';
-  alvo.style.cursor = 'pointer';
-  alvo.addEventListener('click', ()=>avisa('Sem imagem (usando desenho): ' + r.sem.join(', ')));
-})();
