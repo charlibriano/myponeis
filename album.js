@@ -111,12 +111,62 @@ function injetaEstiloAlbum(){
 /* premiar(aoFechar) — chame ao vencer uma rodada.
    Sorteia, guarda, mostra a revelação e fala o nome.
    aoFechar roda quando ela toca no botão. */
+/* ---------- contagem de vitórias ----------
+   O mapa media a fase pelo tamanho da coleção: uma pônei, uma fase.
+   Funcionava até o álbum encher. Com as 32 completas o sorteio para,
+   a contagem congela e a criança fica presa na última parada.
+
+   Agora cada vitória é contada aqui, ganhando pônei ou não. É um
+   número que só cresce, então o mapa pode dar quantas voltas quiser
+   sem depender de haver figurinha nova para entregar. */
+const VITORIAS_CHAVE = "poneis.vitorias.v1";
+
+function vitorias(){
+  try{
+    const n = parseInt(localStorage.getItem(VITORIAS_CHAVE), 10);
+    if(n >= 0) return n;
+  }catch(e){}
+  /* quem já jogava antes desta contagem existir começa pelo tamanho
+     do álbum, que era a medida antiga — o progresso dela não se perde */
+  return (typeof quantasTem === "function") ? quantasTem() : 0;
+}
+
+function registraVitoria(){
+  const n = vitorias() + 1;
+  try{ localStorage.setItem(VITORIAS_CHAVE, String(n)); }catch(e){}
+  return n;
+}
+
 function premiar(aoFechar){
+  registraVitoria();
   const nome = sorteiaPremio();
 
-  if(!nome){                       // álbum completo: comemora e segue
-    if(typeof fala === "function") try{ fala("Você já tem todas as pôneis do álbum! Que campeã!"); }catch(e){}
-    if(typeof aoFechar === "function") aoFechar();
+  if(!nome){
+    /* álbum completo: não há figurinha nova, mas a fase acabou do
+       mesmo jeito. Antes isto seguia direto e ela ficava dentro do
+       jogo, sem prêmio e sem saída até tocar na casinha. */
+    injetaEstiloAlbum();
+
+    let cx = document.getElementById("premio");
+    if(!cx){
+      cx = document.createElement("div");
+      cx.id = "premio";
+      document.body.appendChild(cx);
+    }
+    cx.innerHTML =
+      '<div class="faixa">Fase vencida</div>' +
+      '<div class="nome">Você já tem<br>todas as pôneis!</div>' +
+      '<div class="conta">' + ALBUM.length + ' de ' + ALBUM.length + ' no álbum</div>' +
+      '<button class="botao" id="premioOk">Continuar</button>';
+    cx.classList.add("visivel");
+    brilhos(cx);
+    if(typeof somVitoria === "function") try{ somVitoria(); }catch(e){}
+
+    document.getElementById("premioOk").addEventListener("click", () => {
+      cx.classList.remove("visivel");
+      if(typeof aoFechar === "function") aoFechar();
+      voltaAoMapa();
+    });
     return;
   }
 
