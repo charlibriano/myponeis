@@ -154,7 +154,32 @@ function premiar(aoFechar){
   document.getElementById("premioOk").addEventListener("click", () => {
     cx.classList.remove("visivel");
     if(typeof aoFechar === "function") aoFechar();
+    voltaAoMapa();
   });
+}
+
+/* ---------- a volta para o mapa ----------
+   Uma pônei ganha é uma fase vencida. Antes o jogo simplesmente
+   continuava depois do prêmio, e a passagem de fase não existia para
+   ela: vencia e seguia na mesma tela. Aqui termina onde começou, no
+   mapa, que é onde a caminhada até a próxima parada aparece.
+
+   Isto vale para os cinco jogos de uma vez, porque premiar() é o
+   único ponto do projeto por onde todas as vitórias passam.
+
+   Se a missão do dia fechou junto, a festa vem primeiro — a volta
+   espera o botão dela, senão a comemoração some antes de ser vista. */
+function voltaAoMapa(){
+  const ir = () => { location.href = "index.html"; };
+
+  const festa = document.getElementById("festaMissao");
+  if(festa){
+    const b = document.getElementById("festaMissaoOk");
+    if(b) b.addEventListener("click", ir);
+    else setTimeout(ir, 3000);
+    return;
+  }
+  setTimeout(ir, 250);
 }
 
 function brilhos(cx){
