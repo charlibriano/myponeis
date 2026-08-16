@@ -88,13 +88,22 @@ const SO_COM_IMAGEM = true;
    rodada: ela começaria por trás da tela de prêmio e, ao fechar, o
    jogo já estaria no meio de outra pergunta. */
 function contaDesafio(){
-  /* Quem decide o fim da rodada agora é a caminhada: acabou quando a
-     amiga chega no castelo. Contar acertos soltos não dizia nada para
-     ela, porque não dava para ver o quanto faltava.
+  /* Quem decide o fim da rodada é a caminhada, na tela do "Cadê o
+     Pônei?": acabou quando a amiga chega no castelo. Contar acertos
+     soltos não dizia nada para ela, porque não dava para ver o quanto
+     faltava.
+
+     No "Quem Sumiu?" não existe caminhada, e o andaCaminho devolvia
+     false para sempre — a fase nunca terminava e ela ficava presa no
+     mesmo jogo. Lá uma rodada certa já é a fase inteira: achar quem
+     sumiu é uma tarefa fechada, não uma sequência.
+
      Sem o caminho.js carregado, cai na contagem antiga de 5. */
-  const chegou = (typeof andaCaminho === 'function')
-    ? andaCaminho()
-    : (estrelas !== 0 && estrelas % 5 === 0);
+  const noQuiz = !el('jogo').classList.contains('escondida');
+  let chegou;
+  if(!noQuiz)                                  chegou = true;
+  else if(typeof andaCaminho === 'function')   chegou = andaCaminho();
+  else                                         chegou = (estrelas !== 0 && estrelas % 5 === 0);
   if(!chegou) return false;
 
   let m = null;
@@ -228,39 +237,27 @@ let sTimers = [], sAlvo = null, sRodada = 0, sTravado = true, sGrupo = [], sMesa
 function limpaTimers(){ sTimers.forEach(clearTimeout); sTimers = []; }
 function depois(fn, ms){ sTimers.push(setTimeout(fn, ms)); }
 
+/* ===================================================================
+   QUEM SUMIU?
+
+   A versão anterior escondia o pônei atrás de moitas, barris e casas
+   desenhados em SVG, com um rabinho de pista saindo de trás. Saiu:
+   desenho vetorial feito à mão não sustenta a comparação com as
+   imagens da série que estão na pasta, e o rabinho ficava tosco.
+
+   Aqui todo elemento visível é foto de verdade. Os pôneis brincam no
+   campo, uma rajada de folhas passa, um deles some e deixa o lugar
+   vazio. Ela toca em quem faltou, entre três retratos.
+
+   Uma rodada certa encerra a fase — quem decide isso é o
+   contaDesafio, que devolve true na primeira acertada deste modo.
+   =================================================================== */
+
 function quantosNaMesa(){
   if(sRodada <= 2) return 3;
   if(sRodada <= 5) return 4;
-  if(sRodada <= 8) return 5;
-  return 6;
+  return 5;
 }
-
-/* ===================================================================
-   ESCONDE-ESCONDE
-
-   A versão anterior era recordação: olhe, memorize, aponte quem faltou.
-   Isso é o que o jogo da memória já faz — mudava o enunciado, não a
-   experiência. E terminava sempre numa fila de quadrados parados.
-
-   Aqui a criança PROCURA. Os pôneis brincam no campo, um se esconde, e
-   ela varre o cenário atrás da pista: o esconderijo certo balança de
-   leve e deixa um rabinho à mostra. É atenção visual, e o achado é o
-   prêmio — o mesmo mecanismo do esconde-esconde de verdade.
-   =================================================================== */
-
-/* Os esconderijos. Cada um tem sombra no chão, camadas de tom e um
-   destaque de luz — sem isso viravam manchas chapadas. Renderizei
-   todos antes de aplicar, para conferir a leitura de cada forma. */
-const ESCONDERIJOS = [
-  { id:"moita", svg:'<ellipse cx="50" cy="90" rx="38" ry="7" fill="#3F8A4C" opacity=".35"/> <ellipse cx="28" cy="66" rx="22" ry="19" fill="#3F8F4E"/> <ellipse cx="72" cy="66" rx="22" ry="19" fill="#3F8F4E"/> <ellipse cx="50" cy="58" rx="27" ry="24" fill="#4EA75E"/> <ellipse cx="34" cy="60" rx="15" ry="13" fill="#5CBB6C"/> <ellipse cx="64" cy="56" rx="13" ry="11" fill="#63C674"/> <ellipse cx="44" cy="48" rx="9" ry="7" fill="#7BD98A" opacity=".8"/> <circle cx="70" cy="72" r="3.4" fill="#FF6FB0"/> <circle cx="30" cy="76" r="3" fill="#FFD34A"/> <ellipse cx="50" cy="88" rx="40" ry="6" fill="#4EA75E"/>' },
-  { id:"arvore", svg:'<ellipse cx="50" cy="92" rx="30" ry="6" fill="#3F8A4C" opacity=".35"/> <path d="M44 92 V62 q0-6 6-6 t6 6 V92Z" fill="#8B5A2B"/> <path d="M50 74 L38 64" stroke="#8B5A2B" stroke-width="5" stroke-linecap="round"/> <circle cx="50" cy="38" r="26" fill="#4EA75E"/> <circle cx="29" cy="48" r="17" fill="#3F8F4E"/> <circle cx="71" cy="47" r="18" fill="#45994F"/> <circle cx="43" cy="30" r="13" fill="#63C674"/> <circle cx="60" cy="34" r="9" fill="#7BD98A" opacity=".85"/> <circle cx="34" cy="55" r="4" fill="#E0614F"/> <circle cx="66" cy="58" r="3.6" fill="#E0614F"/>' },
-  { id:"pedra", svg:'<ellipse cx="50" cy="90" rx="36" ry="6" fill="#6B6478" opacity=".3"/> <path d="M12 86 L20 54 L36 40 L58 38 L76 50 L88 86Z" fill="#9B95AC"/> <path d="M20 54 L36 40 L58 38 L46 60Z" fill="#B7B2C6"/> <path d="M58 38 L76 50 L88 86 L64 78Z" fill="#8A849C"/> <path d="M12 86 L20 54 L46 60 L38 86Z" fill="#A79FB8"/> <ellipse cx="34" cy="50" rx="6" ry="3" fill="#CFCBDA" opacity=".85"/> <ellipse cx="50" cy="86" rx="40" ry="5" fill="#4EA75E"/>' },
-  { id:"barril", svg:'<ellipse cx="50" cy="92" rx="30" ry="6" fill="#6B4A24" opacity=".3"/> <path d="M26 38 q24-7 48 0 q6 24 0 50 q-24 7-48 0 q-6-26 0-50Z" fill="#C08A4A"/> <path d="M26 38 q24-7 48 0 q2 8 3 18 q-27-8-54 0 q1-10 3-18Z" fill="#D29B5A"/> <rect x="23" y="50" width="54" height="7" rx="3" fill="#7A4E21"/> <rect x="23" y="72" width="54" height="7" rx="3" fill="#7A4E21"/> <ellipse cx="50" cy="36" rx="24" ry="6" fill="#E0B27A"/> <path d="M34 44 q0 26 2 40" stroke="#A5713A" stroke-width="2" fill="none"/>' },
-  { id:"feno", svg:'<ellipse cx="50" cy="90" rx="34" ry="6" fill="#9C7A2E" opacity=".3"/> <circle cx="50" cy="58" r="32" fill="#E8C46A"/> <path d="M20 46 q30-12 60 0" stroke="#CFA84C" stroke-width="4" fill="none"/> <path d="M18 60 q32-12 64 0" stroke="#CFA84C" stroke-width="4" fill="none"/> <path d="M22 74 q28-12 56 0" stroke="#CFA84C" stroke-width="4" fill="none"/> <path d="M26 34 q10 4 14 10" stroke="#F2DA9A" stroke-width="4" fill="none" stroke-linecap="round"/> <ellipse cx="50" cy="86" rx="36" ry="5" fill="#4EA75E"/>' },
-  { id:"casa", svg:'<ellipse cx="50" cy="92" rx="34" ry="6" fill="#8A6A44" opacity=".3"/> <rect x="20" y="50" width="60" height="40" rx="5" fill="#F6E7C8"/> <rect x="20" y="50" width="60" height="40" rx="5" fill="none" stroke="#C9A87A" stroke-width="3"/> <path d="M50 12 L92 52 H8Z" fill="#E0614F"/> <path d="M50 12 L92 52 H70Z" fill="#C94F3E"/> <rect x="41" y="64" width="18" height="26" rx="8" fill="#8B5A2B"/> <circle cx="55" cy="78" r="2" fill="#E8C46A"/> <rect x="24" y="58" width="13" height="13" rx="3" fill="#9BD8F0" stroke="#C9A87A" stroke-width="2"/> <rect x="63" y="58" width="13" height="13" rx="3" fill="#9BD8F0" stroke="#C9A87A" stroke-width="2"/>' }
-];
-
-let sEsconderijo = null;
 
 /* estilos do campo, injetados daqui para não mexer no CSS do projeto */
 (function estiloCampo(){
@@ -269,139 +266,93 @@ let sEsconderijo = null;
   st.id = 'estiloCampo';
   st.textContent = `
     #tabuleiro.campo{
-      position:relative; display:block; overflow:hidden;
-      min-height:230px; border-radius:22px;
-      box-shadow:inset 0 3px 10px rgba(80,120,160,.18);
+      position:relative; display:block;
+      width:100%; aspect-ratio:16/10; max-height:46vh;
+      border-radius:22px; overflow:hidden;
+      box-shadow:inset 0 2px 10px rgba(40,80,60,.2), 0 4px 12px rgba(62,42,92,.2);
     }
     #tabuleiro.campo .ceuCampo{
-      position:absolute; inset:0;
-      background:
-        radial-gradient(50% 34% at 82% 12%, #FFF3B8 0%, rgba(255,243,184,0) 70%),
-        radial-gradient(26% 18% at 22% 20%, rgba(255,255,255,.95) 0%, rgba(255,255,255,0) 72%),
-        radial-gradient(20% 14% at 52% 14%, rgba(255,255,255,.85) 0%, rgba(255,255,255,0) 72%),
-        linear-gradient(180deg,#BFE8FF 0%, #E6F6FF 100%);
+      position:absolute; inset:0 0 32% 0;
+      background:linear-gradient(180deg,#BFEAFF 0%,#E4F6FF 100%);
     }
     #tabuleiro.campo .grama{
-      position:absolute; left:0; right:0; bottom:0; height:56%;
-      background:
-        radial-gradient(circle at 18% 30%, rgba(255,255,255,.16) 0 8%, transparent 9%),
-        radial-gradient(circle at 62% 52%, rgba(0,60,20,.08) 0 7%, transparent 8%),
-        radial-gradient(circle at 86% 26%, rgba(255,255,255,.14) 0 6%, transparent 7%),
-        linear-gradient(180deg,#8FD68F 0%, #64B96A 100%);
-      border-top:5px solid #5FAE63; border-radius:0 0 20px 20px;
+      position:absolute; left:0; right:0; bottom:0; height:34%;
+      background:linear-gradient(180deg,#8FD89A 0%,#5FBF7A 100%);
+      border-radius:44% 44% 0 0 / 22% 22% 0 0;
     }
 
-    /* os esconderijos ficam na linha do chão */
-    #tabuleiro.campo .esconderijos{
-      position:absolute; left:2%; right:2%; bottom:6%;
-      display:flex; align-items:flex-end; justify-content:space-around; gap:2%;
-      z-index:3;
-    }
-    #tabuleiro.campo .esconderijo{
-      position:relative; flex:1 1 0; max-width:104px; aspect-ratio:1;
-      border:none; background:none; padding:0; cursor:pointer;
-      transition:transform .12s ease;
-    }
-    #tabuleiro.campo .esconderijo svg{ width:100%; height:100%; display:block; }
-    #tabuleiro.campo .esconderijo:active{ transform:scale(.94); }
-
-    /* A PISTA: o esconderijo certo balança de leve e deixa um rabinho
-       à mostra. É o que transforma sorte em observação. */
-    #tabuleiro.campo .esconderijo.temPonei{ animation:moitaMexe 2.6s ease-in-out infinite; }
-    @keyframes moitaMexe{
-      0%,72%,100%{ transform:rotate(0); }
-      78%        { transform:rotate(-4deg); }
-      86%        { transform:rotate(4deg); }
-      92%        { transform:rotate(-2deg); }
-    }
-    #tabuleiro.campo .rabinho{ display:none; }
-    #tabuleiro.campo .esconderijo.temPonei .rabinho{
-      display:block; position:absolute; right:2%; bottom:38%;
-      width:20%; height:14%;
-      /* forma de cauda: ponta arredondada saindo de trás do esconderijo */
-      clip-path:polygon(0% 20%, 62% 0%, 100% 45%, 62% 100%, 0% 78%);
-      background:var(--corRabo, #FF6FB0);
-      filter:drop-shadow(0 1px 2px rgba(40,80,60,.4));
-      transform-origin:left center;
-      animation:raboAbana 2.6s ease-in-out infinite;
-      z-index:2;
-    }
-    @keyframes raboAbana{
-      0%,72%,100%{ transform:rotate(0) translateX(0); }
-      80%        { transform:rotate(-16deg) translateX(3px); }
-      88%        { transform:rotate(12deg) translateX(3px); }
-    }
-    #tabuleiro.campo .esconderijo.achou{ animation:none; }
-    #tabuleiro.campo .esconderijo.vazio{ animation:moitaSacode .45s ease-in-out; }
-    @keyframes moitaSacode{
-      0%,100%{ transform:translateX(0); }
-      25%    { transform:translateX(-7px) rotate(-4deg); }
-      75%    { transform:translateX(7px) rotate(4deg); }
-    }
-    #tabuleiro.campo .borboleta{
-      position:absolute; left:50%; top:10%; font-size:22px; pointer-events:none;
-      animation:borboletaVoa 1.2s ease-out forwards;
-    }
-    @keyframes borboletaVoa{
-      from{ transform:translate(0,0) scale(.6); opacity:1; }
-      to  { transform:translate(30px,-60px) scale(1.1); opacity:0; }
-    }
-
-    /* os pôneis brincando na frente */
+    /* os pôneis brincando: retratos redondos, com pulinho próprio */
     #tabuleiro.campo .brincando{
-      position:absolute; left:6%; right:6%; top:6%;
-      display:flex; justify-content:center; gap:6%;
+      position:absolute; left:5%; right:5%; top:16%;
+      display:flex; justify-content:center; align-items:center; gap:4%;
       z-index:4;
     }
     #tabuleiro.campo .poneiCampo{
-      width:20%; max-width:72px; aspect-ratio:1;
+      width:20%; max-width:78px; aspect-ratio:1;
       animation:pulinho 1.1s ease-in-out infinite alternate;
-      transition:transform .45s ease, opacity .4s ease;
+      transition:transform .5s ease, opacity .5s ease;
     }
     #tabuleiro.campo .poneiCampo img{
       width:100%; height:100%; border-radius:50%;
-      object-fit:cover; object-position:center 34%;
+      object-fit:cover; object-position:center 30%;
       border:3px solid #fff; box-sizing:border-box;
       box-shadow:0 3px 8px rgba(40,80,60,.35);
     }
-    #tabuleiro.campo .poneiCampo svg{ width:100%; height:100%; }
     @keyframes pulinho{
       from{ transform:translateY(0)    rotate(-3deg); }
-      to  { transform:translateY(-16%) rotate(3deg); }
-    }
-    #tabuleiro.campo .poneiCampo.escondeu{ transform:scale(.2) translateY(120%); opacity:0; }
-    #tabuleiro.campo .esconderijo .poneiCampo.surgindo{
-      position:absolute; left:50%; top:-32%; width:74%; max-width:none;
-      transform:translateX(-50%);
-      animation:surgePonei .6s cubic-bezier(.2,1.6,.4,1) both, pulinho 1.1s ease-in-out infinite alternate .6s;
-      z-index:5;
-    }
-    @keyframes surgePonei{
-      0%  { transform:translateX(-50%) scale(.2) translateY(60%); opacity:0; }
-      100%{ transform:translateX(-50%) scale(1) translateY(0); opacity:1; }
+      to  { transform:translateY(-9px) rotate(3deg); }
     }
 
-    /* a rajada de folhas que cobre a cena */
-    #tabuleiro.campo .rajada{ position:absolute; inset:0; z-index:6; pointer-events:none; }
-    #tabuleiro.campo .rajada span{
-      position:absolute; left:-12%;
-      animation:folhaCruza 1.4s linear forwards;
+    /* o que sumiu vira um lugar vazio, não um buraco: ela precisa ver
+       que ALGUÉM estava ali */
+    #tabuleiro.campo .poneiCampo.sumindo{ animation:sumiuPuf .5s ease-in forwards; }
+    @keyframes sumiuPuf{
+      0%  { transform:scale(1)   rotate(0);    opacity:1; }
+      100%{ transform:scale(.25) rotate(18deg); opacity:0; }
     }
-    @keyframes folhaCruza{
-      from{ transform:translateX(0) rotate(0); opacity:0; }
+    #tabuleiro.campo .poneiCampo.vaga{
+      animation:none;
+      border-radius:50%; border:3px dashed #fff;
+      background:rgba(255,255,255,.35);
+      display:flex; align-items:center; justify-content:center;
+      font-family:'Baloo 2',cursive; font-weight:800;
+      font-size:clamp(20px,6vw,34px); color:#fff;
+      text-shadow:0 2px 4px rgba(40,80,60,.5);
+    }
+
+    /* a rajada de folhas que cobre o campo na hora do sumiço */
+    #tabuleiro.campo .folha{
+      position:absolute; z-index:6; font-size:22px; pointer-events:none;
+      animation:folhaVoa 1.5s ease-in forwards;
+    }
+    @keyframes folhaVoa{
+      0%  { transform:translate(-30px,0) rotate(0);      opacity:0; }
       20% { opacity:1; }
-      to  { transform:translateX(130vw) rotate(540deg); opacity:0; }
+      100%{ transform:translate(120px,-24px) rotate(320deg); opacity:0; }
     }
+
+    /* as três respostas, em retrato redondo como no campo */
+    #opcoes .opcao{
+      border:0; padding:0; background:none; cursor:pointer;
+      border-radius:50%; overflow:hidden; aspect-ratio:1;
+      box-shadow:0 0 0 3px #fff, 0 4px 10px rgba(62,42,92,.3);
+      transition:transform .25s ease, opacity .25s ease;
+    }
+    #opcoes .opcao img{
+      width:100%; height:100%; display:block;
+      object-fit:cover; object-position:center 30%;
+    }
+    #opcoes .opcao.certa{ box-shadow:0 0 0 4px #FFC93C, 0 0 22px rgba(255,201,60,.9); }
+    #opcoes .opcao.errada{ animation:tremeOpcao .45s ease; }
+    @keyframes tremeOpcao{
+      0%,100%{ transform:translateX(0); }
+      25%    { transform:translateX(-8px) rotate(-4deg); }
+      75%    { transform:translateX(8px)  rotate(4deg); }
+    }
+    #opcoes .opcao.apagada{ opacity:.35; transform:scale(.92); }
   `;
   document.head.appendChild(st);
 })();
-
-
-function quantosEsconderijos(){
-  if(sRodada <= 2) return 3;
-  if(sRodada <= 5) return 4;
-  return 5;
-}
 
 function novaRodadaSumiu(){
   limpaTimers();
@@ -409,7 +360,7 @@ function novaRodadaSumiu(){
   sRodada++;
   sGrupo = elenco();
 
-  const n = Math.min(3, sGrupo.length);
+  const n = Math.min(quantosNaMesa(), sGrupo.length - 2);
   sMesa = [];
   while(sMesa.length < n){
     const p = sorteia(sGrupo);
@@ -423,47 +374,40 @@ function novaRodadaSumiu(){
 
   montaCampo();
 
-  // 1. todos brincando à vista
-  depois(()=>{ el('balaoSumiu').textContent = 'Um vai se esconder!'; }, 2200);
+  depois(()=>{ el('balaoSumiu').textContent = 'Olha bem quem está aqui!'; }, 1800);
 
-  // 2. uma rajada de folhas cobre o campo
-  depois(()=> rajada(), 3400);
+  depois(()=>{ rajada(); }, 3200);
 
-  // 3. o pônei sumiu; começa a procura
+  /* o sumiço acontece no meio da rajada: as folhas cobrem o momento,
+     que é o que dá a sensação de mágica em vez de o pônei só apagar */
   depois(()=>{
-    el('balaoSumiu').textContent = 'Cadê ' + (sAlvo.art === 'a' ? 'a ' : 'o ') + sAlvo.nome + '?';
-    el('rotuloOpcoes').textContent = 'Procure onde ele se escondeu';
+    const alvoEl = [...el('tabuleiro').querySelectorAll('.poneiCampo')]
+      .find(d => d.dataset.nome === sAlvo.nome);
+    if(alvoEl){
+      bip([520,380],.12);
+      alvoEl.classList.add('sumindo');
+      depois(()=>{
+        alvoEl.classList.remove('sumindo');
+        alvoEl.classList.add('vaga');
+        alvoEl.innerHTML = '?';
+      }, 500);
+    }
+  }, 3800);
+
+  depois(()=>{
+    el('balaoSumiu').textContent = 'Quem sumiu?';
+    el('rotuloOpcoes').textContent = 'Toque no pônei que faltou';
+    montaOpcoes();
     sTravado = false;
-    piscaPista();
-  }, 4600);
+  }, 4800);
 }
 
 function montaCampo(){
   const campo = el('tabuleiro');
   campo.innerHTML = '';
   campo.classList.add('campo');
-
   campo.insertAdjacentHTML('beforeend', '<div class="ceuCampo"></div><div class="grama"></div>');
 
-  // os esconderijos, sorteados sem repetir
-  const lista = ESCONDERIJOS.slice().sort(()=>Math.random()-.5).slice(0, quantosEsconderijos());
-  sEsconderijo = sorteia(lista).id;
-
-  const fila = document.createElement('div');
-  fila.className = 'esconderijos';
-  lista.forEach(e=>{
-    const b = document.createElement('button');
-    b.className = 'esconderijo';
-    b.dataset.id = e.id;
-    b.innerHTML =
-      '<span class="rabinho"></span>' +
-      '<svg viewBox="0 0 100 100">' + e.svg + '</svg>';
-    b.addEventListener('click', ()=> procura(b));
-    fila.appendChild(b);
-  });
-  campo.appendChild(fila);
-
-  // os pôneis brincando na frente
   const brincando = document.createElement('div');
   brincando.className = 'brincando';
   sMesa.forEach((p, i)=>{
@@ -477,76 +421,83 @@ function montaCampo(){
   campo.appendChild(brincando);
 }
 
-/* a rajada de folhas: cobre a cena e leva um pônei junto */
+/* folhas de verdade não existem na pasta, e emoji aqui funciona:
+   é elemento de passagem, não personagem */
 function rajada(){
   const campo = el('tabuleiro');
-  const r = document.createElement('div');
-  r.className = 'rajada';
+  const folhas = ['🍃','🌿','🍂','🌸'];
   for(let i = 0; i < 14; i++){
-    const f = document.createElement('span');
-    f.textContent = sorteia(['🍃','🌿','🍂']);
-    f.style.top = (Math.random() * 80) + '%';
-    f.style.animationDelay = (Math.random() * .5) + 's';
-    f.style.fontSize = (16 + Math.random() * 14) + 'px';
-    r.appendChild(f);
+    const f = document.createElement('div');
+    f.className = 'folha';
+    f.textContent = sorteia(folhas);
+    f.style.left = (Math.random() * 70) + '%';
+    f.style.top  = (10 + Math.random() * 60) + '%';
+    f.style.animationDelay = (Math.random() * .7).toFixed(2) + 's';
+    campo.appendChild(f);
+    setTimeout(()=> f.remove(), 2400);
   }
-  campo.appendChild(r);
-  bip([520, 660], .1);
-
-  depois(()=>{
-    const alvoEl = campo.querySelector('.poneiCampo[data-nome="' + sAlvo.nome + '"]');
-    if(alvoEl) alvoEl.classList.add('escondeu');
-  }, 450);
-
-  depois(()=> r.remove(), 1600);
 }
 
-/* a pista: o esconderijo certo balança e mostra um rabinho */
-function piscaPista(){
-  const certo = document.querySelector('#tabuleiro .esconderijo[data-id="' + sEsconderijo + '"]');
-  if(!certo) return;
-  certo.classList.add('temPonei');
-  certo.style.setProperty('--corRabo', sAlvo.crina && sAlvo.crina[0] ? sAlvo.crina[0] : '#FF6FB0');
+function montaOpcoes(){
+  const escolhas = [sAlvo];
+  const fora = sGrupo.filter(p => !sMesa.includes(p));
+  while(escolhas.length < 3 && escolhas.length - 1 < fora.length){
+    const p = sorteia(fora);
+    if(!escolhas.includes(p)) escolhas.push(p);
+  }
+  escolhas.sort(()=> Math.random() - .5);
+
+  const box = el('opcoes');
+  box.innerHTML = '';
+  escolhas.forEach(p=>{
+    const b = document.createElement('button');
+    b.className = 'opcao';
+    b.setAttribute('aria-label', p.nome);
+    b.innerHTML = retrato(p);
+    b.addEventListener('click', ()=> respondeSumiu(p, b));
+    box.appendChild(b);
+  });
 }
 
-function procura(botao){
+function respondeSumiu(p, botao){
   if(sTravado) return;
 
-  if(botao.dataset.id === sEsconderijo){
-    sTravado = true;
-    estrelas++;
-    el('placar').textContent = estrelas;
-    const premiando = contaDesafio();
-
-    botao.classList.add('achou');
-    const surge = document.createElement('div');
-    surge.className = 'poneiCampo surgindo';
-    surge.innerHTML = retrato(sAlvo);
-    botao.appendChild(surge);
-
-    bip([660, 880, 1180], .11);
-    festa(botao);
-    el('balaoSumiu').textContent = 'Achou!';
-    el('rotuloOpcoes').textContent = '';
-    if(!premiando) depois(novaRodadaSumiu, 2600);
-
-  }else{
-    // errar não pune: sai uma borboleta e o esconderijo balança
-    botao.classList.remove('vazio');
+  if(p !== sAlvo){
+    /* errar não encerra nada: sacode e ela tenta de novo */
+    botao.classList.remove('errada');
     void botao.offsetWidth;
-    botao.classList.add('vazio');
-    const b = document.createElement('span');
-    b.className = 'borboleta';
-    b.textContent = sorteia(['🦋','🐝','🐞']);
-    botao.appendChild(b);
-    depois(()=> b.remove(), 1200);
-    bip([300, 240], .12);
+    botao.classList.add('errada');
+    bip([300,240],.14);
+    return;
   }
+
+  sTravado = true;
+  estrelas++;
+  el('placar').textContent = estrelas;
+
+  botao.classList.add('certa');
+  [...el('opcoes').querySelectorAll('.opcao')].forEach(c=>{
+    if(c !== botao) c.classList.add('apagada');
+  });
+
+  /* o lugar vazio recebe de volta quem estava ali: fecha a história */
+  const vaga = el('tabuleiro').querySelector('.poneiCampo.vaga');
+  if(vaga){
+    vaga.classList.remove('vaga');
+    vaga.innerHTML = retrato(sAlvo);
+  }
+
+  el('balaoSumiu').textContent = (sAlvo.art === 'a' ? 'Era a ' : 'Era o ') + sAlvo.nome + '!';
+  el('rotuloOpcoes').textContent = '';
+  bip([660,880,1180],.11);
+  festa(botao);
+
+  /* uma rodada certa = uma fase. O contaDesafio entrega o prêmio e o
+     album.js devolve ela ao mapa; só se o prêmio não existir é que a
+     próxima rodada é marcada aqui. */
+  const premiando = contaDesafio();
+  if(!premiando) depois(novaRodadaSumiu, 2600);
 }
-
-/* respondeSumiu saiu junto com a fila de opções: agora a resposta é
-   procurar no cenário, tratada em procura(). */
-
 
 /* --- botões --- */
 el('btnJogar').addEventListener('click', ()=>{
