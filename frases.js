@@ -68,8 +68,19 @@
   poe('APLAUSOS',   ['Parabéns!', 'Você conseguiu!', 'Que campeã!']);
 
   /* ---------- as falas continuam removidas ----------
-     fala() existe e não fala: as páginas chamam em vários pontos, e
-     sem esta definição cada chamada derrubaria o bloco onde está. */
+     Estas existem e não fazem nada. As páginas e o voz.js chamam em
+     vários pontos, e sem definição cada chamada derruba o bloco onde
+     está — foi o ReferenceError de falaGravada que travou a memória.
+
+     São no-ops de propósito: as falas foram removidas do jogo, e o
+     objetivo aqui é só impedir que a ausência delas mate código bom
+     em volta. Quando o voz.js for limpo de vez, isto pode sair. */
   poe('fala', function(){});
+  poe('falaGravada', function(){});
+  poe('falaAgora', function(){});
+  poe('paraFala', function(){});
+  poe('testaVoz', function(){});
+  poe('trocaVoz', function(){});
+  poe('precarregaFalas', function(){});
 
 })();
