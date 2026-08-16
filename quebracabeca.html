@@ -12,29 +12,30 @@
 /* ============================================================
    MONTA A PÔNEI — quebra-cabeça
 
-   A imagem é uma foto da série, cortada em pedaços por CSS: cada
-   peça é o mesmo arquivo com o enquadramento deslocado. Nenhum
-   recorte precisa ser gerado, nenhuma imagem nova entra na pasta.
+   A imagem é uma foto da série, cortada por CSS: cada peça é o mesmo
+   arquivo com o enquadramento deslocado. Nenhum recorte é gerado,
+   nenhuma imagem nova entra na pasta.
+
+   A PRIMEIRA VERSÃO MONTAVA O TABULEIRO ANTES DE SABER SE A IMAGEM
+   EXISTIA. Quando o arquivo não vinha — nome com acento, extensão
+   .jpg, pônei sem foto na pasta — as peças ficavam com fundo vazio e
+   a tela ficava em branco, sem aviso nenhum. Agora a imagem é
+   carregada primeiro; o tabuleiro só nasce depois que ela confirma
+   que existe, e a falha aparece escrita na tela.
 
    Cada lugar vazio mostra a própria peça bem apagada, como sombra.
-   Aos 4 anos isso é o que torna o quebra-cabeça possível: ela não
-   precisa imaginar onde vai, ela compara. Sem a sombra, vira
-   tentativa e erro e ela desiste.
-
-   Peça no lugar errado não é derrota: o lugar balança e nada se
-   perde. Não existe fim ruim aqui.
+   Aos 4 anos é isso que torna o quebra-cabeça possível: ela compara
+   em vez de imaginar. Peça no lugar errado só faz o lugar balançar.
    ============================================================ */
 :root{
   --lilas:#EFE3FF; --rosa-claro:#FFE4F2;
-  --roxo:#6B3FBF; --roxo-escuro:#4A2A87;
-  --rosa:#FF6FB0; --amarelo:#FFD34A; --turquesa:#35CFC9;
+  --roxo:#6B3FBF; --rosa:#FF6FB0; --amarelo:#FFD34A;
 }
 *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
 html,body{ height:100%; }
 body{
   font-family:'Baloo 2','Segoe UI Rounded',system-ui,sans-serif;
-  color:#40276E; user-select:none; touch-action:manipulation;
-  overflow:hidden;
+  color:#40276E; user-select:none; touch-action:manipulation; overflow:hidden;
 }
 #app{
   height:100dvh; display:flex; flex-direction:column;
@@ -59,9 +60,15 @@ body{
 #recado{
   margin-top:8px; padding:10px 13px; border-radius:14px;
   background:#3B1220; color:#FFE6EE; border:2px solid var(--rosa);
-  font-size:13px; line-height:1.45; cursor:pointer;
+  font-size:12.5px; line-height:1.5; cursor:pointer; word-break:break-word;
 }
 #recado.escondida{ display:none; }
+
+#carregando{
+  flex:1; display:flex; align-items:center; justify-content:center;
+  font-size:17px; font-weight:800; color:#8A6FBF;
+}
+#carregando.escondida{ display:none; }
 
 /* ---------- o tabuleiro ---------- */
 #tabuleiro{
@@ -70,25 +77,27 @@ body{
   padding:6px; border-radius:22px; background:rgba(255,255,255,.5);
   box-shadow:inset 0 2px 8px rgba(107,63,191,.18), 0 6px 16px rgba(107,63,191,.2);
 }
+#tabuleiro.escondida, #pecas.escondida{ display:none; }
+
 .lugar{
   position:relative; border-radius:8px; overflow:hidden;
-  background-color:#F3ECFF;
-  background-repeat:no-repeat;
-  opacity:1;
+  background:#F0E8FA;
   transition:transform .2s ease;
 }
-/* a sombra da peça que falta ali */
-.lugar::before{
-  content:""; position:absolute; inset:0;
-  background-image:inherit; background-size:inherit; background-position:inherit;
-  opacity:.16; filter:grayscale(.6);
+/* a sombra da peça que falta ali. É um filho de verdade, com o
+   recorte escrito nele — 'background:inherit' em pseudo-elemento não
+   é confiável entre navegadores, e um tabuleiro invisível é
+   indistinguível de um tabuleiro que não foi montado. */
+.lugar .sombra{
+  position:absolute; inset:0;
+  background-repeat:no-repeat;
+  opacity:.17; filter:grayscale(.55);
+  transition:opacity .3s ease, filter .3s ease;
 }
-.lugar.cheio::before{ opacity:1; filter:none; }
+.lugar.cheio .sombra{ opacity:1; filter:none; }
 .lugar.cheio{ animation:encaixa .45s cubic-bezier(.2,1.6,.4,1); }
 @keyframes encaixa{
-  0%  { transform:scale(1.35); }
-  60% { transform:scale(.94); }
-  100%{ transform:scale(1); }
+  0%{ transform:scale(1.3); } 60%{ transform:scale(.95); } 100%{ transform:scale(1); }
 }
 .lugar.recusa{ animation:naoEai .4s ease; }
 @keyframes naoEai{
@@ -106,7 +115,7 @@ body{
 .peca{
   width:clamp(52px, 17vw, 76px); aspect-ratio:1;
   border:0; padding:0; cursor:pointer;
-  border-radius:12px; background-repeat:no-repeat;
+  border-radius:12px; background-repeat:no-repeat; background-color:#fff;
   box-shadow:0 0 0 3px #fff, 0 4px 10px rgba(62,42,92,.3);
   animation:balanca 3s ease-in-out infinite;
   transition:transform .2s ease, box-shadow .2s ease;
@@ -118,8 +127,7 @@ body{
   50%    { transform:translateY(-5px) rotate(2deg); }
 }
 .peca.escolhida{
-  animation:none;
-  transform:scale(1.14);
+  animation:none; transform:scale(1.14);
   box-shadow:0 0 0 4px var(--amarelo), 0 0 20px rgba(255,201,60,.9);
 }
 
@@ -139,13 +147,15 @@ body{
 }
 #pronto .moldura img{ width:100%; height:100%; object-fit:cover; object-position:center 30%; }
 @keyframes prontoEntra{
-  0%  { transform:scale(.3) rotate(-16deg); opacity:0; }
+  0%{ transform:scale(.3) rotate(-16deg); opacity:0; }
   100%{ transform:scale(1) rotate(0); opacity:1; }
 }
 #pronto .nome{ font-size:clamp(26px,8vw,40px); font-weight:800; color:var(--roxo); text-shadow:0 3px 0 #fff; }
 
-.faisca{ position:fixed; pointer-events:none; font-size:24px; z-index:210;
-  animation:faiscaSobe 1.4s ease-out forwards; }
+.faisca{
+  position:fixed; pointer-events:none; font-size:24px; z-index:210;
+  animation:faiscaSobe 1.4s ease-out forwards;
+}
 @keyframes faiscaSobe{
   0%  { transform:translate(0,0) scale(.5); opacity:1; }
   100%{ transform:translate(var(--dx,0), var(--dy,-120px)) scale(1.2); opacity:0; }
@@ -162,13 +172,14 @@ body{
 <div id="app">
   <div class="hud">
     <button class="btn-icone" id="btnCasa" aria-label="Voltar ao mapa">🏠</button>
-    <div class="balao">Monta <b id="quem">a pônei</b>!</div>
+    <div class="balao">Monta <b id="quem">…</b>!</div>
   </div>
 
   <div id="recado" class="escondida"></div>
+  <div id="carregando">preparando…</div>
 
-  <div id="tabuleiro"></div>
-  <div id="pecas"></div>
+  <div id="tabuleiro" class="escondida"></div>
+  <div id="pecas" class="escondida"></div>
 </div>
 
 <div id="pronto">
@@ -185,29 +196,82 @@ body{
 <script>
 const $ = id => document.getElementById(id);
 
-/* erro na tela, não no console: nesta casa é assim que se descobre
-   o que quebrou */
-addEventListener('error', e => {
-  $('recado').textContent = 'Erro: ' + e.message + (e.lineno ? ' (linha ' + e.lineno + ')' : '');
+function avisa(txt){
+  $('recado').textContent = txt;
   $('recado').classList.remove('escondida');
-});
+  $('carregando').classList.add('escondida');
+}
 $('recado').addEventListener('click', () => $('recado').classList.add('escondida'));
 
-/* ---------- quem vai ser montada ----------
-   De preferência uma que ela já ganhou: montar alguém que é dela
-   vale mais do que montar uma desconhecida. Sem coleção ainda,
-   sorteia da lista do álbum, que tem imagem conferida. */
-function sorteiaPonei(){
-  let fonte = [];
-  try{ if(typeof colecao === 'function') fonte = colecao(); }catch(e){}
-  if(!fonte.length && typeof ALBUM !== 'undefined') fonte = ALBUM.slice();
-  if(!fonte.length) return null;
-  return fonte[Math.floor(Math.random() * fonte.length)];
+/* erro na tela, não no console */
+addEventListener('error', e => {
+  avisa('Erro: ' + e.message + (e.lineno ? ' (linha ' + e.lineno + ')' : ''));
+});
+
+$('btnCasa').addEventListener('click', () => { location.href = 'index.html'; });
+
+/* ---------- de onde vêm as candidatas ----------
+   Ordem de preferência: as que ela já ganhou (montar alguém que é
+   dela vale mais), depois a lista do álbum, e por último o catálogo
+   inteiro de personagens, que é o que sempre existe. */
+function candidatas(){
+  const lista = [];
+  try{ if(typeof colecao === 'function') lista.push(...colecao()); }catch(e){}
+  try{ if(typeof ALBUM !== 'undefined') lista.push(...ALBUM); }catch(e){}
+
+  const nomes = [...new Set(lista)];
+  const fila = nomes.map(n => ({
+    nome: n,
+    src: (typeof imgDoAlbum === 'function')
+      ? imgDoAlbum(n) : 'imagens/' + encodeURIComponent(n) + '.png'
+  }));
+
+  /* o catálogo já traz o caminho certo de cada arquivo, inclusive os
+     poucos que são .jpg — por isso ele é a rede de segurança */
+  try{
+    if(typeof PERSONAGENS !== 'undefined' && Array.isArray(PERSONAGENS)){
+      PERSONAGENS.forEach(p => {
+        if(p && p.nome && p.img) fila.push({ nome:p.nome, src:p.img });
+      });
+    }
+  }catch(e){}
+
+  return fila;
+}
+
+/* Carrega de verdade antes de montar. Sem isto, imagem que não existe
+   vira tabuleiro invisível e a criança olha para uma tela vazia. */
+function carrega(src){
+  return new Promise(ok => {
+    const img = new Image();
+    img.onload  = () => ok(img.naturalWidth > 0);
+    img.onerror = () => ok(false);
+    img.src = src;
+  });
+}
+
+async function escolhePonei(){
+  const fila = candidatas();
+  if(!fila.length){
+    avisa('Nenhuma pônei disponível: o album.js e o personagens.js carregaram?');
+    return null;
+  }
+
+  /* embaralha só o começo da fila para não sortear sempre a mesma */
+  fila.sort(() => Math.random() - .5);
+
+  const tentados = [];
+  for(let i = 0; i < fila.length && i < 5; i++){
+    tentados.push(fila[i].src);
+    if(await carrega(fila[i].src)) return fila[i];
+  }
+
+  avisa('Nenhuma imagem carregou. Caminhos tentados: ' + tentados.join(' · '));
+  return null;
 }
 
 /* ---------- o tamanho do desafio ----------
-   Cresce com o que ela já venceu, não com o relógio: 4 peças no
-   começo, 6 depois, 9 quando já pegou o jeito. */
+   Cresce com o que ela já venceu, não com o relógio. */
 function tamanho(){
   let v = 0;
   try{ if(typeof vitorias === 'function') v = vitorias(); }catch(e){}
@@ -216,17 +280,11 @@ function tamanho(){
   return { col:3, lin:3 };
 }
 
-const ponei = sorteiaPonei();
-const foto  = (ponei && typeof imgDoAlbum === 'function') ? imgDoAlbum(ponei) : null;
-const { col, lin } = tamanho();
-const TOTAL = col * lin;
+let foto = null, ponei = null, col = 2, lin = 2, TOTAL = 4;
+let escolhida = null, postas = 0;
 
-let escolhida = null;
-let postas = 0;
-
-/* o recorte de cada peça: a mesma imagem, com o enquadramento
-   deslocado. C colunas viram uma imagem C vezes maior, e cada peça
-   mostra a sua fatia. */
+/* o recorte de cada peça: C colunas viram uma imagem C vezes maior,
+   e cada peça mostra a sua fatia */
 function recorte(i){
   const c = i % col, l = Math.floor(i / col);
   return {
@@ -237,15 +295,13 @@ function recorte(i){
 }
 
 function monta(){
-  if(!foto){
-    $('recado').textContent = 'Nenhuma pônei disponível para montar. O album.js carregou?';
-    $('recado').classList.remove('escondida');
-    return;
-  }
-
   $('quem').textContent = ponei;
+  $('carregando').classList.add('escondida');
+  $('tabuleiro').classList.remove('escondida');
+  $('pecas').classList.remove('escondida');
 
   const tab = $('tabuleiro');
+  tab.innerHTML = '';
   tab.style.gridTemplateColumns = 'repeat(' + col + ', 1fr)';
   tab.style.gridTemplateRows    = 'repeat(' + lin + ', 1fr)';
 
@@ -254,16 +310,21 @@ function monta(){
     const d = document.createElement('div');
     d.className = 'lugar';
     d.dataset.i = i;
-    d.style.backgroundImage    = 'url("' + foto + '")';
-    d.style.backgroundSize     = r.size;
-    d.style.backgroundPosition = r.pos;
+
+    const s = document.createElement('div');
+    s.className = 'sombra';
+    s.style.backgroundImage    = 'url("' + foto + '")';
+    s.style.backgroundSize     = r.size;
+    s.style.backgroundPosition = r.pos;
+    d.appendChild(s);
+
     d.addEventListener('click', () => encaixa(d));
     tab.appendChild(d);
   }
 
-  const ordem = [...Array(TOTAL).keys()].sort(() => Math.random() - .5);
   const caixa = $('pecas');
-  ordem.forEach(i => {
+  caixa.innerHTML = '';
+  [...Array(TOTAL).keys()].sort(() => Math.random() - .5).forEach(i => {
     const r = recorte(i);
     const b = document.createElement('button');
     b.className = 'peca';
@@ -286,11 +347,10 @@ function escolhe(b){
 }
 
 function encaixa(lugar){
-  if(!escolhida) return;
-  if(lugar.classList.contains('cheio')) return;
+  if(!escolhida || lugar.classList.contains('cheio')) return;
 
-  /* lugar errado não tira nada dela: o lugar balança e a peça
-     continua escolhida, pronta para a próxima tentativa */
+  /* lugar errado não tira nada dela: balança e a peça continua
+     escolhida, pronta para a próxima tentativa */
   if(lugar.dataset.i !== escolhida.dataset.i){
     lugar.classList.remove('recusa');
     void lugar.offsetWidth;
@@ -325,7 +385,7 @@ function faiscas(alvo){
   }
 }
 
-/* Fim de fase: mostra a pônei inteira e chama o premiar(). Daí em
+/* Fim de fase: mostra a pônei inteira e chama premiar(). Daí em
    diante quem conduz é o album.js — prêmio, contagem de vitória e
    volta ao mapa. Esta página não sabe que o mapa existe. */
 function terminou(){
@@ -341,9 +401,15 @@ function terminou(){
   }, 1900);
 }
 
-$('btnCasa').addEventListener('click', () => { location.href = 'index.html'; });
-
-monta();
+(async function comeca(){
+  const escolha = await escolhePonei();
+  if(!escolha) return;            // o aviso já está na tela
+  ponei = escolha.nome;
+  foto  = escolha.src;
+  const t = tamanho();
+  col = t.col; lin = t.lin; TOTAL = col * lin;
+  monta();
+})();
 </script>
 </body>
 </html>
