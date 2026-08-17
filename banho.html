@@ -10,23 +10,25 @@
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
 <style>
 /* ============================================================
-   BANHO DA PÔNEI — cuidar, não responder
+   BANHO DA PÔNEI
 
-   Os outros jogos todos perguntam alguma coisa e conferem a
-   resposta. Este não pergunta nada: a pônei está suja e ela esfrega
-   com o dedo até limpar. Não há certo nem errado, e é isso que
-   segura a atenção — cada movimento tem efeito imediato na tela.
+   A primeira versão era raspadinha: uma foto parada e o dedo
+   apagando uma camada de lama. Faltava o gesto. Nos jogos de banho
+   que a criança conhece, o dedo SEGURA alguma coisa — chuveirinho,
+   esponja — e o bicho reage.
 
-   NADA AQUI É DESENHADO. A sujeira é uma camada de textura sobre a
-   foto da série, apagada onde o dedo passa. O que aparece embaixo é
-   a imagem de verdade, a mesma da pasta imagens/. Nenhum
-   personagem, objeto ou acessório inventado entra na tela.
+   Aqui são três etapas, na ordem de um banho de verdade:
+     1. molhar    — o chuveirinho joga água onde o dedo passa
+     2. ensaboar  — a esponja tira a sujeira e deixa espuma
+     3. enxaguar  — a água leva a espuma embora
 
-   A página é autossuficiente: monta sozinha, sem esperar nada, sem
-   Promise. album.js entra depois e é bônus — se estiver ali, o
-   prêmio sai e a fase avança.
+   A pônei respira parada, pula quando ela encosta e se sacode no
+   fim. Nada disso é desenho meu: a foto é a da pasta imagens/, e as
+   ferramentas usam arte/chuveiro.png, arte/esponja.png e
+   arte/toalha.png se existirem — caindo em emoji do sistema quando
+   não existem, nunca em vetor desenhado à mão.
    ============================================================ */
-:root{ --roxo:#6B3FBF; --rosa:#FF6FB0; --amarelo:#FFD34A; --turquesa:#35CFC9; }
+:root{ --roxo:#6B3FBF; --rosa:#FF6FB0; --amarelo:#FFD34A; --agua:#5FC4E8; }
 *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
 html,body{ height:100%; }
 body{
@@ -44,10 +46,9 @@ body{
   background:rgba(255,255,255,.78); font-size:20px; cursor:pointer;
   box-shadow:0 2px 0 rgba(62,42,92,.12);
 }
-.btn-icone:active{ transform:translateY(2px); box-shadow:none; }
 .balao{
   margin-left:auto; background:#fff; border-radius:20px; padding:9px 16px;
-  font-weight:800; font-size:clamp(15px,4.6vw,20px);
+  font-weight:800; font-size:clamp(14px,4.4vw,19px);
   box-shadow:0 4px 0 rgba(62,42,92,.10);
 }
 .balao b{ color:#D2439A; }
@@ -63,61 +64,125 @@ body{
 /* ---------- a banheira ---------- */
 #banheira{
   position:relative; flex:0 0 auto;
-  width:min(84vw, 340px); aspect-ratio:1; margin:14px auto 0;
-  border-radius:50%; overflow:hidden;
-  background:#EAF6FF;
+  width:min(86vw, 350px); aspect-ratio:1; margin:12px auto 0;
+  border-radius:34px; overflow:hidden;
+  background:linear-gradient(180deg,#DFF3FF 0%,#BEE7FA 62%,#96D8F2 100%);
   border:7px solid #fff;
   box-shadow:0 0 0 5px #9FDCF0, 0 14px 30px rgba(62,42,92,.32);
-  touch-action:none;   /* o dedo esfrega, não rola a página */
-}
-#banheira img{
-  position:absolute; inset:0;
-  width:100%; height:100%;
-  object-fit:cover; object-position:center 30%;
-  pointer-events:none;
-  /* a pônei vai ficando viçosa conforme limpa */
-  filter:saturate(var(--vico,.6)) brightness(var(--luz,.92));
-  transition:filter .4s ease;
-}
-#banheira canvas{
-  position:absolute; inset:0; width:100%; height:100%;
   touch-action:none;
+  cursor:none;
 }
-#banheira.limpa{ animation:brilhaLimpa 1s ease-out; }
-@keyframes brilhaLimpa{
-  0%  { box-shadow:0 0 0 5px #9FDCF0, 0 14px 30px rgba(62,42,92,.32); }
-  45% { box-shadow:0 0 0 16px rgba(255,211,74,.9), 0 0 46px rgba(255,211,74,.85); }
-  100%{ box-shadow:0 0 0 5px var(--amarelo), 0 14px 30px rgba(62,42,92,.32); }
+/* a água da banheira, subindo devagarinho no fundo */
+#agua{
+  position:absolute; left:0; right:0; bottom:0; height:22%;
+  background:linear-gradient(180deg, rgba(120,215,245,.75), rgba(70,180,225,.9));
+  border-radius:40% 40% 0 0 / 14% 14% 0 0;
+  animation:ondinha 3.4s ease-in-out infinite;
+  pointer-events:none;
+}
+@keyframes ondinha{
+  0%,100%{ transform:translateY(0)   scaleX(1); }
+  50%    { transform:translateY(-4px) scaleX(1.04); }
 }
 
-/* ---------- a barra de progresso ---------- */
+/* a pônei: respira parada e pula quando encostam nela.
+   Foto parada é o que mais mata a graça — bicho de jogo de banho
+   sempre se mexe. */
+#poneiCaixa{
+  position:absolute; left:8%; right:8%; top:6%; bottom:14%;
+  animation:respira 3.2s ease-in-out infinite;
+  pointer-events:none;
+}
+#poneiCaixa.pulou{ animation:pulinho .5s ease-out; }
+@keyframes respira{
+  0%,100%{ transform:translateY(0)    rotate(-1.2deg) scale(1); }
+  50%    { transform:translateY(-7px) rotate(1.2deg)  scale(1.02); }
+}
+@keyframes pulinho{
+  0%  { transform:translateY(0)     scale(1); }
+  35% { transform:translateY(-16px) scale(1.06) rotate(3deg); }
+  70% { transform:translateY(4px)   scale(.98) rotate(-2deg); }
+  100%{ transform:translateY(0)     scale(1); }
+}
+#poneiCaixa.secando{ animation:sacode .45s ease-in-out 4; }
+@keyframes sacode{
+  0%,100%{ transform:rotate(0)     translateX(0); }
+  25%    { transform:rotate(-6deg) translateX(-7px); }
+  75%    { transform:rotate(6deg)  translateX(7px); }
+}
+#foto{
+  width:100%; height:100%;
+  object-fit:contain;
+  filter:saturate(var(--vico,.72)) brightness(var(--luz,.95));
+  transition:filter .4s ease;
+}
+/* o brilho de molhada */
+#poneiCaixa.molhada #foto{ filter:saturate(1.1) brightness(1.02) contrast(1.06); }
+
+#lonaSujeira, #lonaEspuma{
+  position:absolute; inset:0; width:100%; height:100%; pointer-events:none;
+}
+
+/* ---------- a ferramenta que segue o dedo ---------- */
+#ferramenta{
+  position:fixed; z-index:80; pointer-events:none;
+  width:74px; height:74px; margin:-37px 0 0 -37px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:46px; line-height:1;
+  filter:drop-shadow(0 4px 6px rgba(40,60,90,.45));
+  transition:transform .12s ease;
+}
+#ferramenta img{ width:100%; height:100%; object-fit:contain; }
+#ferramenta.usando{ transform:scale(1.12) rotate(-8deg); }
+#ferramenta.escondida{ display:none; }
+
+/* gotas de água caindo do chuveirinho */
+.gota{
+  position:fixed; z-index:70; pointer-events:none;
+  width:7px; height:11px; border-radius:50% 50% 45% 45%;
+  background:linear-gradient(180deg, rgba(255,255,255,.9), var(--agua));
+  animation:cai .55s ease-in forwards;
+}
+@keyframes cai{
+  0%  { transform:translate(0,0) scale(.7); opacity:.95; }
+  100%{ transform:translate(var(--dx,0), 90px) scale(1); opacity:0; }
+}
+.bolha{
+  position:fixed; pointer-events:none; z-index:75; border-radius:50%;
+  background:radial-gradient(circle at 32% 30%, rgba(255,255,255,.95) 0 18%, rgba(255,255,255,.4) 42%, rgba(190,230,255,.3) 100%);
+  border:1px solid rgba(255,255,255,.85);
+  animation:bolhaSobe 1.4s ease-out forwards;
+}
+@keyframes bolhaSobe{
+  0%  { transform:translate(0,0) scale(.4); opacity:.95; }
+  100%{ transform:translate(var(--dx,0), -100px) scale(1.2); opacity:0; }
+}
+
+/* ---------- etapas e progresso ---------- */
+#etapas{ display:flex; justify-content:center; gap:8px; margin-top:12px; }
+.etapa{
+  display:flex; align-items:center; gap:6px;
+  padding:7px 13px; border-radius:16px;
+  background:rgba(255,255,255,.6); color:#A08CC4;
+  font-size:14px; font-weight:800;
+}
+.etapa .ico{ font-size:19px; }
+.etapa.ativa{
+  background:#fff; color:var(--roxo);
+  box-shadow:0 4px 0 #D9C6F2;
+  transform:scale(1.06);
+}
+.etapa.feita{ background:#E4F7EA; color:#2F7A52; }
+
 #barra{
-  width:min(84vw,340px); height:20px; margin:14px auto 0;
+  width:min(86vw,350px); height:18px; margin:12px auto 0;
   border-radius:12px; background:rgba(255,255,255,.75); overflow:hidden;
   box-shadow:inset 0 2px 5px rgba(107,63,191,.18);
 }
 #barra i{
   display:block; height:100%; width:0;
-  background:linear-gradient(90deg, var(--turquesa), var(--amarelo), var(--rosa));
+  background:linear-gradient(90deg, var(--agua), var(--amarelo), var(--rosa));
   transition:width .25s ease;
-}
-#dica{
-  text-align:center; margin-top:10px;
-  font-size:15px; font-weight:800; color:#8A6FBF;
-}
-
-/* as bolhinhas de sabão nascem onde o dedo passa. São círculos de
-   CSS, não desenho: bolha é bolha em qualquer lugar. */
-.bolha{
-  position:fixed; pointer-events:none; z-index:60;
-  border-radius:50%;
-  background:radial-gradient(circle at 32% 30%, rgba(255,255,255,.95) 0 18%, rgba(255,255,255,.35) 40%, rgba(190,230,255,.25) 100%);
-  border:1px solid rgba(255,255,255,.8);
-  animation:bolhaSobe 1.3s ease-out forwards;
-}
-@keyframes bolhaSobe{
-  0%  { transform:translate(0,0) scale(.4); opacity:.95; }
-  100%{ transform:translate(var(--dx,0), -90px) scale(1.15); opacity:0; }
 }
 
 /* ---------- fim ---------- */
@@ -146,43 +211,43 @@ body{
 </head>
 <body>
 <div class="cenario-chao"></div>
-<div class="cenario-brilho" style="left:8%;  top:30%; animation-delay:0s">✨</div>
-<div class="cenario-brilho" style="left:86%; top:44%; animation-delay:1.6s">⭐</div>
 
 <div id="app">
   <div class="hud">
     <button class="btn-icone" id="btnCasa" aria-label="Voltar ao mapa">🏠</button>
-    <div class="balao">Banho <b id="quem">…</b><span class="versao" id="versao"></span></div>
+    <div class="balao" id="instrucao">Banho <b id="quem">…</b><span class="versao" id="versao"></span></div>
   </div>
 
   <div id="recado" class="escondida"></div>
 
   <div id="banheira">
-    <img id="foto" alt="">
-    <canvas id="lona"></canvas>
+    <div id="agua"></div>
+    <div id="poneiCaixa"><img id="foto" alt=""></div>
+    <canvas id="lonaSujeira"></canvas>
+    <canvas id="lonaEspuma"></canvas>
+  </div>
+
+  <div id="etapas">
+    <div class="etapa" id="et0"><span class="ico">🚿</span>Molhar</div>
+    <div class="etapa" id="et1"><span class="ico">🧽</span>Ensaboar</div>
+    <div class="etapa" id="et2"><span class="ico">🚿</span>Enxaguar</div>
   </div>
 
   <div id="barra"><i id="cheio"></i></div>
-  <div id="dica">Esfrega com o dedo para limpar!</div>
 </div>
+
+<div id="ferramenta" class="escondida"></div>
 
 <div id="pronto">
   <div class="moldura" id="prontoFoto"></div>
   <div class="nome" id="prontoNome"></div>
-  <div class="sub">Ficou limpinha!</div>
+  <div class="sub">Ficou limpinha e cheirosa!</div>
 </div>
 
 <script>
-/* ===================================================================
-   O JOGO. Roda antes de qualquer outro script e não precisa de
-   nenhum deles.
-   =================================================================== */
 (function(){
-  var VERSAO = 'v2';
+  var VERSAO = 'v3';
 
-  /* Escrita aqui de propósito: depender do album.js para saber quais
-     pôneis existem já deixou tela em branco antes. Todas conferidas,
-     com arquivo .png na pasta imagens/. */
   var PONEIS_BANHO = [
     'Rarity', 'Princesa Celestia', 'Princesa Cadance', 'Apple Bloom',
     'Sweetie Belle', 'Scootaloo', 'Trixie', 'Diamond Tiara',
@@ -190,6 +255,13 @@ body{
     'DJ Pon-3', 'Coco Pommel', 'Sunburst', 'Gilda',
     'Big McIntosh', 'Babs Seed', 'Twist', 'Pipsqueak'
   ];
+
+  /* as ferramentas procuram arte de verdade e caem em emoji do
+     sistema se ela não existir — nunca em vetor desenhado à mão */
+  var FERRAMENTAS = {
+    chuveiro: { arte:'arte/chuveiro.png', emoji:'🚿' },
+    esponja:  { arte:'arte/esponja.png',  emoji:'🧽' }
+  };
 
   var $ = function(id){ return document.getElementById(id); };
 
@@ -207,8 +279,6 @@ body{
   $('versao').textContent = VERSAO;
   $('btnCasa').addEventListener('click', function(){ location.href = 'index.html'; });
 
-  /* de preferência uma que ela já ganhou — dar banho em alguém que é
-     dela vale mais. Mas nunca dependendo do album.js. */
   var pool = PONEIS_BANHO;
   try{
     if(typeof colecao === 'function'){
@@ -220,173 +290,268 @@ body{
   var ponei = pool[Math.floor(Math.random() * pool.length)];
   var foto  = 'imagens/' + encodeURIComponent(ponei) + '.png';
 
-  $('quem').textContent = 'd' + (ponei.indexOf('Big') === 0 || ponei.indexOf('Sunburst') === 0 ||
-                                 ponei.indexOf('Pipsqueak') === 0 ? 'o ' : 'a ') + ponei;
-  var img = $('foto');
-  img.src = foto;
-  img.onerror = function(){
-    avisa('A imagem de ' + ponei + ' não carregou (' + foto + '). O banho continua funcionando, mas sem figura.');
+  $('quem').textContent = ponei;
+  $('foto').src = foto;
+  $('foto').onerror = function(){
+    avisa('A imagem de ' + ponei + ' não carregou (' + foto + ').');
   };
 
-  /* ---------------- a camada de sujeira ----------------
-     Um canvas do tamanho da banheira, pintado de lama com manchas de
-     tons variados. Apagar com destination-out revela a foto de
-     verdade embaixo — nada é desenhado por cima da pônei. */
-  var lona = $('lona');
-  var ctx  = lona.getContext('2d');
-  var LADO = 300;                     // resolução interna, independente da tela
-  lona.width = LADO; lona.height = LADO;
+  /* ---------------- as duas camadas ---------------- */
+  var LADO = 300;
+  var cSuj = $('lonaSujeira'), xSuj = cSuj.getContext('2d');
+  var cEsp = $('lonaEspuma'),  xEsp = cEsp.getContext('2d');
+  cSuj.width = cSuj.height = LADO;
+  cEsp.width = cEsp.height = LADO;
 
-  function pintaSujeira(){
-    ctx.globalCompositeOperation = 'source-over';
-    ctx.clearRect(0, 0, LADO, LADO);
-
-    /* A PRIMEIRA VERSÃO PINTAVA A LAMA SÓLIDA POR CIMA DE TUDO. A foto
-       sumia inteira e o jogo virava raspadinha: descobrir quem está
-       embaixo, não dar banho. Dar banho exige ver quem está sujo.
-
-       Agora é uma sujeira fina por cima da pônei toda, mais placas de
-       lama espalhadas. Ela reconhece a pônei desde o primeiro segundo
-       e enxerga onde ainda falta esfregar. */
-
-    /* 1. a sujeira fina: encardido, não tinta */
-    ctx.globalAlpha = 0.30;
-    var fino = ctx.createLinearGradient(0, 0, LADO, LADO);
-    fino.addColorStop(0,   '#9C7A52');
-    fino.addColorStop(0.5, '#7E5F3E');
-    fino.addColorStop(1,   '#8B6B47');
-    ctx.fillStyle = fino;
-    ctx.fillRect(0, 0, LADO, LADO);
-
-    /* 2. as placas de lama: grossas o bastante para valer a pena
-       esfregar, e com falhas entre elas para a pônei aparecer */
-    var tons = ['#5E4227','#7A5A38','#8E6B45','#6B4E2E'];
-    for(var i = 0; i < 26; i++){
-      var cx = Math.random() * LADO, cy = Math.random() * LADO;
-      var raio = 20 + Math.random() * 34;
-      ctx.globalAlpha = 0.55 + Math.random() * 0.28;
-      ctx.fillStyle = tons[i % tons.length];
-      /* três círculos deslocados fazem a borda irregular, que é o que
-         faz parecer lama e não bolinha */
-      ctx.beginPath();
-      ctx.arc(cx, cy, raio, 0, Math.PI * 2);
-      ctx.arc(cx + raio * 0.5, cy + raio * 0.3, raio * 0.7, 0, Math.PI * 2);
-      ctx.arc(cx - raio * 0.4, cy + raio * 0.4, raio * 0.6, 0, Math.PI * 2);
-      ctx.fill();
+  /* Sujeira em placas translúcidas, não um tapume opaco: ela precisa
+     reconhecer a pônei desde o começo. Banho é cuidar de alguém, não
+     descobrir quem está embaixo. */
+  (function pintaSujeira(){
+    var tons = ['#6B4E2E','#8A6842','#5E4227','#9C7A52'];
+    for(var i = 0; i < 22; i++){
+      var cx = Math.random() * LADO, cy = 30 + Math.random() * (LADO - 60);
+      var raio = 16 + Math.random() * 26;
+      xSuj.globalAlpha = 0.5 + Math.random() * 0.3;
+      xSuj.fillStyle = tons[i % tons.length];
+      xSuj.beginPath();
+      xSuj.arc(cx, cy, raio, 0, Math.PI * 2);
+      xSuj.arc(cx + raio * .5, cy + raio * .3, raio * .7, 0, Math.PI * 2);
+      xSuj.arc(cx - raio * .4, cy + raio * .4, raio * .6, 0, Math.PI * 2);
+      xSuj.fill();
     }
-
-    /* 3. respingos pequenos, para a textura não ficar regular */
-    for(var j = 0; j < 45; j++){
-      ctx.globalAlpha = 0.35 + Math.random() * 0.4;
-      ctx.fillStyle = tons[j % tons.length];
-      ctx.beginPath();
-      ctx.arc(Math.random() * LADO, Math.random() * LADO, 3 + Math.random() * 9, 0, Math.PI * 2);
-      ctx.fill();
+    for(var j = 0; j < 40; j++){
+      xSuj.globalAlpha = 0.35 + Math.random() * 0.35;
+      xSuj.fillStyle = tons[j % tons.length];
+      xSuj.beginPath();
+      xSuj.arc(Math.random() * LADO, Math.random() * LADO, 3 + Math.random() * 8, 0, Math.PI * 2);
+      xSuj.fill();
     }
+    xSuj.globalAlpha = 1;
+  })();
 
-    ctx.globalAlpha = 1;
-    ctx.globalCompositeOperation = 'destination-out';
+  /* ---------------- as etapas ---------------- */
+  var ETAPAS = [
+    { id:'molhar',   ferramenta:'chuveiro', texto:'Molha a ' , meta:.55 },
+    { id:'ensaboar', ferramenta:'esponja',  texto:'Esfrega a ', meta:.90 },
+    { id:'enxaguar', ferramenta:'chuveiro', texto:'Enxágua a ', meta:.88 }
+  ];
+  var etapa = 0, terminado = false;
+  var molhado = [];              // grade de cobertura da etapa 1
+  var GRADE = 12;
+  for(var g = 0; g < GRADE * GRADE; g++) molhado.push(0);
+
+  function mostraEtapa(){
+    for(var i = 0; i < 3; i++){
+      var e = $('et' + i);
+      e.className = 'etapa' + (i < etapa ? ' feita' : (i === etapa ? ' ativa' : ''));
+    }
+    $('instrucao').innerHTML = ETAPAS[etapa].texto + '<b>' + ponei + '</b>!' +
+      '<span class="versao">' + VERSAO + '</span>';
+    poeFerramenta(ETAPAS[etapa].ferramenta);
   }
 
-  pintaSujeira();
-
-  /* ---------------- esfregar ---------------- */
-  var limpando = false, terminado = false, progresso = 0;
-
-  function ponto(ev){
-    var r = lona.getBoundingClientRect();
-    var x = (ev.clientX - r.left) / r.width  * LADO;
-    var y = (ev.clientY - r.top)  / r.height * LADO;
-    return { x:x, y:y, telaX:ev.clientX, telaY:ev.clientY };
+  function poeFerramenta(qual){
+    var f = FERRAMENTAS[qual];
+    var alvo = $('ferramenta');
+    alvo.innerHTML = f.emoji;
+    /* se a arte existir, ela substitui o emoji — sem esperar por ela */
+    var t = new Image();
+    t.onload = function(){ alvo.innerHTML = '<img src="' + f.arte + '" alt="">'; };
+    t.src = f.arte;
   }
 
-  function esfrega(ev){
+  /* ---------------- o dedo ---------------- */
+  var ativo = false;
+  var banheira = $('banheira');
+
+  function local(ev){
+    var r = banheira.getBoundingClientRect();
+    return {
+      x: (ev.clientX - r.left) / r.width  * LADO,
+      y: (ev.clientY - r.top)  / r.height * LADO,
+      dentro: ev.clientX >= r.left && ev.clientX <= r.right &&
+              ev.clientY >= r.top  && ev.clientY <= r.bottom,
+      telaX: ev.clientX, telaY: ev.clientY
+    };
+  }
+
+  function moveFerramenta(ev){
+    var f = $('ferramenta');
+    f.classList.remove('escondida');
+    f.style.left = ev.clientX + 'px';
+    f.style.top  = ev.clientY + 'px';
+  }
+
+  function age(ev){
     if(terminado) return;
-    var p = ponto(ev);
+    var p = local(ev);
+    if(!p.dentro) return;
 
-    /* o rastro é generoso: dedo de criança de 4 anos não faz traço
-       fino, e limpar tem que dar a sensação de render bastante */
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, 26, 0, Math.PI * 2);
-    ctx.fill();
+    if(ETAPAS[etapa].id === 'molhar')        molha(p);
+    else if(ETAPAS[etapa].id === 'ensaboar') ensaboa(p);
+    else                                      enxagua(p);
+  }
 
-    if(Math.random() < .35) bolha(p.telaX, p.telaY);
+  /* etapa 1: a água cai do chuveirinho e vai molhando a pônei */
+  function molha(p){
+    for(var i = 0; i < 3; i++) gota(p.telaX, p.telaY);
+    var cx = Math.floor(p.x / LADO * GRADE), cy = Math.floor(p.y / LADO * GRADE);
+    for(var dy = -1; dy <= 1; dy++){
+      for(var dx = -1; dx <= 1; dx++){
+        var gx = cx + dx, gy = cy + dy;
+        if(gx >= 0 && gx < GRADE && gy >= 0 && gy < GRADE) molhado[gy * GRADE + gx] = 1;
+      }
+    }
+    var somados = 0;
+    for(var k = 0; k < molhado.length; k++) somados += molhado[k];
+    var q = somados / molhado.length;
+    progresso(q);
+    if(q >= ETAPAS[0].meta){
+      $('poneiCaixa').classList.add('molhada');
+      avanca();
+    }
+  }
+
+  /* etapa 2: a esponja tira a sujeira e deixa espuma no lugar */
+  function ensaboa(p){
+    xSuj.globalCompositeOperation = 'destination-out';
+    xSuj.beginPath();
+    xSuj.arc(p.x, p.y, 26, 0, Math.PI * 2);
+    xSuj.fill();
+    xSuj.globalCompositeOperation = 'source-over';
+
+    xEsp.globalCompositeOperation = 'source-over';
+    xEsp.globalAlpha = .5;
+    xEsp.fillStyle = '#FFFFFF';
+    for(var i = 0; i < 5; i++){
+      xEsp.beginPath();
+      xEsp.arc(p.x + (Math.random() * 34 - 17), p.y + (Math.random() * 34 - 17),
+               7 + Math.random() * 13, 0, Math.PI * 2);
+      xEsp.fill();
+    }
+    xEsp.globalAlpha = 1;
+
+    if(Math.random() < .5) bolha(p.telaX, p.telaY);
+    progresso(limpeza());
+    if(limpeza() >= ETAPAS[1].meta) avanca();
+  }
+
+  /* etapa 3: a água leva a espuma embora */
+  function enxagua(p){
+    for(var i = 0; i < 3; i++) gota(p.telaX, p.telaY);
+    xEsp.globalCompositeOperation = 'destination-out';
+    xEsp.beginPath();
+    xEsp.arc(p.x, p.y, 30, 0, Math.PI * 2);
+    xEsp.fill();
+    xEsp.globalCompositeOperation = 'source-over';
+    progresso(1 - cobertura(xEsp));
+    if(1 - cobertura(xEsp) >= ETAPAS[2].meta) termina();
+  }
+
+  /* quanto de uma camada ainda cobre a pônei. Amostragem em grade:
+     ler o canvas inteiro a cada movimento travaria o celular. */
+  function cobertura(ctx){
+    var d;
+    try{ d = ctx.getImageData(0, 0, LADO, LADO).data; }catch(e){ return 0; }
+    var passo = 10, total = 0, cheios = 0;
+    for(var y = 0; y < LADO; y += passo){
+      for(var x = 0; x < LADO; x += passo){
+        total++;
+        if(d[(y * LADO + x) * 4 + 3] > 30) cheios++;
+      }
+    }
+    return total ? cheios / total : 0;
+  }
+  function limpeza(){ return 1 - cobertura(xSuj); }
+
+  function progresso(q){
+    $('cheio').style.width = Math.round(Math.max(0, Math.min(1, q)) * 100) + '%';
+    document.documentElement.style.setProperty('--vico', (.72 + q * .45).toFixed(2));
+  }
+
+  function avanca(){
+    if(etapa >= ETAPAS.length - 1) return;
+    etapa++;
+    $('cheio').style.width = '0%';
+    if(typeof somVitoria === 'function'){ try{ somVitoria(); }catch(e){} }
+    pula();
+    mostraEtapa();
+  }
+
+  function pula(){
+    var c = $('poneiCaixa');
+    c.classList.remove('pulou');
+    void c.offsetWidth;
+    c.classList.add('pulou');
+    setTimeout(function(){ c.classList.remove('pulou'); }, 520);
+  }
+
+  function gota(x, y){
+    var d = document.createElement('div');
+    d.className = 'gota';
+    d.style.left = (x + Math.random() * 40 - 20) + 'px';
+    d.style.top  = (y + 10) + 'px';
+    d.style.setProperty('--dx', (Math.random() * 26 - 13).toFixed(0) + 'px');
+    document.body.appendChild(d);
+    setTimeout(function(){ if(d.parentNode) d.parentNode.removeChild(d); }, 600);
   }
 
   function bolha(x, y){
     var b = document.createElement('div');
-    var d = 10 + Math.random() * 18;
+    var t = 12 + Math.random() * 20;
     b.className = 'bolha';
-    b.style.width  = d + 'px';
-    b.style.height = d + 'px';
-    b.style.left = (x - d / 2) + 'px';
-    b.style.top  = (y - d / 2) + 'px';
-    b.style.setProperty('--dx', (Math.random() * 50 - 25).toFixed(0) + 'px');
+    b.style.width = b.style.height = t + 'px';
+    b.style.left = (x - t / 2) + 'px';
+    b.style.top  = (y - t / 2) + 'px';
+    b.style.setProperty('--dx', (Math.random() * 60 - 30).toFixed(0) + 'px');
     document.body.appendChild(b);
-    setTimeout(function(){ if(b.parentNode) b.parentNode.removeChild(b); }, 1350);
+    setTimeout(function(){ if(b.parentNode) b.parentNode.removeChild(b); }, 1450);
   }
 
-  lona.addEventListener('pointerdown', function(ev){
-    limpando = true;
-    try{ lona.setPointerCapture(ev.pointerId); }catch(e){}
-    esfrega(ev);
-    if(typeof somToque === 'function'){ try{ somToque(); }catch(e){} }
+  banheira.addEventListener('pointerdown', function(ev){
+    ativo = true;
+    try{ banheira.setPointerCapture(ev.pointerId); }catch(e){}
+    $('ferramenta').classList.add('usando');
+    moveFerramenta(ev);
+    pula();
+    age(ev);
   });
-  lona.addEventListener('pointermove', function(ev){ if(limpando) esfrega(ev); });
-  lona.addEventListener('pointerup',     function(){ limpando = false; });
-  lona.addEventListener('pointercancel', function(){ limpando = false; });
-  lona.addEventListener('pointerleave',  function(){ limpando = false; });
-
-  /* ---------------- quanto já foi limpo ----------------
-     Amostragem em grade: ler o canvas inteiro a cada movimento
-     travaria o celular. Aqui são ~900 pontos, quatro vezes por
-     segundo, o que é barato e suficiente. */
-  function mede(){
-    if(terminado) return;
-    var dados;
-    try{ dados = ctx.getImageData(0, 0, LADO, LADO).data; }
-    catch(e){ return; }
-
-    var passo = 10, total = 0, limpos = 0;
-    for(var y = 0; y < LADO; y += passo){
-      for(var x = 0; x < LADO; x += passo){
-        total++;
-        if(dados[(y * LADO + x) * 4 + 3] < 30) limpos++;
-      }
-    }
-    progresso = limpos / total;
-
-    $('cheio').style.width = Math.round(progresso * 100) + '%';
-    /* a pônei vai ganhando cor e luz conforme sai a sujeira */
-    document.documentElement.style.setProperty('--vico', (.6 + progresso * .6).toFixed(2));
-    document.documentElement.style.setProperty('--luz',  (.92 + progresso * .16).toFixed(2));
-
-    if(progresso > .30 && progresso < .75) $('dica').textContent = 'Continua! Está saindo!';
-    else if(progresso >= .75)              $('dica').textContent = 'Quase lá!';
-
-    /* 92% e não 100%: sobra sempre um canto que o dedo não alcança,
-       e obrigar a caçar o último pontinho transforma o carinho em
-       tarefa chata */
-    if(progresso >= .92) termina();
-  }
-  setInterval(mede, 250);
+  banheira.addEventListener('pointermove', function(ev){
+    moveFerramenta(ev);
+    if(ativo) age(ev);
+  });
+  ['pointerup','pointercancel','pointerleave'].forEach(function(n){
+    banheira.addEventListener(n, function(){
+      ativo = false;
+      $('ferramenta').classList.remove('usando');
+    });
+  });
 
   function termina(){
+    if(terminado) return;
     terminado = true;
-    ctx.clearRect(0, 0, LADO, LADO);
+    xSuj.clearRect(0, 0, LADO, LADO);
+    xEsp.clearRect(0, 0, LADO, LADO);
     $('cheio').style.width = '100%';
-    $('banheira').classList.add('limpa');
-    $('dica').textContent = 'Ficou linda!';
+    $('et2').className = 'etapa feita';
+    $('ferramenta').classList.add('escondida');
+    $('instrucao').innerHTML = 'Prontinho!<span class="versao">' + VERSAO + '</span>';
     document.documentElement.style.setProperty('--vico', '1.15');
-    document.documentElement.style.setProperty('--luz',  '1.08');
+    document.documentElement.style.setProperty('--luz',  '1.06');
+
+    /* a sacudida de secar: é o gesto que fecha um banho */
+    var c = $('poneiCaixa');
+    c.classList.remove('molhada');
+    c.classList.add('secando');
     if(typeof somVitoria === 'function'){ try{ somVitoria(); }catch(e){} }
 
-    for(var i = 0; i < 18; i++){
+    var r = banheira.getBoundingClientRect();
+    for(var i = 0; i < 24; i++){
       (function(i){
         setTimeout(function(){
-          var r = $('banheira').getBoundingClientRect();
-          bolha(r.left + Math.random() * r.width, r.top + Math.random() * r.height);
-        }, i * 60);
+          gota(r.left + Math.random() * r.width, r.top + Math.random() * r.height * .6);
+          if(i % 2) bolha(r.left + Math.random() * r.width, r.top + Math.random() * r.height);
+        }, i * 55);
       })(i);
     }
 
@@ -394,20 +559,19 @@ body{
       $('prontoFoto').innerHTML = '<img src="' + foto + '" alt="">';
       $('prontoNome').textContent = ponei;
       $('pronto').classList.add('visivel');
-    }, 1200);
+    }, 1700);
 
-    /* daí em diante quem conduz é o album.js: prêmio, contagem de
-       vitória e volta ao mapa. Esta página não sabe que o mapa existe. */
     setTimeout(function(){
       $('pronto').classList.remove('visivel');
       if(typeof premiar === 'function') premiar();
       else location.href = 'index.html';
-    }, 3100);
+    }, 3600);
   }
+
+  mostraEtapa();
 })();
 </script>
 
-<!-- carregados DEPOIS: o jogo já está na tela quando eles chegam -->
 <script src="frases.js"></script>
 <script src="perfil.js"></script>
 <script src="album.js"></script>
