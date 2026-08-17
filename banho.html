@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Banho da Pônei</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   BANHO DA PÔNEI — cuidar, não responder
+
+   Os outros jogos todos perguntam alguma coisa e conferem a
+   resposta. Este não pergunta nada: a pônei está suja e ela esfrega
+   com o dedo até limpar. Não há certo nem errado, e é isso que
+   segura a atenção — cada movimento tem efeito imediato na tela.
+
+   NADA AQUI É DESENHADO. A sujeira é uma camada de textura sobre a
+   foto da série, apagada onde o dedo passa. O que aparece embaixo é
+   a imagem de verdade, a mesma da pasta imagens/. Nenhum
+   personagem, objeto ou acessório inventado entra na tela.
+
+   A página é autossuficiente: monta sozinha, sem esperar nada, sem
+   Promise. album.js entra depois e é bônus — se estiver ali, o
+   prêmio sai e a fase avança.
+   ============================================================ */
+:root{ --roxo:#6B3FBF; --rosa:#FF6FB0; --amarelo:#FFD34A; --turquesa:#35CFC9; }
+*{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+html,body{ height:100%; }
+body{
+  font-family:'Baloo 2','Segoe UI Rounded',system-ui,sans-serif;
+  color:#40276E; user-select:none; overflow:hidden;
+}
+#app{
+  height:100dvh; display:flex; flex-direction:column;
+  padding:max(10px,env(safe-area-inset-top)) 12px max(10px,env(safe-area-inset-bottom));
+  max-width:560px; margin:0 auto;
+}
+.hud{ display:flex; align-items:center; gap:8px; min-height:44px; }
+.btn-icone{
+  width:44px; height:44px; border:0; border-radius:999px;
+  background:rgba(255,255,255,.78); font-size:20px; cursor:pointer;
+  box-shadow:0 2px 0 rgba(62,42,92,.12);
+}
+.btn-icone:active{ transform:translateY(2px); box-shadow:none; }
+.balao{
+  margin-left:auto; background:#fff; border-radius:20px; padding:9px 16px;
+  font-weight:800; font-size:clamp(15px,4.6vw,20px);
+  box-shadow:0 4px 0 rgba(62,42,92,.10);
+}
+.balao b{ color:#D2439A; }
+.versao{ font-size:10px; font-weight:600; color:#B0A0CC; margin-left:6px; }
+
+#recado{
+  margin-top:8px; padding:10px 13px; border-radius:14px;
+  background:#3B1220; color:#FFE6EE; border:2px solid var(--rosa);
+  font-size:12.5px; line-height:1.5; cursor:pointer; word-break:break-word;
+}
+#recado.escondida{ display:none; }
+
+/* ---------- a banheira ---------- */
+#banheira{
+  position:relative; flex:0 0 auto;
+  width:min(84vw, 340px); aspect-ratio:1; margin:14px auto 0;
+  border-radius:50%; overflow:hidden;
+  background:#EAF6FF;
+  border:7px solid #fff;
+  box-shadow:0 0 0 5px #9FDCF0, 0 14px 30px rgba(62,42,92,.32);
+  touch-action:none;   /* o dedo esfrega, não rola a página */
+}
+#banheira img{
+  position:absolute; inset:0;
+  width:100%; height:100%;
+  object-fit:cover; object-position:center 30%;
+  pointer-events:none;
+  /* a pônei vai ficando viçosa conforme limpa */
+  filter:saturate(var(--vico,.45)) brightness(var(--luz,.86));
+  transition:filter .4s ease;
+}
+#banheira canvas{
+  position:absolute; inset:0; width:100%; height:100%;
+  touch-action:none;
+}
+#banheira.limpa{ animation:brilhaLimpa 1s ease-out; }
+@keyframes brilhaLimpa{
+  0%  { box-shadow:0 0 0 5px #9FDCF0, 0 14px 30px rgba(62,42,92,.32); }
+  45% { box-shadow:0 0 0 16px rgba(255,211,74,.9), 0 0 46px rgba(255,211,74,.85); }
+  100%{ box-shadow:0 0 0 5px var(--amarelo), 0 14px 30px rgba(62,42,92,.32); }
+}
+
+/* ---------- a barra de progresso ---------- */
+#barra{
+  width:min(84vw,340px); height:20px; margin:14px auto 0;
+  border-radius:12px; background:rgba(255,255,255,.75); overflow:hidden;
+  box-shadow:inset 0 2px 5px rgba(107,63,191,.18);
+}
+#barra i{
+  display:block; height:100%; width:0;
+  background:linear-gradient(90deg, var(--turquesa), var(--amarelo), var(--rosa));
+  transition:width .25s ease;
+}
+#dica{
+  text-align:center; margin-top:10px;
+  font-size:15px; font-weight:800; color:#8A6FBF;
+}
+
+/* as bolhinhas de sabão nascem onde o dedo passa. São círculos de
+   CSS, não desenho: bolha é bolha em qualquer lugar. */
+.bolha{
+  position:fixed; pointer-events:none; z-index:60;
+  border-radius:50%;
+  background:radial-gradient(circle at 32% 30%, rgba(255,255,255,.95) 0 18%, rgba(255,255,255,.35) 40%, rgba(190,230,255,.25) 100%);
+  border:1px solid rgba(255,255,255,.8);
+  animation:bolhaSobe 1.3s ease-out forwards;
+}
+@keyframes bolhaSobe{
+  0%  { transform:translate(0,0) scale(.4); opacity:.95; }
+  100%{ transform:translate(var(--dx,0), -90px) scale(1.15); opacity:0; }
+}
+
+/* ---------- fim ---------- */
+#pronto{
+  position:fixed; inset:0; z-index:200; display:none;
+  align-items:center; justify-content:center; flex-direction:column; gap:14px;
+  padding:24px; text-align:center;
+  background:radial-gradient(circle at 50% 40%, #FFF9DC 0%, #E9F7FF 55%, #EFE0FF 100%);
+}
+#pronto.visivel{ display:flex; }
+#pronto .moldura{
+  width:min(62vw,240px); aspect-ratio:1; border-radius:50%;
+  overflow:hidden; border:6px solid var(--amarelo); background:#fff;
+  box-shadow:0 12px 34px rgba(107,63,191,.3);
+  animation:prontoEntra .6s cubic-bezier(.2,1.5,.4,1) both;
+}
+#pronto .moldura img{ width:100%; height:100%; object-fit:cover; object-position:center 30%; }
+@keyframes prontoEntra{
+  0%{ transform:scale(.3) rotate(-16deg); opacity:0; }
+  100%{ transform:scale(1) rotate(0); opacity:1; }
+}
+#pronto .nome{ font-size:clamp(24px,7vw,36px); font-weight:800; color:var(--roxo); text-shadow:0 3px 0 #fff; }
+#pronto .sub{ font-size:16px; font-weight:600; color:#8A6FBF; }
+</style>
+<link rel="stylesheet" href="cenario.css">
+</head>
+<body>
+<div class="cenario-chao"></div>
+<div class="cenario-brilho" style="left:8%;  top:30%; animation-delay:0s">✨</div>
+<div class="cenario-brilho" style="left:86%; top:44%; animation-delay:1.6s">⭐</div>
+
+<div id="app">
+  <div class="hud">
+    <button class="btn-icone" id="btnCasa" aria-label="Voltar ao mapa">🏠</button>
+    <div class="balao">Banho <b id="quem">…</b><span class="versao" id="versao"></span></div>
+  </div>
+
+  <div id="recado" class="escondida"></div>
+
+  <div id="banheira">
+    <img id="foto" alt="">
+    <canvas id="lona"></canvas>
+  </div>
+
+  <div id="barra"><i id="cheio"></i></div>
+  <div id="dica">Esfrega com o dedo para limpar!</div>
+</div>
+
+<div id="pronto">
+  <div class="moldura" id="prontoFoto"></div>
+  <div class="nome" id="prontoNome"></div>
+  <div class="sub">Ficou limpinha!</div>
+</div>
+
+<script>
+/* ===================================================================
+   O JOGO. Roda antes de qualquer outro script e não precisa de
+   nenhum deles.
+   =================================================================== */
+(function(){
+  var VERSAO = 'v1';
+
+  /* Escrita aqui de propósito: depender do album.js para saber quais
+     pôneis existem já deixou tela em branco antes. Todas conferidas,
+     com arquivo .png na pasta imagens/. */
+  var PONEIS_BANHO = [
+    'Rarity', 'Princesa Celestia', 'Princesa Cadance', 'Apple Bloom',
+    'Sweetie Belle', 'Scootaloo', 'Trixie', 'Diamond Tiara',
+    'Silver Spoon', 'Cheerilee', 'Lyra Heartstrings', 'Octavia Melody',
+    'DJ Pon-3', 'Coco Pommel', 'Sunburst', 'Gilda',
+    'Big McIntosh', 'Babs Seed', 'Twist', 'Pipsqueak'
+  ];
+
+  var $ = function(id){ return document.getElementById(id); };
+
+  function avisa(txt){
+    var r = $('recado');
+    if(!r) return;
+    r.textContent = txt;
+    r.classList.remove('escondida');
+  }
+  $('recado').addEventListener('click', function(){ $('recado').classList.add('escondida'); });
+  window.addEventListener('error', function(e){
+    avisa('Erro: ' + e.message + (e.lineno ? ' (linha ' + e.lineno + ')' : ''));
+  });
+
+  $('versao').textContent = VERSAO;
+  $('btnCasa').addEventListener('click', function(){ location.href = 'index.html'; });
+
+  /* de preferência uma que ela já ganhou — dar banho em alguém que é
+     dela vale mais. Mas nunca dependendo do album.js. */
+  var pool = PONEIS_BANHO;
+  try{
+    if(typeof colecao === 'function'){
+      var minhas = colecao().filter(function(n){ return PONEIS_BANHO.indexOf(n) >= 0; });
+      if(minhas.length >= 3) pool = minhas;
+    }
+  }catch(e){}
+
+  var ponei = pool[Math.floor(Math.random() * pool.length)];
+  var foto  = 'imagens/' + encodeURIComponent(ponei) + '.png';
+
+  $('quem').textContent = 'd' + (ponei.indexOf('Big') === 0 || ponei.indexOf('Sunburst') === 0 ||
+                                 ponei.indexOf('Pipsqueak') === 0 ? 'o ' : 'a ') + ponei;
+  var img = $('foto');
+  img.src = foto;
+  img.onerror = function(){
+    avisa('A imagem de ' + ponei + ' não carregou (' + foto + '). O banho continua funcionando, mas sem figura.');
+  };
+
+  /* ---------------- a camada de sujeira ----------------
+     Um canvas do tamanho da banheira, pintado de lama com manchas de
+     tons variados. Apagar com destination-out revela a foto de
+     verdade embaixo — nada é desenhado por cima da pônei. */
+  var lona = $('lona');
+  var ctx  = lona.getContext('2d');
+  var LADO = 300;                     // resolução interna, independente da tela
+  lona.width = LADO; lona.height = LADO;
+
+  function pintaSujeira(){
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.clearRect(0, 0, LADO, LADO);
+
+    var base = ctx.createLinearGradient(0, 0, LADO, LADO);
+    base.addColorStop(0,   '#9C7A52');
+    base.addColorStop(0.5, '#7E5F3E');
+    base.addColorStop(1,   '#8B6B47');
+    ctx.fillStyle = base;
+    ctx.fillRect(0, 0, LADO, LADO);
+
+    /* manchas: dão textura para ela ver onde ainda falta esfregar */
+    var tons = ['rgba(60,42,26,.55)','rgba(140,110,70,.5)','rgba(90,70,44,.5)','rgba(170,140,95,.4)'];
+    for(var i = 0; i < 70; i++){
+      ctx.beginPath();
+      ctx.fillStyle = tons[i % tons.length];
+      ctx.arc(Math.random() * LADO, Math.random() * LADO, 8 + Math.random() * 26, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalCompositeOperation = 'destination-out';
+  }
+  pintaSujeira();
+
+  /* ---------------- esfregar ---------------- */
+  var limpando = false, terminado = false, progresso = 0;
+
+  function ponto(ev){
+    var r = lona.getBoundingClientRect();
+    var x = (ev.clientX - r.left) / r.width  * LADO;
+    var y = (ev.clientY - r.top)  / r.height * LADO;
+    return { x:x, y:y, telaX:ev.clientX, telaY:ev.clientY };
+  }
+
+  function esfrega(ev){
+    if(terminado) return;
+    var p = ponto(ev);
+
+    /* o rastro é generoso: dedo de criança de 4 anos não faz traço
+       fino, e limpar tem que dar a sensação de render bastante */
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 26, 0, Math.PI * 2);
+    ctx.fill();
+
+    if(Math.random() < .35) bolha(p.telaX, p.telaY);
+  }
+
+  function bolha(x, y){
+    var b = document.createElement('div');
+    var d = 10 + Math.random() * 18;
+    b.className = 'bolha';
+    b.style.width  = d + 'px';
+    b.style.height = d + 'px';
+    b.style.left = (x - d / 2) + 'px';
+    b.style.top  = (y - d / 2) + 'px';
+    b.style.setProperty('--dx', (Math.random() * 50 - 25).toFixed(0) + 'px');
+    document.body.appendChild(b);
+    setTimeout(function(){ if(b.parentNode) b.parentNode.removeChild(b); }, 1350);
+  }
+
+  lona.addEventListener('pointerdown', function(ev){
+    limpando = true;
+    try{ lona.setPointerCapture(ev.pointerId); }catch(e){}
+    esfrega(ev);
+    if(typeof somToque === 'function'){ try{ somToque(); }catch(e){} }
+  });
+  lona.addEventListener('pointermove', function(ev){ if(limpando) esfrega(ev); });
+  lona.addEventListener('pointerup',     function(){ limpando = false; });
+  lona.addEventListener('pointercancel', function(){ limpando = false; });
+  lona.addEventListener('pointerleave',  function(){ limpando = false; });
+
+  /* ---------------- quanto já foi limpo ----------------
+     Amostragem em grade: ler o canvas inteiro a cada movimento
+     travaria o celular. Aqui são ~900 pontos, quatro vezes por
+     segundo, o que é barato e suficiente. */
+  function mede(){
+    if(terminado) return;
+    var dados;
+    try{ dados = ctx.getImageData(0, 0, LADO, LADO).data; }
+    catch(e){ return; }
+
+    var passo = 10, total = 0, limpos = 0;
+    for(var y = 0; y < LADO; y += passo){
+      for(var x = 0; x < LADO; x += passo){
+        total++;
+        if(dados[(y * LADO + x) * 4 + 3] < 40) limpos++;
+      }
+    }
+    progresso = limpos / total;
+
+    $('cheio').style.width = Math.round(progresso * 100) + '%';
+    /* a pônei vai ganhando cor e luz conforme sai a sujeira */
+    document.documentElement.style.setProperty('--vico', (.45 + progresso * .75).toFixed(2));
+    document.documentElement.style.setProperty('--luz',  (.86 + progresso * .22).toFixed(2));
+
+    if(progresso > .30 && progresso < .75) $('dica').textContent = 'Continua! Está saindo!';
+    else if(progresso >= .75)              $('dica').textContent = 'Quase lá!';
+
+    /* 92% e não 100%: sobra sempre um canto que o dedo não alcança,
+       e obrigar a caçar o último pontinho transforma o carinho em
+       tarefa chata */
+    if(progresso >= .92) termina();
+  }
+  setInterval(mede, 250);
+
+  function termina(){
+    terminado = true;
+    ctx.clearRect(0, 0, LADO, LADO);
+    $('cheio').style.width = '100%';
+    $('banheira').classList.add('limpa');
+    $('dica').textContent = 'Ficou linda!';
+    document.documentElement.style.setProperty('--vico', '1.15');
+    document.documentElement.style.setProperty('--luz',  '1.08');
+    if(typeof somVitoria === 'function'){ try{ somVitoria(); }catch(e){} }
+
+    for(var i = 0; i < 18; i++){
+      (function(i){
+        setTimeout(function(){
+          var r = $('banheira').getBoundingClientRect();
+          bolha(r.left + Math.random() * r.width, r.top + Math.random() * r.height);
+        }, i * 60);
+      })(i);
+    }
+
+    setTimeout(function(){
+      $('prontoFoto').innerHTML = '<img src="' + foto + '" alt="">';
+      $('prontoNome').textContent = ponei;
+      $('pronto').classList.add('visivel');
+    }, 1200);
+
+    /* daí em diante quem conduz é o album.js: prêmio, contagem de
+       vitória e volta ao mapa. Esta página não sabe que o mapa existe. */
+    setTimeout(function(){
+      $('pronto').classList.remove('visivel');
+      if(typeof premiar === 'function') premiar();
+      else location.href = 'index.html';
+    }, 3100);
+  }
+})();
+</script>
+
+<!-- carregados DEPOIS: o jogo já está na tela quando eles chegam -->
+<script src="frases.js"></script>
+<script src="perfil.js"></script>
+<script src="album.js"></script>
+</body>
+</html>
