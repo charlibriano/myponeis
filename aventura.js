@@ -36,10 +36,11 @@ const JOGOS = {
   labirinto: { pagina:'labirinto.html',         nome:'Leva o Pônei' },
   sumiu:     { pagina:'poneis.html?modo=sumiu', nome:'Quem Sumiu?' },
   nome:      { pagina:'nome.html',              nome:'Balões do Nome' },
-  montar:    { pagina:'quebracabeca.html',      nome:'Monta a Pônei' }
+  montar:    { pagina:'quebracabeca.html',      nome:'Monta a Pônei' },
+  banho:     { pagina:'banho.html',             nome:'Banho da Pônei' }
 };
 
-const JOGOS_ORDEM = ['memoria', 'cade', 'montar', 'labirinto', 'sumiu', 'nome'];
+const JOGOS_ORDEM = ['memoria', 'cade', 'banho', 'montar', 'labirinto', 'sumiu', 'nome'];
 
 /* x e y em % da imagem do mapa — é aqui que se ajusta a rota */
 const PARADAS = [
