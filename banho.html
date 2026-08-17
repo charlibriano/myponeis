@@ -76,7 +76,7 @@ body{
   object-fit:cover; object-position:center 30%;
   pointer-events:none;
   /* a pônei vai ficando viçosa conforme limpa */
-  filter:saturate(var(--vico,.45)) brightness(var(--luz,.86));
+  filter:saturate(var(--vico,.6)) brightness(var(--luz,.92));
   transition:filter .4s ease;
 }
 #banheira canvas{
@@ -178,7 +178,7 @@ body{
    nenhum deles.
    =================================================================== */
 (function(){
-  var VERSAO = 'v1';
+  var VERSAO = 'v2';
 
   /* Escrita aqui de propósito: depender do album.js para saber quais
      pôneis existem já deixou tela em branco antes. Todas conferidas,
@@ -241,23 +241,53 @@ body{
     ctx.globalCompositeOperation = 'source-over';
     ctx.clearRect(0, 0, LADO, LADO);
 
-    var base = ctx.createLinearGradient(0, 0, LADO, LADO);
-    base.addColorStop(0,   '#9C7A52');
-    base.addColorStop(0.5, '#7E5F3E');
-    base.addColorStop(1,   '#8B6B47');
-    ctx.fillStyle = base;
+    /* A PRIMEIRA VERSÃO PINTAVA A LAMA SÓLIDA POR CIMA DE TUDO. A foto
+       sumia inteira e o jogo virava raspadinha: descobrir quem está
+       embaixo, não dar banho. Dar banho exige ver quem está sujo.
+
+       Agora é uma sujeira fina por cima da pônei toda, mais placas de
+       lama espalhadas. Ela reconhece a pônei desde o primeiro segundo
+       e enxerga onde ainda falta esfregar. */
+
+    /* 1. a sujeira fina: encardido, não tinta */
+    ctx.globalAlpha = 0.30;
+    var fino = ctx.createLinearGradient(0, 0, LADO, LADO);
+    fino.addColorStop(0,   '#9C7A52');
+    fino.addColorStop(0.5, '#7E5F3E');
+    fino.addColorStop(1,   '#8B6B47');
+    ctx.fillStyle = fino;
     ctx.fillRect(0, 0, LADO, LADO);
 
-    /* manchas: dão textura para ela ver onde ainda falta esfregar */
-    var tons = ['rgba(60,42,26,.55)','rgba(140,110,70,.5)','rgba(90,70,44,.5)','rgba(170,140,95,.4)'];
-    for(var i = 0; i < 70; i++){
-      ctx.beginPath();
+    /* 2. as placas de lama: grossas o bastante para valer a pena
+       esfregar, e com falhas entre elas para a pônei aparecer */
+    var tons = ['#5E4227','#7A5A38','#8E6B45','#6B4E2E'];
+    for(var i = 0; i < 26; i++){
+      var cx = Math.random() * LADO, cy = Math.random() * LADO;
+      var raio = 20 + Math.random() * 34;
+      ctx.globalAlpha = 0.55 + Math.random() * 0.28;
       ctx.fillStyle = tons[i % tons.length];
-      ctx.arc(Math.random() * LADO, Math.random() * LADO, 8 + Math.random() * 26, 0, Math.PI * 2);
+      /* três círculos deslocados fazem a borda irregular, que é o que
+         faz parecer lama e não bolinha */
+      ctx.beginPath();
+      ctx.arc(cx, cy, raio, 0, Math.PI * 2);
+      ctx.arc(cx + raio * 0.5, cy + raio * 0.3, raio * 0.7, 0, Math.PI * 2);
+      ctx.arc(cx - raio * 0.4, cy + raio * 0.4, raio * 0.6, 0, Math.PI * 2);
       ctx.fill();
     }
+
+    /* 3. respingos pequenos, para a textura não ficar regular */
+    for(var j = 0; j < 45; j++){
+      ctx.globalAlpha = 0.35 + Math.random() * 0.4;
+      ctx.fillStyle = tons[j % tons.length];
+      ctx.beginPath();
+      ctx.arc(Math.random() * LADO, Math.random() * LADO, 3 + Math.random() * 9, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = 'destination-out';
   }
+
   pintaSujeira();
 
   /* ---------------- esfregar ---------------- */
@@ -321,15 +351,15 @@ body{
     for(var y = 0; y < LADO; y += passo){
       for(var x = 0; x < LADO; x += passo){
         total++;
-        if(dados[(y * LADO + x) * 4 + 3] < 40) limpos++;
+        if(dados[(y * LADO + x) * 4 + 3] < 30) limpos++;
       }
     }
     progresso = limpos / total;
 
     $('cheio').style.width = Math.round(progresso * 100) + '%';
     /* a pônei vai ganhando cor e luz conforme sai a sujeira */
-    document.documentElement.style.setProperty('--vico', (.45 + progresso * .75).toFixed(2));
-    document.documentElement.style.setProperty('--luz',  (.86 + progresso * .22).toFixed(2));
+    document.documentElement.style.setProperty('--vico', (.6 + progresso * .6).toFixed(2));
+    document.documentElement.style.setProperty('--luz',  (.92 + progresso * .16).toFixed(2));
 
     if(progresso > .30 && progresso < .75) $('dica').textContent = 'Continua! Está saindo!';
     else if(progresso >= .75)              $('dica').textContent = 'Quase lá!';
