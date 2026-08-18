@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Bolhas da Pônei</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   BOLHAS DA PÔNEI
+
+   Bolhas coloridas no alto, a pônei embaixo lançando. Três da mesma
+   cor encostadas e elas estouram.
+
+   SEM MIRA POR ÂNGULO. No jogo adulto você gira um canhão e calcula
+   rebote na parede; aos 4 anos isso é frustração garantida. Aqui ela
+   toca na coluna onde quer e a bolha sobe reto. A dificuldade vem de
+   escolher a coluna certa, não de acertar um ângulo.
+
+   E NÃO EXISTE PERDER. O tabuleiro só encolhe; bolha que não combina
+   fica lá esperando. Sem relógio, sem teto descendo, sem tela de
+   derrota. Ela sai quando limpar tudo.
+
+   Tudo é forma de CSS: as bolhas são gradientes, não desenho. A
+   única figura é a foto da pônei lançadora, da pasta imagens/.
+   ============================================================ */
+:root{ --roxo:#6B3FBF; --rosa:#FF6FB0; --amarelo:#FFD34A; }
+*{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+html,body{ height:100%; }
+body{
+  font-family:'Baloo 2','Segoe UI Rounded',system-ui,sans-serif;
+  color:#40276E; user-select:none; overflow:hidden; touch-action:manipulation;
+}
+#app{
+  height:100dvh; display:flex; flex-direction:column;
+  padding:max(8px,env(safe-area-inset-top)) 10px max(8px,env(safe-area-inset-bottom));
+  max-width:560px; margin:0 auto;
+}
+.hud{ display:flex; align-items:center; gap:8px; min-height:44px; }
+.btn-icone{
+  width:44px; height:44px; border:0; border-radius:999px;
+  background:rgba(255,255,255,.78); font-size:20px; cursor:pointer;
+  box-shadow:0 2px 0 rgba(62,42,92,.12);
+}
+.balao{
+  margin-left:auto; background:#fff; border-radius:20px; padding:8px 15px;
+  font-weight:800; font-size:clamp(14px,4.4vw,19px);
+  box-shadow:0 4px 0 rgba(62,42,92,.10);
+}
+.balao b{ color:#D2439A; }
+.versao{ font-size:10px; font-weight:600; color:#B0A0CC; margin-left:6px; }
+
+#recado{
+  margin-top:8px; padding:10px 13px; border-radius:14px;
+  background:#3B1220; color:#FFE6EE; border:2px solid var(--rosa);
+  font-size:12.5px; line-height:1.5; cursor:pointer; word-break:break-word;
+}
+#recado.escondida{ display:none; }
+
+/* ---------- o campo ---------- */
+#campo{
+  position:relative; flex:1; min-height:0; margin-top:8px;
+  border-radius:22px; overflow:hidden;
+  background:linear-gradient(180deg,#CFEEFF 0%,#E4F6FF 55%,#DFF3E6 100%);
+  box-shadow:inset 0 2px 10px rgba(74,42,135,.14);
+  cursor:pointer;
+}
+/* a coluna que ela está mirando acende: aos 4 anos o dedo precisa de
+   confirmação antes de soltar */
+#mira{
+  position:absolute; top:0; bottom:0; width:0;
+  background:linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,0));
+  pointer-events:none; opacity:0; transition:opacity .15s ease;
+}
+#mira.on{ opacity:1; }
+
+.bolha{
+  position:absolute; border-radius:50%;
+  box-shadow:inset -3px -4px 8px rgba(0,0,0,.16), inset 3px 4px 8px rgba(255,255,255,.75),
+             0 2px 5px rgba(40,60,90,.22);
+  transition:transform .28s cubic-bezier(.3,1.3,.5,1), top .25s ease, left .25s ease;
+}
+.bolha::after{
+  content:""; position:absolute; left:22%; top:18%;
+  width:26%; height:22%; border-radius:50%;
+  background:rgba(255,255,255,.85);
+}
+.bolha.estoura{ animation:puf .35s ease-out forwards; }
+@keyframes puf{
+  0%  { transform:scale(1);   opacity:1; }
+  45% { transform:scale(1.35); opacity:.9; }
+  100%{ transform:scale(.2);  opacity:0; }
+}
+.bolha.caindo{ animation:cai .6s ease-in forwards; }
+@keyframes cai{
+  0%  { transform:translateY(0)     scale(1); opacity:1; }
+  100%{ transform:translateY(260px) scale(.7); opacity:0; }
+}
+.bolha.voando{ transition:left .32s linear, top .32s linear; z-index:5; }
+
+/* ---------- a lançadora ---------- */
+#lancador{
+  flex:0 0 auto; display:flex; align-items:center; justify-content:center;
+  gap:12px; margin-top:8px; min-height:96px;
+}
+#poneiCaixa{
+  width:96px; height:96px; border-radius:50%; overflow:hidden;
+  border:4px solid #fff; background:#fff;
+  box-shadow:0 0 0 3px var(--rosa), 0 6px 14px rgba(62,42,92,.3);
+  transition:transform .18s ease;
+}
+#poneiCaixa img{ width:100%; height:100%; object-fit:cover; object-position:center 30%; }
+#poneiCaixa.atira{ animation:empurra .3s ease-out; }
+@keyframes empurra{
+  0%{ transform:translateY(0) scale(1); }
+  40%{ transform:translateY(-10px) scale(1.08); }
+  100%{ transform:translateY(0) scale(1); }
+}
+#proxima{
+  width:54px; height:54px; border-radius:50%;
+  box-shadow:inset -3px -4px 8px rgba(0,0,0,.16), inset 3px 4px 8px rgba(255,255,255,.75),
+             0 3px 8px rgba(40,60,90,.28);
+  position:relative;
+}
+#proxima::after{
+  content:""; position:absolute; left:22%; top:18%;
+  width:26%; height:22%; border-radius:50%; background:rgba(255,255,255,.85);
+}
+#quantas{ font-size:15px; font-weight:800; color:#8A6FBF; }
+
+/* ---------- escolha de nível ---------- */
+#nivel{
+  position:fixed; inset:0; z-index:150; display:flex;
+  align-items:center; justify-content:center; flex-direction:column; gap:16px;
+  padding:24px; text-align:center;
+  background:radial-gradient(circle at 50% 38%, #FFF9DC 0%, #E9F7FF 55%, #EFE0FF 100%);
+}
+#nivel.escondida{ display:none; }
+#nivel h2{ font-size:clamp(24px,7vw,34px); color:var(--roxo); text-shadow:0 3px 0 #fff; }
+#nivel .opcoes{ display:flex; flex-direction:column; gap:12px; width:min(86vw,320px); }
+#nivel button{
+  display:flex; align-items:center; gap:14px;
+  border:0; cursor:pointer; font-family:inherit; text-align:left;
+  padding:12px 16px; border-radius:20px; background:#fff;
+  box-shadow:0 5px 0 #D9C6F2, 0 8px 16px rgba(107,63,191,.16);
+}
+#nivel button:active{ transform:translateY(4px); box-shadow:0 1px 0 #D9C6F2; }
+#nivel .amostra{ display:flex; gap:4px; flex:0 0 auto; }
+#nivel .amostra i{ width:16px; height:16px; border-radius:50%; display:block; }
+#nivel .txt{ font-size:19px; font-weight:800; color:var(--roxo); line-height:1.15; }
+#nivel .txt small{ display:block; font-size:13px; font-weight:600; color:#9A83C4; }
+
+/* ---------- fim ---------- */
+#pronto{
+  position:fixed; inset:0; z-index:200; display:none;
+  align-items:center; justify-content:center; flex-direction:column; gap:14px;
+  padding:24px; text-align:center;
+  background:radial-gradient(circle at 50% 40%, #FFF9DC 0%, #E9F7FF 55%, #EFE0FF 100%);
+}
+#pronto.visivel{ display:flex; }
+#pronto .moldura{
+  width:min(62vw,230px); aspect-ratio:1; border-radius:50%;
+  overflow:hidden; border:6px solid var(--amarelo); background:#fff;
+  box-shadow:0 12px 34px rgba(107,63,191,.3);
+  animation:prontoEntra .6s cubic-bezier(.2,1.5,.4,1) both;
+}
+#pronto .moldura img{ width:100%; height:100%; object-fit:cover; object-position:center 30%; }
+@keyframes prontoEntra{
+  0%{ transform:scale(.3) rotate(-16deg); opacity:0; }
+  100%{ transform:scale(1) rotate(0); opacity:1; }
+}
+#pronto .nome{ font-size:clamp(24px,7vw,36px); font-weight:800; color:var(--roxo); text-shadow:0 3px 0 #fff; }
+#pronto .sub{ font-size:16px; font-weight:600; color:#8A6FBF; }
+</style>
+<link rel="stylesheet" href="cenario.css">
+</head>
+<body>
+<div class="cenario-chao"></div>
+
+<div id="app">
+  <div class="hud">
+    <button class="btn-icone" id="btnCasa" aria-label="Voltar ao mapa">🏠</button>
+    <div class="balao">Bolhas <b id="quem">…</b><span class="versao" id="versao"></span></div>
+  </div>
+
+  <div id="recado" class="escondida"></div>
+
+  <div id="campo"><div id="mira"></div></div>
+
+  <div id="lancador">
+    <div id="poneiCaixa"><img id="foto" alt=""></div>
+    <div id="proxima"></div>
+    <div id="quantas"></div>
+  </div>
+</div>
+
+<div id="nivel">
+  <h2>Quantas cores?</h2>
+  <div class="opcoes" id="opcoesNivel"></div>
+</div>
+
+<div id="pronto">
+  <div class="moldura" id="prontoFoto"></div>
+  <div class="nome" id="prontoNome"></div>
+  <div class="sub">Estourou todas as bolhas!</div>
+</div>
+
+<script>
+(function(){
+  var VERSAO = 'v1';
+
+  var PONEIS_BOLHAS = [
+    'Rarity', 'Princesa Celestia', 'Princesa Cadance', 'Apple Bloom',
+    'Sweetie Belle', 'Scootaloo', 'Trixie', 'Diamond Tiara',
+    'Silver Spoon', 'Cheerilee', 'Lyra Heartstrings', 'Octavia Melody',
+    'DJ Pon-3', 'Coco Pommel', 'Sunburst', 'Gilda',
+    'Big McIntosh', 'Babs Seed', 'Twist', 'Pipsqueak'
+  ];
+
+  /* cores bem separadas entre si: aos 4 anos dois tons parecidos de
+     azul são a mesma cor, e o jogo vira sorte */
+  var CORES = [
+    { id:'rosa',  css:'radial-gradient(circle at 34% 30%, #FFB6D9, #F0629F)' },
+    { id:'azul',  css:'radial-gradient(circle at 34% 30%, #A8DEFF, #3F9BE0)' },
+    { id:'verde', css:'radial-gradient(circle at 34% 30%, #B6EFC0, #4FBE6B)' },
+    { id:'amarelo', css:'radial-gradient(circle at 34% 30%, #FFEBA8, #F0C03E)' },
+    { id:'roxo',  css:'radial-gradient(circle at 34% 30%, #D8BDF5, #8B5CE0)' }
+  ];
+
+  var NIVEIS = [
+    { id:'facil',   cores:3, linhas:3, nome:'Fácil'   },
+    { id:'medio',   cores:4, linhas:4, nome:'Médio'   },
+    { id:'dificil', cores:5, linhas:5, nome:'Difícil' }
+  ];
+  var NIVEL_CHAVE = 'poneis.bolhas.nivel';
+
+  var COLS = 7;
+  var MAX_LINHAS = 9;
+
+  var $ = function(id){ return document.getElementById(id); };
+
+  function avisa(txt){
+    var r = $('recado');
+    if(!r) return;
+    r.textContent = txt;
+    r.classList.remove('escondida');
+  }
+  $('recado').addEventListener('click', function(){ $('recado').classList.add('escondida'); });
+  window.addEventListener('error', function(e){
+    avisa('Erro: ' + e.message + (e.lineno ? ' (linha ' + e.lineno + ')' : ''));
+  });
+  $('versao').textContent = VERSAO;
+  $('btnCasa').addEventListener('click', function(){ location.href = 'index.html'; });
+
+  /* ---------- a lançadora ---------- */
+  var pool = PONEIS_BOLHAS;
+  try{
+    if(typeof colecao === 'function'){
+      var minhas = colecao().filter(function(n){ return PONEIS_BOLHAS.indexOf(n) >= 0; });
+      if(minhas.length >= 3) pool = minhas;
+    }
+  }catch(e){}
+  var ponei = pool[Math.floor(Math.random() * pool.length)];
+  var foto  = 'imagens/' + encodeURIComponent(ponei) + '.png';
+  $('quem').textContent = ponei;
+  $('foto').src = foto;
+  $('foto').onerror = function(){ avisa('A imagem de ' + ponei + ' não carregou (' + foto + ').'); };
+
+  /* ---------- estado ---------- */
+  var grade = [];            // grade[linha][coluna] = {cor, el} ou null
+  var paleta = [], proxima = null, atirando = false, terminado = false;
+  var campo = $('campo'), lado = 40;
+
+  function medeLado(){
+    lado = Math.floor(campo.clientWidth / COLS);
+    return lado;
+  }
+
+  function corDe(id){
+    for(var i = 0; i < CORES.length; i++) if(CORES[i].id === id) return CORES[i];
+    return CORES[0];
+  }
+
+  function novaBolha(cor, col, linha){
+    var d = document.createElement('div');
+    d.className = 'bolha';
+    d.style.width = d.style.height = (lado - 4) + 'px';
+    d.style.background = corDe(cor).css;
+    d.style.left = (col * lado + 2) + 'px';
+    d.style.top  = (linha * lado + 2) + 'px';
+    campo.appendChild(d);
+    return d;
+  }
+
+  function monta(nivel){
+    terminado = false; atirando = false;
+    campo.querySelectorAll('.bolha').forEach(function(b){ b.remove(); });
+    medeLado();
+
+    paleta = CORES.slice(0, nivel.cores).map(function(c){ return c.id; });
+
+    grade = [];
+    for(var l = 0; l < MAX_LINHAS; l++){
+      grade.push([]);
+      for(var c = 0; c < COLS; c++) grade[l].push(null);
+    }
+
+    for(var li = 0; li < nivel.linhas; li++){
+      for(var co = 0; co < COLS; co++){
+        var cor = paleta[Math.floor(Math.random() * paleta.length)];
+        grade[li][co] = { cor:cor, el:novaBolha(cor, co, li) };
+      }
+    }
+
+    sorteiaProxima();
+    contaBolhas();
+  }
+
+  function sorteiaProxima(){
+    /* só sorteia cor que ainda existe no tabuleiro: entregar uma cor
+       que não combina com nada é dar uma peça inútil na mão dela */
+    var vivas = {};
+    for(var l = 0; l < MAX_LINHAS; l++)
+      for(var c = 0; c < COLS; c++)
+        if(grade[l][c]) vivas[grade[l][c].cor] = 1;
+    var lista = Object.keys(vivas);
+    if(!lista.length) lista = paleta;
+    proxima = lista[Math.floor(Math.random() * lista.length)];
+    $('proxima').style.background = corDe(proxima).css;
+  }
+
+  function contaBolhas(){
+    var n = 0;
+    for(var l = 0; l < MAX_LINHAS; l++)
+      for(var c = 0; c < COLS; c++) if(grade[l][c]) n++;
+    $('quantas').textContent = n + ' bolhas';
+    return n;
+  }
+
+  /* ---------- mirar e atirar ---------- */
+  function colunaDe(ev){
+    var r = campo.getBoundingClientRect();
+    var c = Math.floor((ev.clientX - r.left) / lado);
+    return Math.max(0, Math.min(COLS - 1, c));
+  }
+
+  campo.addEventListener('pointermove', function(ev){
+    if(terminado || atirando) return;
+    var c = colunaDe(ev);
+    var m = $('mira');
+    m.style.left = (c * lado) + 'px';
+    m.style.width = lado + 'px';
+    m.classList.add('on');
+  });
+  campo.addEventListener('pointerleave', function(){ $('mira').classList.remove('on'); });
+
+  campo.addEventListener('pointerdown', function(ev){
+    if(terminado || atirando) return;
+    atira(colunaDe(ev));
+  });
+
+  function atira(col){
+    /* onde a bolha para: logo acima da primeira ocupada da coluna */
+    var destino = -1;
+    for(var l = 0; l < MAX_LINHAS; l++){
+      if(grade[l][col]){ destino = l - 1; break; }
+      destino = l;
+    }
+    if(destino < 0){
+      /* coluna cheia até o topo: a bolha estoura sem grudar, para o
+         tabuleiro nunca crescer sem fim */
+      return;
+    }
+
+    atirando = true;
+    $('poneiCaixa').classList.remove('atira');
+    void $('poneiCaixa').offsetWidth;
+    $('poneiCaixa').classList.add('atira');
+    if(typeof somToque === 'function'){ try{ somToque(); }catch(e){} }
+
+    var cor = proxima;
+    var el = novaBolha(cor, col, MAX_LINHAS);   // nasce embaixo do campo
+    el.classList.add('voando');
+    void el.offsetWidth;
+    el.style.top = (destino * lado + 2) + 'px';
+
+    setTimeout(function(){
+      el.classList.remove('voando');
+      grade[destino][col] = { cor:cor, el:el };
+      resolve(destino, col);
+      atirando = false;
+      sorteiaProxima();
+    }, 330);
+  }
+
+  /* ---------- combinar ---------- */
+  function vizinhos(l, c){
+    return [[l-1,c],[l+1,c],[l,c-1],[l,c+1]].filter(function(p){
+      return p[0] >= 0 && p[0] < MAX_LINHAS && p[1] >= 0 && p[1] < COLS;
+    });
+  }
+
+  function grupo(l, c){
+    var cor = grade[l][c] && grade[l][c].cor;
+    if(!cor) return [];
+    var visto = {}, fila = [[l,c]], saida = [];
+    visto[l + ',' + c] = 1;
+    while(fila.length){
+      var p = fila.pop();
+      saida.push(p);
+      vizinhos(p[0], p[1]).forEach(function(v){
+        var k = v[0] + ',' + v[1];
+        if(visto[k]) return;
+        if(grade[v[0]][v[1]] && grade[v[0]][v[1]].cor === cor){
+          visto[k] = 1; fila.push(v);
+        }
+      });
+    }
+    return saida;
+  }
+
+  function resolve(l, c){
+    var g = grupo(l, c);
+    if(g.length < 3){ contaBolhas(); return; }
+
+    g.forEach(function(p, i){
+      var b = grade[p[0]][p[1]];
+      grade[p[0]][p[1]] = null;
+      if(!b) return;
+      setTimeout(function(){
+        b.el.classList.add('estoura');
+        setTimeout(function(){ if(b.el.parentNode) b.el.remove(); }, 360);
+      }, i * 45);
+    });
+    if(typeof somAchou === 'function'){ try{ somAchou(); }catch(e){} }
+
+    setTimeout(soltaSoltas, g.length * 45 + 120);
+  }
+
+  /* bolha que perdeu a ligação com o teto cai — é o que dá a
+     sensação de desmoronar, que é metade da graça do jogo */
+  function soltaSoltas(){
+    var preso = {}, fila = [];
+    for(var c = 0; c < COLS; c++) if(grade[0][c]){ fila.push([0,c]); preso['0,' + c] = 1; }
+    while(fila.length){
+      var p = fila.pop();
+      vizinhos(p[0], p[1]).forEach(function(v){
+        var k = v[0] + ',' + v[1];
+        if(preso[k] || !grade[v[0]][v[1]]) return;
+        preso[k] = 1; fila.push(v);
+      });
+    }
+    for(var l = 0; l < MAX_LINHAS; l++){
+      for(var co = 0; co < COLS; co++){
+        if(grade[l][co] && !preso[l + ',' + co]){
+          var b = grade[l][co];
+          grade[l][co] = null;
+          b.el.classList.add('caindo');
+          setTimeout((function(el){ return function(){ if(el.parentNode) el.remove(); }; })(b.el), 620);
+        }
+      }
+    }
+    if(contaBolhas() === 0) termina();
+    else sorteiaProxima();
+  }
+
+  /* ---------- nível e fim ---------- */
+  function nivelGuardado(){
+    try{
+      var id = localStorage.getItem(NIVEL_CHAVE);
+      for(var i = 0; i < NIVEIS.length; i++) if(NIVEIS[i].id === id) return NIVEIS[i];
+    }catch(e){}
+    return null;
+  }
+
+  function pedeNivel(){
+    var cx = $('opcoesNivel');
+    cx.innerHTML = '';
+    NIVEIS.forEach(function(n){
+      var b = document.createElement('button');
+      var am = '<span class="amostra">';
+      for(var i = 0; i < n.cores; i++) am += '<i style="background:' + CORES[i].css + '"></i>';
+      am += '</span>';
+      b.innerHTML = am + '<span class="txt">' + n.nome +
+        '<small>' + n.cores + ' cores · ' + n.linhas + ' fileiras</small></span>';
+      b.addEventListener('click', function(){
+        if(typeof somToque === 'function'){ try{ somToque(); }catch(e){} }
+        try{ localStorage.setItem(NIVEL_CHAVE, n.id); }catch(e){}
+        $('nivel').classList.add('escondida');
+        monta(n);
+      });
+      cx.appendChild(b);
+    });
+    $('nivel').classList.remove('escondida');
+  }
+
+  function termina(){
+    if(terminado) return;
+    terminado = true;
+    $('quantas').textContent = 'Limpou tudo!';
+    if(typeof somVitoria === 'function'){ try{ somVitoria(); }catch(e){} }
+
+    setTimeout(function(){
+      $('prontoFoto').innerHTML = '<img src="' + foto + '" alt="">';
+      $('prontoNome').textContent = ponei;
+      $('pronto').classList.add('visivel');
+    }, 700);
+
+    /* daí em diante quem conduz é o album.js: prêmio, contagem de
+       vitória e volta ao mapa */
+    setTimeout(function(){
+      $('pronto').classList.remove('visivel');
+      if(typeof premiar === 'function') premiar();
+      else location.href = 'index.html';
+    }, 2600);
+  }
+
+  addEventListener('resize', function(){
+    if(terminado) return;
+    var antes = lado;
+    medeLado();
+    if(antes === lado) return;
+    for(var l = 0; l < MAX_LINHAS; l++){
+      for(var c = 0; c < COLS; c++){
+        if(!grade[l][c]) continue;
+        var e = grade[l][c].el;
+        e.style.width = e.style.height = (lado - 4) + 'px';
+        e.style.left = (c * lado + 2) + 'px';
+        e.style.top  = (l * lado + 2) + 'px';
+      }
+    }
+  });
+
+  /* monta atrás e pede o nível por cima: se ela só quiser jogar,
+     toca em qualquer opção e está pronto */
+  monta(nivelGuardado() || NIVEIS[0]);
+  pedeNivel();
+})();
+</script>
+
+<script src="frases.js"></script>
+<script src="perfil.js"></script>
+<script src="album.js"></script>
+</body>
+</html>
