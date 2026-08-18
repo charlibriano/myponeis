@@ -210,7 +210,7 @@ body{
 
 <script>
 (function(){
-  var VERSAO = 'v1';
+  var VERSAO = 'v2';
 
   var PONEIS_BOLHAS = [
     'Rarity', 'Princesa Celestia', 'Princesa Cadance', 'Apple Bloom',
@@ -363,17 +363,20 @@ body{
   });
 
   function atira(col){
-    /* onde a bolha para: logo acima da primeira ocupada da coluna */
-    var destino = -1;
-    for(var l = 0; l < MAX_LINHAS; l++){
-      if(grade[l][col]){ destino = l - 1; break; }
-      destino = l;
+    /* Onde a bolha gruda: logo ABAIXO da última ocupada da coluna.
+
+       A primeira versão varria de cima para baixo e parava na primeira
+       casa ocupada, pondo a bolha uma linha acima dela. Como o
+       tabuleiro começa cheio desde a linha 0, essa primeira ocupada
+       era sempre a do topo e o destino dava -1 — o toque não fazia
+       nada, em nenhuma coluna. */
+    var destino = 0;
+    for(var l = MAX_LINHAS - 1; l >= 0; l--){
+      if(grade[l][col]){ destino = l + 1; break; }
     }
-    if(destino < 0){
-      /* coluna cheia até o topo: a bolha estoura sem grudar, para o
-         tabuleiro nunca crescer sem fim */
-      return;
-    }
+    /* coluna cheia até embaixo: a bolha não gruda, e o tabuleiro
+       nunca cresce sem fim */
+    if(destino >= MAX_LINHAS) return;
 
     atirando = true;
     $('poneiCaixa').classList.remove('atira');
