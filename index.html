@@ -4,258 +4,243 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<title>Leva o Pônei — Labirinto</title>
+<title>Jogos dos Pôneis</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
 <style>
 :root{
-  /* forma da ferradura, usada como máscara pelas pegadas */
-  --forma-pegada:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 60'%3E%3Cpath d='M17 47 A 17 19 0 1 1 43 47' fill='none' stroke='%23000' stroke-width='11' stroke-linecap='round'/%3E%3C/svg%3E");
   --lilas:#EFE3FF; --rosa-claro:#FFE4F2;
   --roxo:#6B3FBF; --roxo-escuro:#4A2A87;
   --rosa:#FF6FB0; --turquesa:#35CFC9; --amarelo:#FFD34A;
   --texto:#40276E;
-  --parede:#7B57C9;
 }
 *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
-html,body{ height:100%; overflow:hidden; }
+html,body{ min-height:100%; }
 body{
   font-family:'Baloo 2','Segoe UI Rounded','SF Pro Rounded',system-ui,sans-serif;
   color:var(--texto);
   background:
     radial-gradient(1200px 600px at 20% -10%, #FFF6C9 0%, transparent 55%),
     linear-gradient(160deg, var(--lilas) 0%, var(--rosa-claro) 100%);
-  display:flex; flex-direction:column;
-  padding:calc(8px + env(safe-area-inset-top)) 10px calc(10px + env(safe-area-inset-bottom));
-  user-select:none; touch-action:none;
+  display:flex; flex-direction:column; align-items:center;
+  padding:calc(14px + env(safe-area-inset-top)) 14px calc(20px + env(safe-area-inset-bottom));
+  user-select:none;
 }
 
-/* ---------- barra ---------- */
-.barra{ display:flex; align-items:center; justify-content:space-between; gap:8px; flex:0 0 auto; margin-bottom:8px; }
-.marcador{
-  background:rgba(255,255,255,.75); border-radius:14px; padding:6px 14px;
-  font-weight:800; font-size:17px; color:var(--roxo);
-  box-shadow:0 2px 6px rgba(107,63,191,.14); text-align:center; min-width:72px;
-}
-.marcador span{ display:block; font-size:10px; font-weight:600; color:#9A83C4; letter-spacing:.08em; text-transform:uppercase; }
-.icone{
-  border:none; background:rgba(255,255,255,.75); color:var(--roxo);
-  font-family:inherit; font-weight:800; font-size:20px;
-  width:44px; height:44px; border-radius:14px; cursor:pointer;
-  box-shadow:0 2px 6px rgba(107,63,191,.14); flex:0 0 auto;
+.titulo{
+  font-size:clamp(26px,7.5vw,40px); font-weight:800; line-height:.95;
+  color:var(--roxo); text-align:center; margin-top:10px;
+  text-shadow:0 3px 0 #fff, 0 6px 14px rgba(107,63,191,.25);
 }
 
-/* ---------- labirinto ---------- */
-#palco{ flex:1; min-height:0; display:flex; align-items:center; justify-content:center; }
-#labirinto{ position:relative; }
-
-.celula{
-  position:absolute;
-  border:0 solid var(--parede);
-  background:rgba(255,255,255,.5);
-}
-.celula.chegada{ background:#D8F7F0; }
-
-#poneiz, #amiga{
-  position:absolute; display:flex; align-items:center; justify-content:center;
-  pointer-events:none; z-index:3;
-}
-#poneiz{ z-index:4; }
-/* linear, e com a mesma duração do intervalo entre passos: com 'ease'
-   o pônei acelerava e freava em cada casa, o que parecia pulo. Assim
-   ele desliza sem parar de uma ponta à outra. */
-#poneiz.andando{ transition:left .3s linear, top .3s linear; }
-
-/* Pegada de casco.
-
-   A cor vem do cenário, não é fixa. Com a ferradura sempre roxa, ela
-   sumia no castelo e no mundo dos doces, que têm chão arroxeado.
-
-   O desenho é uma máscara, não uma imagem: assim o SVG define só a
-   forma e a cor vem do CSS, que é o que permite trocá-la por cenário. */
-.pegada{
-  position:absolute; pointer-events:none; z-index:1;
-  background-color:var(--pegada, #4A2A87);
-  -webkit-mask-image:var(--forma-pegada); mask-image:var(--forma-pegada);
-  -webkit-mask-size:contain;  mask-size:contain;
-  -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
-  -webkit-mask-position:center;  mask-position:center;
-  opacity:.85;
-  animation:pegadaSurge .28s ease-out both;
-}
-@keyframes pegadaSurge{
-  from{ transform:scale(.4); opacity:0; }
-  to  { transform:scale(1);  opacity:.85; }
+/* ---------- grade de jogos ----------
+   Antes eram sete cartões largos empilhados, o que dava um scroll
+   enorme no celular. Duas colunas cabem seis jogos em três fileiras. */
+.jogos{
+  display:grid; grid-template-columns:1fr 1fr; gap:10px;
+  width:100%; max-width:400px;
 }
 
-/* A ÚLTIMA PEGADA MARCA ONDE ELA ESTÁ.
-   O pônei fica parado na largada, então sem isto ela perde a própria
-   posição — principalmente ao voltar atrás num labirinto grande. */
-.pegada.atual{
-  background-color:var(--pegada-atual, #E3488F);
-  opacity:1;
-  animation:pegadaPisca 1s ease-in-out infinite;
-}
-.pegada.atual::after{
-  content:""; position:absolute; inset:-45%;
-  border-radius:50%;
-  background:radial-gradient(circle, var(--halo-pegada, rgba(255,111,176,.6)) 0%, transparent 70%);
-  animation:halolPisca 1s ease-in-out infinite;
-}
-@keyframes pegadaPisca{
-  0%,100%{ transform:scale(1);    opacity:.92; }
-  50%    { transform:scale(1.2);  opacity:1; }
-}
-@keyframes halolPisca{
-  0%,100%{ opacity:.3; }
-  50%    { opacity:1; }
-}
-}
-#poneiz img, #amiga img{ width:100%; height:100%; object-fit:contain; }
-#poneiz .emoji, #amiga .emoji{ font-size:26px; }
-
-@keyframes pulsa{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.12); } }
-
-/* itens espalhados pelo labirinto */
-.item{
-  position:absolute; z-index:3; pointer-events:none;
-  display:flex; align-items:center; justify-content:center;
-  /* text-shadow no lugar de filter:drop-shadow. Filtro cria uma superfície
-     separada que o navegador reprocessa a cada quadro; no celular ele
-     desiste e a animação morre. text-shadow é pintado junto com o texto. */
-  text-shadow:0 3px 4px rgba(60,40,110,.45);
-  will-change:transform;
-  animation:itemFlutua 2.2s ease-in-out infinite;
-}
-@keyframes itemFlutua{
-  0%,100%{ transform:translate3d(0,0,0)    scale(1); }
-  50%    { transform:translate3d(0,-14%,0) scale(1.08); }
-}
-.item.sumindo{ animation:itemPego .45s ease-out forwards; }
-@keyframes itemPego{
-  0%  { transform:translate3d(0,0,0)     scale(1);   opacity:1; }
-  100%{ transform:translate3d(0,-90%,0)  scale(1.9); opacity:0; }
-}
-
-/* portão: fecha a chegada até ela achar a chave */
-.portao{
-  position:absolute; inset:0; z-index:3; pointer-events:none;
-  display:flex; align-items:center; justify-content:center;
-  border-radius:9px;
-  background:repeating-linear-gradient(45deg,
-    rgba(120,90,60,.85) 0 7px, rgba(150,115,75,.85) 7px 14px);
-  box-shadow:inset 0 0 0 3px rgba(90,65,40,.9);
-}
-.portao.abrindo{ animation:portaoAbre .5s ease-in forwards; }
-@keyframes portaoAbre{
-  to{ transform:scaleY(0); opacity:0; }
-}
-#amiga{ animation:pulsa 1.6s ease-in-out infinite; }
-
-/* ---------- setas ---------- */
-#setas{
-  flex:0 0 auto; display:grid; gap:8px; justify-content:center; margin-top:10px;
-  grid-template-columns:repeat(3, 62px); grid-template-rows:repeat(2, 54px);
-}
-.seta{
-  border:none; border-radius:18px; cursor:pointer;
-  font-family:inherit; font-size:26px; font-weight:800; color:#fff;
-  background:linear-gradient(180deg,#8B5CE0 0%, var(--roxo) 100%);
-  box-shadow:0 4px 0 var(--roxo-escuro);
-}
-.seta:active{ transform:translateY(3px); box-shadow:0 1px 0 var(--roxo-escuro); }
-.seta[data-dir="cima"]  { grid-column:2; grid-row:1; }
-.seta[data-dir="esq"]   { grid-column:1; grid-row:2; }
-.seta[data-dir="baixo"] { grid-column:2; grid-row:2; }
-.seta[data-dir="dir"]   { grid-column:3; grid-row:2; }
-
-/* ---------- vitória ---------- */
-/* ---------- escolha de dificuldade ----------
-   Ela não lê, então a cor e a quantidade de quadradinhos é que dizem o
-   tamanho: verde pequeno, amarelo médio, vermelho grande. */
-#escolha{
-  position:fixed; inset:0; z-index:90; display:none;
-  align-items:center; justify-content:center; flex-direction:column; gap:14px;
-  padding:22px; text-align:center;
-  background:linear-gradient(180deg, rgba(255,255,255,.75) 0%, rgba(240,235,255,.9) 100%);
-}
-#escolha.visivel{ display:flex; }
-#escolha h2{ font-size:26px; font-weight:800; color:var(--roxo); text-shadow:0 2px 0 #fff; }
-
-.nivelBtn{
-  display:flex; align-items:center; gap:14px;
-  width:100%; max-width:290px; padding:12px 16px;
-  border:none; border-radius:24px; cursor:pointer; font-family:inherit;
-  background:#fff; box-shadow:0 5px 0 #D9C6F2, 0 10px 18px rgba(107,63,191,.18);
+.jogo{
+  display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
+  gap:6px; padding:12px 8px 10px; border:none; border-radius:22px;
+  cursor:pointer; font-family:inherit; text-align:center;
+  background:linear-gradient(180deg,#FFFFFF 0%,#F8F0FF 100%);
+  box-shadow:0 5px 0 #D9C6F2, 0 10px 18px rgba(107,63,191,.18);
   transition:transform .1s ease, box-shadow .1s ease;
 }
-.nivelBtn:active{ transform:translateY(4px); box-shadow:0 1px 0 #D9C6F2; }
-.nivelBtn .bolinha{
-  flex:0 0 auto; width:34px; height:34px; border-radius:50%;
-  box-shadow:inset 0 -4px 8px rgba(0,0,0,.18);
-}
-.nivelBtn .grade{ display:grid; gap:2px; }
-.nivelBtn .grade i{ width:7px; height:7px; border-radius:2px; background:#C9BBE4; }
-.nivelBtn .txt{ margin-left:auto; font-size:19px; font-weight:800; color:var(--roxo); }
+.jogo:active{ transform:translateY(4px); box-shadow:0 1px 0 #D9C6F2; }
 
-.nivelBtn[data-n="facil"]   .bolinha{ background:#5ECB74; }
-.nivelBtn[data-n="medio"]   .bolinha{ background:#FFC93C; }
-.nivelBtn[data-n="dificil"] .bolinha{ background:#F0614F; }
+/* o ícone é a identidade do jogo: ela não lê, então a figura precisa
+   dizer sozinha qual brincadeira é */
+.jogo .icone{
+  width:100%; max-width:78px; aspect-ratio:1;
+  display:flex; align-items:center; justify-content:center;
+  border-radius:20px; padding:8px;
+  background:#F3ECFF;
+}
+.jogo .icone svg{ width:100%; height:100%; }
 
-#festa{
-  position:fixed; inset:0; z-index:60; display:none;
-  align-items:center; justify-content:center; flex-direction:column; gap:14px;
-  background:rgba(255,246,201,.92); text-align:center; padding:20px;
+/* os ícones balançam sozinhos, cada um no seu tempo, para o menu não
+   parecer uma tabela parada */
+.jogo .icone{ animation:iconeBoia 3.6s ease-in-out infinite; }
+.jogo:nth-child(2) .icone{ animation-delay:.0s; }
+.jogo:nth-child(3) .icone{ animation-delay:.5s; }
+.jogo:nth-child(4) .icone{ animation-delay:1.0s; }
+.jogo:nth-child(5) .icone{ animation-delay:1.5s; }
+.jogo:nth-child(6) .icone{ animation-delay:2.0s; }
+@keyframes iconeBoia{
+  0%,100%{ transform:translateY(0)    rotate(-2deg); }
+  50%    { transform:translateY(-5px) rotate(2deg); }
 }
-#festa.visivel{ display:flex; }
-#festa .titulo{ font-size:clamp(26px,8vw,40px); font-weight:800; color:var(--roxo); text-shadow:0 3px 0 #fff; }
-#festa .retratoPremio{
-  position:relative; width:min(52vw,190px); aspect-ratio:1;
-  border-radius:50%; overflow:visible;
-  border:6px solid var(--amarelo); background:#fff;
-  box-shadow:0 10px 26px rgba(107,63,191,.3);
-  animation:premioPula .6s cubic-bezier(.2,1.5,.4,1) both;
-}
-#festa .retratoPremio > img{
-  width:100%; height:100%; border-radius:50%;
-  object-fit:cover; object-position:center 34%;
-}
-@keyframes premioPula{
-  0%  { transform:scale(.3) rotate(-20deg); opacity:0; }
-  100%{ transform:scale(1) rotate(0); opacity:1; }
-}
-#festa .nomeEnfeite{ font-size:20px; font-weight:800; color:var(--rosa); }
-#festa .contaEnfeite{ font-size:13px; font-weight:600; color:#8A6FBF; }
-#festa .botao{
-  border:none; border-radius:22px; cursor:pointer; font-family:inherit;
-  font-weight:800; font-size:22px; color:#fff; padding:16px 30px;
-  background:linear-gradient(180deg, var(--rosa) 0%, #E3488F 100%);
-  box-shadow:0 5px 0 #C43A79;
-}
-.estrela-cai{ position:fixed; top:-40px; font-size:26px; pointer-events:none; animation:cair linear forwards; z-index:61; }
-@keyframes cair{ to{ transform:translateY(110vh) rotate(360deg); opacity:.2; } }
 
-/* ---------- voz ---------- */
-#btnStatus, #btnTrocaVoz{
-  border:none; border-radius:12px; cursor:pointer;
-  font-family:inherit; font-weight:800; font-size:12px; padding:6px 10px;
-  background:rgba(255,255,255,.8); color:#8A6FBF;
-  box-shadow:0 2px 6px rgba(107,63,191,.14); flex:0 0 auto;
+/* ao tocar, o ícone dá um pulo antes de trocar de página */
+.jogo.tocado .icone{ animation:iconePula .42s cubic-bezier(.2,1.6,.4,1); }
+@keyframes iconePula{
+  0%  { transform:scale(1)    rotate(0); }
+  40% { transform:scale(1.28) rotate(-9deg); }
+  70% { transform:scale(.94)  rotate(5deg); }
+  100%{ transform:scale(1)    rotate(0); }
 }
-#btnStatus[data-ok="sim"]{ background:#D8F7F0; color:#12786F; }
-#btnStatus[data-ok="nao"]{ background:#FFDDE6; color:#B02A4A; }
+.jogo.tocado{ box-shadow:0 2px 0 #D9C6F2, 0 0 0 4px rgba(255,111,176,.35); }
+
+.faiscaMenu{
+  position:fixed; pointer-events:none; z-index:60; font-size:20px;
+  animation:faiscaMenuVoa .55s ease-out forwards;
+}
+@keyframes faiscaMenuVoa{
+  from{ transform:translate3d(0,0,0) scale(.5); opacity:1; }
+  to  { transform:translate3d(var(--fx,0), var(--fy,-40px),0) scale(1.25); opacity:0; }
+}
+.jogo .nome{ font-size:15px; font-weight:800; color:var(--roxo); line-height:1.1; }
+.jogo .como{ display:none; }          /* a legenda escrita não serve para ela */
+
+.jogo[data-cor="rosa"] .icone{ background:#FFE4F2; }
+.jogo[data-cor="turq"] .icone{ background:#D8F7F0; }
+.jogo[data-cor="amar"] .icone{ background:#FFF3CC; }
+.jogo[data-cor="verde"] .icone{ background:#E0F5DF; }
+
+/* o álbum ocupa a largura toda: é o painel de progresso, não um jogo */
+.jogo.largo{
+  grid-column:1 / -1;
+  flex-direction:row; align-items:center; gap:12px;
+  padding:10px 14px; text-align:left;
+}
+.jogo.largo .icone{ width:56px; max-width:56px; flex:0 0 auto; }
+.jogo.largo .nome{ font-size:18px; }
+.jogo.largo .como{ display:block; font-size:12px; font-weight:600; color:#9A83C4; margin-top:2px; }
+.jogo.largo .seta{ margin-left:auto; font-size:22px; color:var(--rosa); }
+.jogo .seta{ display:none; }
+
+/* voz */
 #recado{
-  position:fixed; left:8px; right:8px; top:calc(56px + env(safe-area-inset-top)); z-index:70;
+  position:fixed; left:8px; right:8px; top:calc(46px + env(safe-area-inset-top)); z-index:45;
   background:#3B1220; color:#FFE6EE; border:2px solid var(--rosa); border-radius:14px;
   padding:10px 12px; font-size:13px; line-height:1.45; cursor:pointer;
   box-shadow:0 8px 24px rgba(0,0,0,.3);
 }
 #recado.escondida{ display:none; }
 
+/* telas baixas (iPhone SE e parecidos): aperta o cabeçalho e os ícones
+   para os seis jogos caberem sem rolagem */
+@media (max-height: 720px){
+  .titulo{ font-size:24px; margin-top:4px; }
+  .recepcao{ padding:6px 12px 6px 6px; margin-bottom:8px; }
+  .recepcao .amiga{ width:48px; height:48px; }
+  .jogo{ padding:8px 6px 8px; gap:4px; }
+  .jogo .icone{ max-width:58px; padding:6px; }
+  .jogo .nome{ font-size:14px; }
+  .jogo.largo .icone{ width:46px; max-width:46px; }
+}
+
 @media (prefers-reduced-motion: reduce){
   *{ animation-duration:.01ms !important; transition-duration:.01ms !important; }
 }
+
+/* ---------- a amiga recebendo ela ---------- */
+.recepcao{
+  display:flex; align-items:center; gap:12px;
+  width:100%; max-width:400px; margin:0 auto 10px;
+  background:rgba(255,255,255,.82); border-radius:22px; padding:8px 14px 8px 8px;
+  box-shadow:0 5px 0 #D9C6F2, 0 10px 20px rgba(107,63,191,.18);
+}
+.recepcao .amiga{
+  position:relative;
+  flex:0 0 auto; width:56px; height:56px; border-radius:50%;
+  /* overflow visível para o enfeite poder passar da borda do retrato */
+  overflow:visible;
+  border:3px solid #FFD34A; background:#FFF6C9;
+  animation:balanca 3.6s ease-in-out infinite;
+}
+.recepcao .amiga img{ width:100%; height:100%; border-radius:50%; object-fit:cover; object-position:center 34%; }
+.recepcao .fala{ flex:1; min-width:0; }
+.recepcao .oi{ font-size:17px; font-weight:800; color:var(--roxo); line-height:1.1; }
+.recepcao .tarefa{ font-size:11px; font-weight:600; color:#9A83C4; margin:2px 0 3px; }
+
+/* ---------- primeira vez: quem vai brincar? ---------- */
+#apresentacao{
+  position:fixed; inset:0; z-index:120; display:none;
+  align-items:center; justify-content:flex-start; flex-direction:column;
+  padding:calc(18px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));
+  text-align:center; overflow-y:auto;
+  /* deixa o cenário do fundo aparecer por trás em vez de tapar tudo */
+  background:linear-gradient(180deg, rgba(255,255,255,.72) 0%, rgba(255,240,250,.88) 100%);
+  backdrop-filter:blur(2px);
+}
+#apresentacao.visivel{ display:flex; }
+
+.cartao{
+  width:100%; max-width:360px;
+  background:#fff; border-radius:30px;
+  padding:22px 18px 24px;
+  box-shadow:0 8px 0 #E4D8F5, 0 18px 34px rgba(107,63,191,.24);
+  border:3px solid #fff;
+}
+
+#apresentacao .estrelinhas{ font-size:26px; letter-spacing:6px; margin-bottom:2px; }
+#apresentacao h2{
+  font-size:27px; font-weight:800; color:var(--roxo); line-height:1.1;
+  text-shadow:0 2px 0 #fff;
+}
+#apresentacao p{ font-size:13px; font-weight:600; color:#9A83C4; margin:4px 0 14px; }
+
+/* o campo mostra o nome em letras grandes: ela já sabe escrever o dela,
+   e ver a própria letra aparecendo grande faz parte da graça */
+#campoNome{
+  font-family:inherit; font-size:30px; font-weight:800; text-align:center;
+  letter-spacing:2px; color:var(--roxo);
+  border:3px solid #E4D8F5; border-radius:20px;
+  padding:12px 14px; width:100%; background:#FBF6FF;
+  outline:none; transition:border-color .2s ease, box-shadow .2s ease;
+}
+#campoNome:focus{ border-color:var(--rosa); box-shadow:0 0 0 4px rgba(255,111,176,.22); background:#fff; }
+#campoNome::placeholder{ color:#CFC0E8; font-size:22px; letter-spacing:1px; }
+
+.divisor{
+  display:flex; align-items:center; gap:10px;
+  margin:20px 0 12px; color:#C4B4E0; font-size:12px; font-weight:800;
+  text-transform:uppercase; letter-spacing:.12em;
+}
+.divisor::before, .divisor::after{
+  content:""; flex:1; height:3px; border-radius:2px;
+  background:linear-gradient(90deg, transparent, #E4D8F5, transparent);
+}
+
+.escolhaAmigas{
+  display:grid; grid-template-columns:repeat(4, 1fr); gap:10px;
+}
+.escolhaAmigas button{
+  border:3px solid #E4D8F5; background:#FBF6FF; border-radius:50%;
+  aspect-ratio:1; width:100%; padding:0; overflow:hidden; cursor:pointer;
+  transition:transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+.escolhaAmigas button:active{ transform:scale(.94); }
+.escolhaAmigas button.marcada{
+  border-color:var(--rosa);
+  box-shadow:0 0 0 5px rgba(255,111,176,.28), 0 4px 10px rgba(196,58,121,.3);
+  transform:scale(1.08);
+}
+.escolhaAmigas img{ width:100%; height:100%; object-fit:cover; object-position:center 34%; }
+
+#nomeDaAmiga{
+  min-height:22px; margin-top:10px;
+  font-size:16px; font-weight:800; color:var(--rosa);
+}
+
+/* o botão existia com a classe .botao, que nunca foi definida nesta
+   página — por isso saía o botão cru do navegador */
+#btnComecar{
+  margin-top:18px; width:100%;
+  border:none; border-radius:24px; cursor:pointer;
+  font-family:inherit; font-weight:800; font-size:24px; color:#fff;
+  padding:16px 20px;
+  background:linear-gradient(180deg, #FF8FC0 0%, #E3488F 100%);
+  box-shadow:0 6px 0 #C43A79, 0 12px 22px rgba(196,58,121,.32);
+  transition:transform .1s ease, box-shadow .1s ease, filter .2s ease;
+}
+#btnComecar:active{ transform:translateY(5px); box-shadow:0 1px 0 #C43A79; }
+#btnComecar.esperando{ filter:grayscale(.5) opacity(.6); }
 </style>
 <link rel="stylesheet" href="cenario.css">
 </head>
@@ -268,803 +253,151 @@ body{
 
 <div id="recado" class="escondida"></div>
 
-<div class="barra">
-  <button class="icone" id="btnCasa" aria-label="Voltar aos jogos">🏠</button>
-  <button class="icone" id="btnNivel" aria-label="Trocar dificuldade">🎚️</button>
-  <div class="marcador"><span>Estrelas</span><b id="mEstrelas">0</b></div>
-  <div class="marcador"><span>Labirinto</span><b id="mNivel">1</b></div>
-  <div class="marcador" id="caixaMacas"><span id="rotuloItem">Itens</span><b id="mMacas">0/0</b></div>
-  <button id="btnTrocaVoz">trocar voz</button>
-  <button id="btnStatus" data-ok="?">🔈 voz</button>
+<div id="mapa"></div>
+<div id="faixaFase"></div>
+
+<h1 class="titulo">Jogos dos Pôneis</h1>
+
+<div class="recepcao" id="recepcao" style="display:none">
+  <span class="amiga" id="amigaFoto"></span>
+  <span class="fala">
+    <span class="oi" id="amigaOi">Oi!</span>
+    <span class="tarefa" id="amigaTarefa"></span>
+    <span id="fitaAqui"></span>
+  </span>
 </div>
 
-<div id="palco"><div id="labirinto"></div></div>
+<div class="jogos" id="jogos"></div>
 
-<div id="setas">
-  <button class="seta" data-dir="cima"  aria-label="Para cima">▲</button>
-  <button class="seta" data-dir="esq"   aria-label="Para a esquerda">◀</button>
-  <button class="seta" data-dir="baixo" aria-label="Para baixo">▼</button>
-  <button class="seta" data-dir="dir"   aria-label="Para a direita">▶</button>
+<div id="apresentacao">
+  <div class="cartao">
+    <div class="estrelinhas" aria-hidden="true">🌈 ✨ 🦄 ✨ 🌈</div>
+    <h2>Quem vai brincar?</h2>
+    <p>Escreva o nome dela aqui</p>
+    <input id="campoNome" maxlength="14" placeholder="nome" autocomplete="off"
+           autocapitalize="words" spellcheck="false">
+
+    <div class="divisor">escolha a amiga</div>
+    <div class="escolhaAmigas" id="escolhaAmigas"></div>
+    <div id="nomeDaAmiga"></div>
+
+    <button id="btnComecar" class="esperando">Começar</button>
+  </div>
 </div>
 
-<div id="escolha">
-  <h2>Escolha o labirinto</h2>
-  <button class="nivelBtn" data-n="facil">
-    <span class="bolinha"></span><span class="grade"></span><span class="txt">Fácil</span>
-  </button>
-  <button class="nivelBtn" data-n="medio">
-    <span class="bolinha"></span><span class="grade"></span><span class="txt">Médio</span>
-  </button>
-  <button class="nivelBtn" data-n="dificil">
-    <span class="bolinha"></span><span class="grade"></span><span class="txt">Difícil</span>
-  </button>
-</div>
-
-<div id="festa">
-  <div class="titulo" id="festaTitulo">Chegou!</div>
-  <div class="retratoPremio" id="retratoPremio"></div>
-  <div class="nomeEnfeite" id="nomeEnfeite"></div>
-  <div class="contaEnfeite" id="contaEnfeite"></div>
-  <button class="botao" id="btnProximo">Outro labirinto</button>
-</div>
-
-<script src="personagens.js"></script>
 <script src="frases.js"></script>
-<script src="voz.js"></script>
 <script src="perfil.js"></script>
 <script src="enfeites.js"></script>
 <script src="album.js"></script>
+<script src="aventura.js"></script>
 <script>
-/* ===================================================================
-   LABIRINTO — "Leva o Pônei"
-   Ela tem 4 anos e não lê: a instrução é falada, e o caminho já
-   percorrido fica pintado para ela não se perder.
-   =================================================================== */
-
-const $ = id => document.getElementById(id);
-
-addEventListener("error", e => {
-  const r = $("recado");
-  if(!r) return;
-  r.textContent = "Erro: " + e.message + (e.lineno ? " (linha " + e.lineno + ")" : "");
-  r.classList.remove("escondida");
-});
-$("recado").addEventListener("click", () => $("recado").classList.add("escondida"));
-
-/* o voz.js pode faltar — o jogo não pode morrer por causa disso */
-const TEM_VOZJS = (typeof fala === "function");
-const dizer   = t => { if(TEM_VOZJS) try{ fala(t); }catch(e){} };
-const tocar   = f => { if(typeof f === "function") try{ f(); }catch(e){} };
-
-/* ---------- elenco: usa as imagens já baixadas ---------- */
-const TEM_ELENCO = (typeof PERSONAGENS !== "undefined" && Array.isArray(PERSONAGENS) && PERSONAGENS.length);
-const sorteia = a => a[Math.floor(Math.random() * a.length)];
-
-function retratoDe(p){
-  if(p && p.img) return '<img src="' + encodeURI(p.img) + '" alt="' + p.nome + '">';
-  return '<span class="emoji">🦄</span>';
-}
-
+/* os cartões agora usam ícones desenhados, não fotos — não há
+   imagem que possa falhar */
 
 /* ===================================================================
-   CENÁRIOS
-   Criança de 4 anos perde o interesse quando vê a mesma tela três
-   vezes. Cada rodada acontece num lugar diferente: muda o céu, o
-   chão, as cercas, o item que ela coleta e o nome que a voz anuncia.
-
-   Os cenários entram embaralhados e só repetem depois que todos os
-   sete passaram — assim ela nunca vê o mesmo duas vezes seguidas.
+   PERFIL: primeira vez, e a recepção da amiga
    =================================================================== */
-const CENARIOS = [
-  { nome:"o jardim",   item:"🍎", oQue:"maçã",     oQuePl:"maçãs",
-    ceuAlto:"#7FCFF2", ceuBaixo:"#C8EEFF", sol:"#FFF0B8",
-    chaoClaro:"#F6E7C8", chaoEscuro:"#EAD6B0", pedrisco:"rgba(160,120,80,.20)",
-    molduraClara:"#E8D5AE", molduraEscura:"#DCC79A",
-    paredeTopo:"#63C36F", paredeMeio:"#3E9A54", paredeBase:"#2E7A41", paredeSombra:"rgba(20,90,45,.35)" , pegada:"#5A3A16", pegadaAtual:"#C43A79"},
+injetaEstiloPerfil();
 
-  { nome:"a praia",    item:"🐚", oQue:"conchinha", oQuePl:"conchinhas",
-    ceuAlto:"#6FD8E8", ceuBaixo:"#D6F6FF", sol:"#FFE9A8",
-    chaoClaro:"#FBEFCF", chaoEscuro:"#F0DCA8", pedrisco:"rgba(200,160,100,.22)",
-    molduraClara:"#F2DFB0", molduraEscura:"#E4CB92",
-    paredeTopo:"#7FD8E0", paredeMeio:"#48AFC4", paredeBase:"#2E8CA6", paredeSombra:"rgba(20,90,110,.35)" , pegada:"#7A4A18", pegadaAtual:"#1E7A8C"},
+let amigaEscolhida = null;
 
-  { nome:"a neve",     item:"❄️", oQue:"floquinho", oQuePl:"floquinhos",
-    ceuAlto:"#A8D8F0", ceuBaixo:"#E8F6FF", sol:"#FFFFFF",
-    chaoClaro:"#FBFDFF", chaoEscuro:"#DCEAF6", pedrisco:"rgba(140,175,205,.25)",
-    molduraClara:"#E4F0FA", molduraEscura:"#CFE2F2",
-    paredeTopo:"#CFEBFA", paredeMeio:"#95C8E8", paredeBase:"#6BA8D0", paredeSombra:"rgba(60,120,165,.32)" , pegada:"#2E5A80", pegadaAtual:"#C43A79"},
-
-  { nome:"a floresta", item:"🌰", oQue:"castanha",  oQuePl:"castanhas",
-    ceuAlto:"#8FD0A8", ceuBaixo:"#DAF2DC", sol:"#F4F0B0",
-    chaoClaro:"#E0D0A8", chaoEscuro:"#C8B48A", pedrisco:"rgba(110,85,50,.24)",
-    molduraClara:"#CBB894", molduraEscura:"#B49E78",
-    paredeTopo:"#A8763E", paredeMeio:"#7E5528", paredeBase:"#5E3D1B", paredeSombra:"rgba(60,35,10,.38)" , pegada:"#3A2408", pegadaAtual:"#B03A2E"},
-
-  { nome:"o mundo dos doces", item:"🍬", oQue:"balinha", oQuePl:"balinhas",
-    ceuAlto:"#F5A8D0", ceuBaixo:"#FFE0F0", sol:"#FFF4C8",
-    chaoClaro:"#FFF0DC", chaoEscuro:"#F4DCBC", pedrisco:"rgba(210,140,170,.22)",
-    molduraClara:"#F8DCC8", molduraEscura:"#EEC4AC",
-    paredeTopo:"#FF9ECB", paredeMeio:"#E86BAA", paredeBase:"#C4488A", paredeSombra:"rgba(150,40,95,.32)" , pegada:"#8A3060", pegadaAtual:"#4A2A87"},
-
-  { nome:"o castelo",  item:"💎", oQue:"joia",      oQuePl:"joias",
-    ceuAlto:"#9CB8E8", ceuBaixo:"#DCE6FA", sol:"#FFF2CC",
-    chaoClaro:"#E8E2F2", chaoEscuro:"#D2C8E4", pedrisco:"rgba(120,105,150,.24)",
-    molduraClara:"#DCD2EC", molduraEscura:"#C4B8DC",
-    paredeTopo:"#BFB4D4", paredeMeio:"#9186B0", paredeBase:"#6E6390", paredeSombra:"rgba(55,45,85,.34)" , pegada:"#3A2E5E", pegadaAtual:"#B03A6E"},
-
-  { nome:"o pôr do sol", item:"⭐", oQue:"estrelinha", oQuePl:"estrelinhas",
-    ceuAlto:"#F5A87E", ceuBaixo:"#FFE2C8", sol:"#FFD08A",
-    chaoClaro:"#F2DCC0", chaoEscuro:"#E0C29E", pedrisco:"rgba(160,105,70,.22)",
-    molduraClara:"#E8CDAC", molduraEscura:"#D4B48E",
-    paredeTopo:"#C48EB4", paredeMeio:"#9A6494", paredeBase:"#744874", paredeSombra:"rgba(70,35,70,.34)", pegada:"#5E2A2A", pegadaAtual:"#2E5A80" }
-];
-
-let baralhoCenarios = [], cenario = CENARIOS[0];
-
-function proximoCenario(){
-  if(!baralhoCenarios.length){
-    baralhoCenarios = CENARIOS.slice();
-    for(let i = baralhoCenarios.length - 1; i > 0; i--){
-      const j = Math.floor(Math.random() * (i + 1));
-      [baralhoCenarios[i], baralhoCenarios[j]] = [baralhoCenarios[j], baralhoCenarios[i]];
-    }
-    // se o primeiro do baralho novo for igual ao último jogado, manda para o fim
-    if(baralhoCenarios[0] === cenario && baralhoCenarios.length > 1){
-      baralhoCenarios.push(baralhoCenarios.shift());
-    }
-  }
-  cenario = baralhoCenarios.shift();
-  aplicaCenario();
-}
-
-function aplicaCenario(){
-  const r = document.documentElement.style;
-  r.setProperty("--ceu-alto",       cenario.ceuAlto);
-  r.setProperty("--ceu-baixo",      cenario.ceuBaixo);
-  r.setProperty("--sol",            cenario.sol);
-  r.setProperty("--chao-claro",     cenario.chaoClaro);
-  r.setProperty("--chao-escuro",    cenario.chaoEscuro);
-  r.setProperty("--pedrisco",       cenario.pedrisco);
-  r.setProperty("--moldura-clara",  cenario.molduraClara);
-  r.setProperty("--moldura-escura", cenario.molduraEscura);
-  r.setProperty("--parede-topo",    cenario.paredeTopo);
-  r.setProperty("--parede-meio",    cenario.paredeMeio);
-  r.setProperty("--parede-base",    cenario.paredeBase);
-  r.setProperty("--parede-sombra",  cenario.paredeSombra);
-  // a pegada muda de cor junto: roxo fixo sumia no castelo e nos doces
-  r.setProperty("--pegada",       cenario.pegada || "#4A2A87");
-  r.setProperty("--pegada-atual", cenario.pegadaAtual || "#E3488F");
-}
-
-/* ===================================================================
-   1. GERAÇÃO DO LABIRINTO
-   Algoritmo de escavação (recursive backtracker): parte de uma célula,
-   derruba paredes andando ao acaso e volta atrás quando encurrala.
-   Gera sempre um labirinto com um único caminho entre dois pontos —
-   ou seja, ela nunca fica presa e nunca tem becos infinitos.
-   =================================================================== */
-let grade = [], linhas = 4, colunas = 4;
-let pr = 0, pc = 0;              // posição do pônei
-let nivel = (typeof nivelSalvo === 'function') ? nivelSalvo() : 1;
-let estrelas = 0, lado = 60;
-let poneiAtual = null, amigaAtual = null;
-
-function geraLabirinto(nl, nc){
-  grade = [];
-  for(let r = 0; r < nl; r++){
-    grade.push([]);
-    for(let c = 0; c < nc; c++){
-      grade[r].push({ cima:true, baixo:true, esq:true, dir:true, visitada:false });
-    }
-  }
-
-  const pilha = [[0, 0]];
-  grade[0][0].visitada = true;
-
-  while(pilha.length){
-    const [r, c] = pilha[pilha.length - 1];
-    const vizinhos = [];
-    if(r > 0      && !grade[r-1][c].visitada) vizinhos.push(['cima',  r-1, c]);
-    if(r < nl - 1 && !grade[r+1][c].visitada) vizinhos.push(['baixo', r+1, c]);
-    if(c > 0      && !grade[r][c-1].visitada) vizinhos.push(['esq',   r, c-1]);
-    if(c < nc - 1 && !grade[r][c+1].visitada) vizinhos.push(['dir',   r, c+1]);
-
-    if(!vizinhos.length){ pilha.pop(); continue; }
-
-    const [dir, nr, ncol] = sorteia(vizinhos);
-    const oposto = { cima:'baixo', baixo:'cima', esq:'dir', dir:'esq' }[dir];
-    grade[r][c][dir] = false;
-    grade[nr][ncol][oposto] = false;
-    grade[nr][ncol].visitada = true;
-    pilha.push([nr, ncol]);
-  }
-}
-
-/* ===================================================================
-   2. DESENHO — o tamanho da célula vem do espaço real da tela,
-   mesma lógica do tabuleiro da memória.
-   =================================================================== */
-function desenha(){
-  const palco = $("palco");
-  const L = palco.clientWidth, A = palco.clientHeight;
-  lado = Math.floor(Math.min(L / colunas, A / linhas));
-  lado = Math.max(34, Math.min(lado, 92));
-
-  const cx = $("labirinto");
-  cx.style.width  = (colunas * lado) + "px";
-  cx.style.height = (linhas  * lado) + "px";
+function montaEscolha(){
+  const cx = document.getElementById("escolhaAmigas");
   cx.innerHTML = "";
-
-  const espessura = Math.max(6, Math.round(lado / 8));   // arbusto pede mais corpo que uma borda
-
-  /* 1. o chão: cada casa é um pedaço de caminho */
-  for(let r = 0; r < linhas; r++){
-    for(let c = 0; c < colunas; c++){
-      const d = document.createElement("div");
-      d.className = "celula";
-      d.dataset.r = r; d.dataset.c = c;
-      d.style.left = (c * lado) + "px";
-      d.style.top  = (r * lado) + "px";
-      d.style.width = lado + "px";
-      d.style.height = lado + "px";
-      if(r === linhas - 1 && c === colunas - 1) d.classList.add("chegada");
-      cx.appendChild(d);
-    }
-  }
-
-  /* 2. as paredes: arbustos desenhados por cima, um elemento por trecho.
-
-     Antes eram bordas de CSS. Borda é fina, tem canto vivo e não aceita
-     textura, então o labirinto parecia planilha. Como elemento próprio,
-     cada trecho ganha ponta arredondada, folhagem e volume.
-
-     Cada parede é registrada nas duas casas vizinhas. Para não desenhar
-     duas vezes, percorro só a de cima e a da esquerda de cada casa, e
-     fecho a moldura com a de baixo da última linha e a da direita da
-     última coluna. */
-  const meia = espessura / 2;
-  const poeParede = (x, y, w, h) => {
-    const p = document.createElement("div");
-    p.className = "parede";
-    p.style.left = x + "px"; p.style.top = y + "px";
-    p.style.width = w + "px"; p.style.height = h + "px";
-    p.style.borderRadius = meia + "px";
-    cx.appendChild(p);
-  };
-
-  for(let r = 0; r < linhas; r++){
-    for(let c = 0; c < colunas; c++){
-      const g = grade[r][c];
-      if(g.cima) poeParede(c * lado - meia, r * lado - meia, lado + espessura, espessura);
-      if(g.esq)  poeParede(c * lado - meia, r * lado - meia, espessura, lado + espessura);
-      if(r === linhas - 1 && g.baixo)
-        poeParede(c * lado - meia, (r + 1) * lado - meia, lado + espessura, espessura);
-      if(c === colunas - 1 && g.dir)
-        poeParede((c + 1) * lado - meia, r * lado - meia, espessura, lado + espessura);
-    }
-  }
-
-  const amiga = document.createElement("div");
-  amiga.id = "amiga";
-  amiga.style.width = lado + "px"; amiga.style.height = lado + "px";
-  amiga.style.left = ((colunas - 1) * lado) + "px";
-  amiga.style.top  = ((linhas  - 1) * lado) + "px";
-  amiga.innerHTML = retratoDe(amigaAtual);
-  cx.appendChild(amiga);
-
-  const p = document.createElement("div");
-  p.id = "poneiz";
-  p.style.width = lado + "px"; p.style.height = lado + "px";
-  p.innerHTML = retratoDe(poneiAtual);
-  // o pônei fica na largada; a amiga, na chegada. Nenhum dos dois anda.
-  p.style.left = (caminho[0][1] * lado) + "px";
-  p.style.top  = (caminho[0][0] * lado) + "px";
-  cx.appendChild(p);
-
-  desenhaItens();
-  desenhaRastro();
-}
-
-function desenhaItens(){
-  const cx = $("labirinto");
-  cx.querySelectorAll(".item, .portao").forEach(e => e.remove());
-  const tam = Math.round(lado * 0.52);
-
-  const poe = (r, c, emoji, classe) => {
-    const d = document.createElement("div");
-    d.className = "item " + classe;
-    d.style.width = tam + "px"; d.style.height = tam + "px";
-    d.style.left = (c * lado + (lado - tam) / 2) + "px";
-    d.style.top  = (r * lado + (lado - tam) / 2) + "px";
-    d.style.fontSize = Math.round(tam * 0.8) + "px";
-    d.textContent = emoji;
-    cx.appendChild(d);
-  };
-
-  macas.forEach((m, i) => { if(!m.pego) poe(m.r, m.c, cenario.item, "maca-" + i); });
-  if(chave && !chave.pego) poe(chave.r, chave.c, "🔑", "chave");
-
-  // portão barrando a chegada enquanto a chave não aparecer
-  if(chave && !chave.pego){
-    const p = document.createElement("div");
-    p.className = "portao";
-    p.style.position = "absolute";
-    p.style.width = lado + "px"; p.style.height = lado + "px";
-    p.style.left = ((colunas - 1) * lado) + "px";
-    p.style.top  = ((linhas - 1) * lado) + "px";
-    p.style.fontSize = Math.round(lado * 0.45) + "px";
-    p.textContent = "🔒";
-    cx.appendChild(p);
-  }
-
-  $("mMacas").textContent = macas.filter(m => m.pego).length + "/" + macas.length;
-}
-
-/* ---------- rastro de pegadas ----------
-   caminho guarda a rota atual, da largada até onde ela está.
-   O pônei e a amiga não saem do lugar: quem anda é o rastro. */
-let caminho = [[0, 0]];
-const GIRO = { cima:0, dir:90, baixo:180, esq:270 };
-
-/* itens do labirinto */
-let macas = [];          // [{r, c, pego}]
-let chave = null;        // {r, c, pego} ou null nos níveis iniciais
-let temChave = false;
-
-/* Os itens ficam em becos sem saída — casas com três paredes.
-   É o que transforma o desvio em escolha: hoje ela passa reto por eles.
-   O beco da largada e o da chegada ficam de fora. */
-function becosSemSaida(){
-  const lista = [];
-  for(let r = 0; r < linhas; r++){
-    for(let c = 0; c < colunas; c++){
-      if(r === 0 && c === 0) continue;
-      if(r === linhas - 1 && c === colunas - 1) continue;
-      const g = grade[r][c];
-      const paredes = (g.cima?1:0) + (g.baixo?1:0) + (g.esq?1:0) + (g.dir?1:0);
-      if(paredes === 3) lista.push([r, c]);
-    }
-  }
-  return lista;
-}
-
-/* Casas que ela consegue alcançar SEM entrar na chegada.
-
-   Isto não é preciosismo: a chegada fica trancada até achar a chave, e
-   entrar nela encerra a rodada. Então qualquer item que só se alcance
-   atravessando a chegada é inalcançável — e se for a chave, o labirinto
-   fica impossível. Testando 12 mil mapas, isso acontecia em um terço deles.
-
-   Busca em largura a partir da largada, tratando a chegada como parede. */
-function casasAlcancaveis(){
-  const D = { cima:[-1,0], baixo:[1,0], esq:[0,-1], dir:[0,1] };
-  const fim = (linhas - 1) + "," + (colunas - 1);
-  const vistas = new Set(["0,0"]);
-  const fila = [[0, 0]];
-
-  while(fila.length){
-    const [r, c] = fila.shift();
-    for(const d in D){
-      if(grade[r][c][d]) continue;
-      const nr = r + D[d][0], nc = c + D[d][1];
-      const id = nr + "," + nc;
-      if(id === fim) continue;                       // a chegada é barreira
-      if(nr < 0 || nc < 0 || nr >= linhas || nc >= colunas) continue;
-      if(vistas.has(id)) continue;
-      vistas.add(id);
-      fila.push([nr, nc]);
-    }
-  }
-  vistas.delete("0,0");                              // a largada é do pônei
-  return vistas;
-}
-
-function espalhaItens(){
-  macas = []; chave = null; temChave = false;
-
-  const ok = casasAlcancaveis();
-  let becos = becosSemSaida().filter(([r, c]) => ok.has(r + "," + c));
-
-  // mapa pequeno pode não ter becos suficientes: usa qualquer casa alcançável
-  if(becos.length < 3){
-    const extras = [];
-    ok.forEach(id => {
-      const [r, c] = id.split(",").map(Number);
-      if(!becos.some(b => b[0] === r && b[1] === c)) extras.push([r, c]);
+  AMIGAS.forEach(nome => {
+    const b = document.createElement("button");
+    b.innerHTML = '<img src="imagens/' + encodeURIComponent(nome) + '.png" alt="' + nome + '">';
+    b.addEventListener("click", () => {
+      amigaEscolhida = nome;
+      cx.querySelectorAll("button").forEach(x => x.classList.remove("marcada"));
+      b.classList.add("marcada");
+      // ela não lê ainda, mas o pai precisa saber quem escolheu
+      document.getElementById("nomeDaAmiga").textContent = nome;
+      if(typeof somToque === "function") somToque();
+      confereBotao();
     });
-    becos = becos.concat(extras);
-  }
-
-  for(let i = becos.length - 1; i > 0; i--){        // embaralha
-    const j = Math.floor(Math.random() * (i + 1));
-    [becos[i], becos[j]] = [becos[j], becos[i]];
-  }
-
-  // a chave só entra a partir do 4º labirinto: antes disso é regra demais
-  const usaChave = (DIFICULDADES[dificuldade].chave && becos.length >= 2);
-  let k = 0;
-  if(usaChave){
-    chave = { r: becos[0][0], c: becos[0][1], pego:false };
-    k = 1;
-  }
-
-  const quantas = Math.min(becos.length - k, dificuldade === "facil" ? 2 : 3);
-  for(let i = 0; i < quantas; i++){
-    macas.push({ r: becos[k + i][0], c: becos[k + i][1], pego:false });
-  }
-  temChave = !usaChave;      // sem chave no mapa, o portão nem existe
-}
-
-/* Um cavalo tem quatro cascos e anda alternando os lados, então uma
-   marca sozinha no meio da casa parece carimbo, não passada.
-
-   Cada casa recebe DUAS ferraduras: uma um pouco atrás e outra à frente,
-   deslocadas para lados opostos. E o lado troca a cada casa, de modo que
-   o rastro inteiro zigue-zagueia como pegada na areia.
-
-   'ao longo' é o eixo da direção em que ela andou; 'de lado' é o eixo
-   perpendicular. Qual deles é o horizontal depende da direção, por isso
-   os dois casos abaixo. */
-function desenhaRastro(){
-  const cx = $("labirinto");
-  cx.querySelectorAll(".pegada").forEach(e => e.remove());
-
-  const tam = Math.round(lado * 0.26);
-  const meio = (lado - tam) / 2;
-  const AO_LONGO = lado * 0.17;   // distância entre a marca de trás e a da frente
-  const DE_LADO  = lado * 0.15;   // afastamento do eixo central
-
-  caminho.forEach((passo, i) => {
-    if(i === 0) return;                       // a largada é o próprio pônei
-    const [r, c, dir] = passo;
-    const vertical = (dir === "cima" || dir === "baixo");
-    const sentido  = (dir === "baixo" || dir === "dir") ? 1 : -1;
-    const ladoDaVez = (i % 2 === 0) ? 1 : -1;  // alterna a cada casa
-
-    [-1, 1].forEach((ordem, k) => {
-      const aoLongo = ordem * AO_LONGO * sentido;
-      const deLado  = (k === 0 ? ladoDaVez : -ladoDaVez) * DE_LADO;
-
-      const dx = vertical ? deLado  : aoLongo;
-      const dy = vertical ? aoLongo : deLado;
-
-      const p = document.createElement("div");
-      p.className = "pegada" + (i === caminho.length - 1 ? " atual" : "");
-      p.dataset.passo = i;
-      p.style.width  = tam + "px";
-      p.style.height = tam + "px";
-      p.style.left = (c * lado + meio + dx) + "px";
-      p.style.top  = (r * lado + meio + dy) + "px";
-      p.style.rotate = (GIRO[dir] || 0) + "deg";
-      // a de trás surge um instante antes da da frente: vira uma passada
-      p.style.animationDelay = (ordem === -1 ? 0 : 70) + "ms";
-      cx.appendChild(p);
-    });
+    cx.appendChild(b);
   });
 }
 
-/* ===================================================================
-   3. MOVIMENTO
-   =================================================================== */
-let travado = false;
-
-function move(dir){
-  if(travado) return;
-  const g = grade[pr][pc];
-  if(g[dir]) {              // tem parede: avisa de leve e não sai do lugar
-    tocar(typeof somErrou === "function" ? somErrou : null);
-    return;
-  }
-  if(dir === "cima")  pr--;
-  if(dir === "baixo") pr++;
-  if(dir === "esq")   pc--;
-  if(dir === "dir")   pc++;
-
-  // portão trancado: não deixa entrar na chegada sem a chave
-  if(!temChave && pr === linhas - 1 && pc === colunas - 1){
-    if(dir === "cima")  pr++;
-    if(dir === "baixo") pr--;
-    if(dir === "esq")   pc++;
-    if(dir === "dir")   pc--;
-    tocar(typeof somErrou === "function" ? somErrou : null);
-    dizer("Está trancado! Acha a chavinha primeiro.");
-    return;
-  }
-
-  // voltou para a casa anterior? então desfaz a pegada em vez de empilhar.
-  // assim o rastro mostra o caminho atual, não tudo que ela já pisou.
-  const anterior = caminho[caminho.length - 2];
-  if(anterior && anterior[0] === pr && anterior[1] === pc) caminho.pop();
-  else caminho.push([pr, pc, dir]);
-
-  tocar(typeof somToque === "function" ? somToque : null);
-  desenhaRastro();
-  cancelaDica();
-  recolhe();
-
-  if(pr === linhas - 1 && pc === colunas - 1) setTimeout(chegou, 220);
-  else agendaDica();
+/* o botão só ganha cor quando há nome e amiga escolhidos — assim ele
+   não parece quebrado quando o toque não faz nada */
+function confereBotao(){
+  const pronto = document.getElementById("campoNome").value.trim() !== "" && amigaEscolhida;
+  document.getElementById("btnComecar").classList.toggle("esperando", !pronto);
 }
 
-/* pegou alguma coisa na casa em que parou? */
-function recolhe(){
-  const cx = $("labirinto");
-
-  macas.forEach((m, i) => {
-    if(m.pego || m.r !== pr || m.c !== pc) return;
-
-    m.pego = true;
-    const el = cx.querySelector(".maca-" + i);
-    if(el){ el.classList.add("sumindo"); setTimeout(() => el.remove(), 450); }
-    tocar(typeof somAchou === "function" ? somAchou : null);
-
-    const faltam = macas.filter(x => !x.pego).length;
-    dizer(faltam
-      ? "Pegou uma " + cenario.oQue + "! " + (faltam === 1 ? "Falta uma." : "Faltam " + faltam + ".")
-      : "Pegou todas as " + cenario.oQuePl + "!");
-    $("mMacas").textContent = macas.filter(x => x.pego).length + "/" + macas.length;
-  });
-
-  if(chave && !chave.pego && chave.r === pr && chave.c === pc){
-    chave.pego = true;
-    temChave = true;
-    const el = cx.querySelector(".chave");
-    if(el){ el.classList.add("sumindo"); setTimeout(() => el.remove(), 450); }
-    const portao = cx.querySelector(".portao");
-    if(portao){ portao.classList.add("abrindo"); setTimeout(() => portao.remove(), 500); }
-    tocar(typeof somVitoria === "function" ? somVitoria : null);
-    dizer("Achou a chavinha! O portão abriu.");
-  }
+function abreApresentacao(){
+  montaEscolha();
+  document.getElementById("campoNome").addEventListener("input", confereBotao);
+  document.getElementById("apresentacao").classList.add("visivel");
 }
 
-/* setas */
-document.querySelectorAll(".seta").forEach(b => {
-  b.addEventListener("click", () => move(b.dataset.dir));
+document.getElementById("btnComecar").addEventListener("click", () => {
+  const nome = document.getElementById("campoNome").value.trim();
+  if(!nome){ document.getElementById("campoNome").focus(); return; }
+  if(!amigaEscolhida) amigaEscolhida = AMIGAS[0];
+
+  const p = perfil();
+  p.nome = nome;
+  p.amiga = amigaEscolhida;
+  salvaPerfil(p);
+
+  document.getElementById("apresentacao").classList.remove("visivel");
+  mostraRecepcao();
+  if(typeof somVitoria === "function") somVitoria();
 });
 
-/* teclado, para você testar no computador */
-addEventListener("keydown", e => {
-  const m = { ArrowUp:"cima", ArrowDown:"baixo", ArrowLeft:"esq", ArrowRight:"dir" }[e.key];
-  if(m){ e.preventDefault(); move(m); }
+function mostraRecepcao(){
+  if(!temPerfil()) return;
+  const m = missao();
+  const feito = m.feitos >= DESAFIOS_POR_DIA;
+
+  const foto = document.getElementById("amigaFoto");
+  foto.innerHTML = '<img src="' + imgDaAmiga() + '" alt="' + amigaDela() + '">';
+  // é AQUI que o enfeite ganho nos labirintos aparece, todo dia
+  if(typeof poeEnfeite === "function") poeEnfeite(foto);
+  document.getElementById("amigaOi").textContent = "Oi, " + nomeDela() + "!";
+  document.getElementById("amigaTarefa").textContent = feito
+    ? "Missão de hoje cumprida!"
+    : "Faltam " + (DESAFIOS_POR_DIA - m.feitos) + " brincadeiras hoje";
+  document.getElementById("fitaAqui").innerHTML = fitaDaMissao();
+  document.getElementById("recepcao").style.display = "flex";
+}
+
+if(temPerfil()) mostraRecepcao(); else abreApresentacao();
+
+function faiscasNoToque(b){
+  const r = b.getBoundingClientRect();
+  const simbolos = ["✨", "⭐", "💖"];
+  for(let i = 0; i < 6; i++){
+    const f = document.createElement("div");
+    f.className = "faiscaMenu";
+    f.textContent = simbolos[i % 3];
+    f.style.left = (r.left + r.width / 2 - 10) + "px";
+    f.style.top  = (r.top + r.height / 2 - 10) + "px";
+    f.style.setProperty("--fx", (Math.random() * 90 - 45) + "px");
+    f.style.setProperty("--fy", (-25 - Math.random() * 45) + "px");
+    document.body.appendChild(f);
+    setTimeout(() => f.remove(), 600);
+  }
+}
+
+/* Delegação em vez de um ouvinte por cartão: a grade é montada pelo
+   aventura.js só quando ela abre o "Brincar à vontade", depois desta
+   linha rodar. Um ouvinte preso a cada botão só pegaria os que já
+   existissem — jogo novo ficaria sem clique. */
+document.getElementById("jogos").addEventListener("click", ev => {
+  const b = ev.target.closest(".jogo");
+  if(!b || !b.dataset.pagina) return;
+
+  try{ if(typeof somToque === "function") somToque(); }catch(e){}
+
+  b.classList.add("tocado");
+  faiscasNoToque(b);
+
+  setTimeout(() => { location.href = b.dataset.pagina; }, 300);
 });
-
-/* arrastar o dedo: cada trecho de meia célula vira um passo */
-let ox = null, oy = null;
-const palco = $("palco");
-
-palco.addEventListener("touchstart", e => {
-  const t = e.touches[0]; ox = t.clientX; oy = t.clientY;
-}, { passive:true });
-
-palco.addEventListener("touchmove", e => {
-  if(ox === null) return;
-  const t = e.touches[0];
-  const dx = t.clientX - ox, dy = t.clientY - oy;
-  const limite = Math.max(18, lado * 0.5);
-
-  if(Math.abs(dx) < limite && Math.abs(dy) < limite) return;
-
-  if(Math.abs(dx) > Math.abs(dy)) move(dx > 0 ? "dir" : "esq");
-  else                            move(dy > 0 ? "baixo" : "cima");
-
-  ox = t.clientX; oy = t.clientY;   // reinicia para permitir arrasto contínuo
-}, { passive:true });
-
-palco.addEventListener("touchend", () => { ox = oy = null; }, { passive:true });
-
-/* ===================================================================
-   4. RODADAS
-   =================================================================== */
-/* A dificuldade agora é escolha dela, não crescimento automático.
-   Antes o labirinto ia aumentando sozinho e ela não tinha como voltar
-   para um tamanho confortável. */
-const DIFICULDADES = {
-  facil:   { tamanho:4, chave:false },
-  medio:   { tamanho:5, chave:true  },
-  dificil: { tamanho:7, chave:true  }
-};
-const DIF_CHAVE = "poneis.labirinto.dificuldade";
-
-function dificuldadeSalva(){
-  try{
-    const d = localStorage.getItem(DIF_CHAVE);
-    return DIFICULDADES[d] ? d : null;
-  }catch(e){ return null; }
-}
-function salvaDificuldade(d){
-  try{ localStorage.setItem(DIF_CHAVE, d); }catch(e){}
-}
-
-let dificuldade = dificuldadeSalva() || "facil";
-function tamanhoDoNivel(){ return DIFICULDADES[dificuldade].tamanho; }
-
-function novaRodada(){
-  travado = false;
-  linhas = colunas = tamanhoDoNivel();
-  pr = pc = 0;
-  caminho = [[0, 0]];
-
-  if(TEM_ELENCO){
-    poneiAtual = sorteia(PERSONAGENS);
-    do { amigaAtual = sorteia(PERSONAGENS); } while(amigaAtual === poneiAtual);
-  }
-
-  proximoCenario();
-  geraLabirinto(linhas, colunas);
-  espalhaItens();
-  $("rotuloItem").textContent = cenario.oQuePl;
-  desenha();
-  $("mNivel").textContent = nivel;
-  if(typeof salvaNivel === "function") salvaNivel(nivel);
-  $("festa").classList.remove("visivel");
-
-  tocar(typeof somComeco === "function" ? somComeco : null);
-  const quem = (amigaAtual && amigaAtual.nome) ? amigaAtual.nome : "a amiga";
-  setTimeout(() => dizer("Agora vamos para " + cenario.nome + "! " + (chave
-      ? "Acha a chavinha para abrir o portão, e leva o pônei até " + quem + "."
-      : "Leva o pônei até " + quem + ", e pega as " + cenario.oQuePl + " pelo caminho.")), 400);
-  agendaDica();
-}
-
-/* o pônei só anda no fim: percorre o rastro que ela desenhou até a amiga.
-   É a recompensa de ter achado o caminho — ela vê a rota dela funcionando. */
-function poneiCaminha(aoFim){
-  const p = $("poneiz");
-  p.classList.add("andando");
-  let i = 0;
-  const passo = () => {
-    i++;
-    if(i >= caminho.length){
-      p.classList.remove("andando");
-      if(typeof aoFim === "function") aoFim();
-      return;
-    }
-    const [r, c] = caminho[i];
-    p.style.left = (c * lado) + "px";
-    p.style.top  = (r * lado) + "px";
-    // som a cada duas casas: numa rota longa, um por passo vira metralhadora
-    if(i % 2 === 0) tocar(typeof somToque === "function" ? somToque : null);
-    // apaga as duas ferraduras da casa que ele acabou de pisar
-    $("labirinto").querySelectorAll('.pegada[data-passo="' + i + '"]').forEach(e => e.remove());
-    setTimeout(passo, 300);
-  };
-  setTimeout(passo, 260);
-}
-
-function chegou(){
-  travado = true;
-  cancelaDica();
-  estrelas++;
-  $("mEstrelas").textContent = estrelas;
-
-  const quem = (amigaAtual && amigaAtual.nome) ? amigaAtual.nome : "a amiga";
-  $("festaTitulo").textContent = "Achou " + quem + "!";
-  dizer(comNome("Muito bem! Você achou o caminho"));
-
-  poneiCaminha(() => {
-    tocar(typeof somVitoria === "function" ? somVitoria : null);
-    const todas = macas.length && macas.every(m => m.pego);
-    dizer(todas
-      ? "O pônei chegou até " + quem + ", e você pegou todas as " + cenario.oQuePl + "!"
-      : "O pônei chegou até " + quem + "!");
-    chuvaDeEstrelas();
-    const m = concluiuDesafio();
-
-    /* O prêmio de cada labirinto é um enfeite novo para a pônei amiga:
-       ela passa a usá-lo, e isso aparece no menu toda vez que o jogo
-       abre. A figurinha do álbum ficou para cada terceiro labirinto,
-       senão as 32 acabam rápido e o prêmio perde a graça. */
-    const enfeite = (typeof ganhaEnfeite === "function") ? ganhaEnfeite() : null;
-    mostraPremioDoLabirinto(enfeite);
-
-    setTimeout(() => {
-      $("festa").classList.add("visivel");
-      /* ANTES: (nivel % 3 === 0). O prêmio do álbum saía só a cada
-         três labirintos, e nos outros dois o botão "Próximo" montava
-         mais um — o jogo não terminava nunca. Isso fazia sentido
-         quando o prêmio daqui era o enfeite e as 32 figurinhas
-         precisavam durar. Com o mapa de fases, uma vitória é uma
-         fase: tem que premiar sempre, senão ela fica presa. */
-      const daFigurinha = (typeof premiar === "function");
-      if(daFigurinha){
-        premiar(() => { if(m.completouAgora) festejaMissao(); });
-      }else if(m.completouAgora){
-        festejaMissao();
-      }
-    }, 1100);
-  });
-}
-
-$("btnProximo").addEventListener("click", () => { nivel++; novaRodada(); });
-$("btnCasa").addEventListener("click", () => { location.href = "index.html"; });
-
-/* ---------- escolha de dificuldade ---------- */
-function desenhaGrades(){
-  document.querySelectorAll(".nivelBtn").forEach(b => {
-    const t = DIFICULDADES[b.dataset.n].tamanho;
-    const g = b.querySelector(".grade");
-    g.innerHTML = "";
-    g.style.gridTemplateColumns = "repeat(" + t + ", 7px)";
-    // a quantidade de quadradinhos é o tamanho real do labirinto
-    for(let i = 0; i < t * t; i++) g.appendChild(document.createElement("i"));
-  });
-}
-
-function abreEscolha(){
-  desenhaGrades();
-  document.querySelectorAll(".nivelBtn").forEach(b => {
-    b.style.outline = (b.dataset.n === dificuldade) ? "4px solid rgba(255,111,176,.5)" : "none";
-  });
-  $("escolha").classList.add("visivel");
-}
-
-document.querySelectorAll(".nivelBtn").forEach(b => {
-  b.addEventListener("click", () => {
-    dificuldade = b.dataset.n;
-    salvaDificuldade(dificuldade);
-    $("escolha").classList.remove("visivel");
-    tocar(typeof somComeco === "function" ? somComeco : null);
-    novaRodada();
-  });
-});
-
-$("btnNivel").addEventListener("click", abreEscolha);
-
-/* monta a tela de prêmio: a amiga usando o enfeite conquistado */
-function mostraPremioDoLabirinto(enfeite){
-  const caixa = $("retratoPremio");
-  const foto = (typeof imgDaAmiga === "function") ? imgDaAmiga() : null;
-  caixa.innerHTML = foto ? '<img src="' + foto + '" alt="">' : "";
-
-  if(enfeite && typeof poeEnfeite === "function"){
-    poeEnfeite(caixa, enfeite);
-    $("nomeEnfeite").textContent = "Ganhou: " + enfeite.nome + "!";
-    $("contaEnfeite").textContent = quantosEnfeites() + " de " + totalEnfeites() + " enfeites";
-  }else{
-    if(typeof poeEnfeite === "function") poeEnfeite(caixa);
-    $("nomeEnfeite").textContent = "Você já tem todos os enfeites!";
-    $("contaEnfeite").textContent = "";
-  }
-}
-
-function chuvaDeEstrelas(){
-  const s = ["⭐","✨","🌈","💖","🦄"];
-  for(let i = 0; i < 20; i++){
-    const e = document.createElement("div");
-    e.className = "estrela-cai";
-    e.textContent = sorteia(s);
-    e.style.left = (Math.random() * 96) + "vw";
-    e.style.animationDuration = (2.2 + Math.random() * 2) + "s";
-    e.style.animationDelay = (Math.random() * 1.2) + "s";
-    document.body.appendChild(e);
-    setTimeout(() => e.remove(), 6000);
-  }
-}
-
-/* se ela travar, a voz chama de volta */
-let relogio = null;
-function cancelaDica(){ clearTimeout(relogio); }
-function agendaDica(){
-  cancelaDica();
-  relogio = setTimeout(() => {
-    if(travado) return;
-    dizer("Arraste o dedo pelo caminho, ou use as setinhas.");
-    agendaDica();
-  }, 18000);
-}
-
-addEventListener("resize", () => desenha());
-addEventListener("orientationchange", () => setTimeout(desenha, 250));
-
-if(!TEM_ELENCO){
-  // aviso legítimo, mas some sozinho: barra fixa por cima do tabuleiro
-  // atrapalha quem está jogando
-  $("recado").textContent = "O personagens.js não carregou; o pônei aparece como emoji.";
-  $("recado").classList.remove("escondida");
-  setTimeout(() => $("recado").classList.add("escondida"), 6000);
-}
-
-if(dificuldadeSalva()) novaRodada(); else abreEscolha();
 </script>
 </body>
 </html>
