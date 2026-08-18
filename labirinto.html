@@ -237,14 +237,6 @@ body{
 @keyframes cair{ to{ transform:translateY(110vh) rotate(360deg); opacity:.2; } }
 
 /* ---------- voz ---------- */
-#btnStatus, #btnTrocaVoz{
-  border:none; border-radius:12px; cursor:pointer;
-  font-family:inherit; font-weight:800; font-size:12px; padding:6px 10px;
-  background:rgba(255,255,255,.8); color:#8A6FBF;
-  box-shadow:0 2px 6px rgba(107,63,191,.14); flex:0 0 auto;
-}
-#btnStatus[data-ok="sim"]{ background:#D8F7F0; color:#12786F; }
-#btnStatus[data-ok="nao"]{ background:#FFDDE6; color:#B02A4A; }
 #recado{
   position:fixed; left:8px; right:8px; top:calc(56px + env(safe-area-inset-top)); z-index:70;
   background:#3B1220; color:#FFE6EE; border:2px solid var(--rosa); border-radius:14px;
@@ -274,8 +266,6 @@ body{
   <div class="marcador"><span>Estrelas</span><b id="mEstrelas">0</b></div>
   <div class="marcador"><span>Labirinto</span><b id="mNivel">1</b></div>
   <div class="marcador" id="caixaMacas"><span id="rotuloItem">Itens</span><b id="mMacas">0/0</b></div>
-  <button id="btnTrocaVoz">trocar voz</button>
-  <button id="btnStatus" data-ok="?">🔈 voz</button>
 </div>
 
 <div id="palco"><div id="labirinto"></div></div>
@@ -310,7 +300,6 @@ body{
 
 <script src="personagens.js"></script>
 <script src="frases.js"></script>
-<script src="voz.js"></script>
 <script src="perfil.js"></script>
 <script src="enfeites.js"></script>
 <script src="album.js"></script>
@@ -331,7 +320,7 @@ addEventListener("error", e => {
 });
 $("recado").addEventListener("click", () => $("recado").classList.add("escondida"));
 
-/* o voz.js pode faltar — o jogo não pode morrer por causa disso */
+/* a fala foi removida do projeto; isto vira nada e não quebra nada */
 const TEM_VOZJS = (typeof fala === "function");
 const dizer   = t => { if(TEM_VOZJS) try{ fala(t); }catch(e){} };
 const tocar   = f => { if(typeof f === "function") try{ f(); }catch(e){} };
