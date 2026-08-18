@@ -427,10 +427,53 @@ function festejaVolta(visto, aoFechar){
 
 /* A grade antiga não morre: vira "brincar à vontade", escondida atrás
    de um botão. O mapa é o caminho; a grade é para quando ela quiser
-   repetir um jogo de que gostou. */
+   repetir um jogo de que gostou.
+
+   A GRADE É COMPLETADA AQUI. Ela está escrita à mão no index.html, com
+   os cinco jogos originais — então todo jogo novo entrava no mapa e
+   sumia da grade, que foi o que aconteceu com o quebra-cabeça, o banho
+   e as bolhas. Agora qualquer jogo de JOGOS que não tenha cartão ganha
+   um automaticamente, e acrescentar um jogo continua sendo só as duas
+   linhas lá em cima. */
+function completaGrade(grade){
+  var existentes = {};
+  grade.querySelectorAll('.jogo').forEach(b => {
+    existentes[(b.getAttribute('data-pagina') || '').trim()] = true;
+  });
+
+  const cores = ['rosa','roxo','turq','verde','amarelo'];
+  let i = 0;
+
+  Object.keys(JOGOS).forEach(chave => {
+    const j = JOGOS[chave];
+    if(existentes[j.pagina]) return;
+
+    const b = document.createElement('button');
+    b.className = 'jogo';
+    b.setAttribute('data-cor', cores[i++ % cores.length]);
+    b.setAttribute('data-pagina', j.pagina);
+    /* o ícone é a inicial dentro de um círculo: os cartões antigos usam
+       desenhos próprios, e inventar um desenho para cada jogo novo
+       ficaria pior do que uma letra limpa */
+    b.innerHTML =
+      '<span class="icone" style="display:flex;align-items:center;justify-content:center;' +
+        'font-family:inherit;font-weight:800;font-size:26px;color:#8B5CE0">' +
+        j.nome.charAt(0) +
+      '</span>' +
+      '<span class="nome">' + j.nome + '</span>';
+    b.addEventListener('click', () => {
+      if(typeof somToque === 'function') try{ somToque(); }catch(e){}
+      setTimeout(() => { location.href = j.pagina; }, 180);
+    });
+    grade.appendChild(b);
+  });
+}
+
 function ligaModoLivre(){
   const grade = document.querySelector('.jogos');
   if(!grade) return;
+
+  completaGrade(grade);
   grade.classList.add('recolhida');
 
   const b = document.createElement('button');
