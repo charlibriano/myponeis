@@ -215,25 +215,6 @@ body{
 /* ===================================================================
    VOZ: status e recado  (ela não lê, mas o pai precisa ver o que houve)
    =================================================================== */
-#btnStatus{
-  position:fixed; top:calc(8px + env(safe-area-inset-top)); right:8px; z-index:40;
-  border:none; border-radius:12px; cursor:pointer;
-  font-family:inherit; font-weight:800; font-size:12px;
-  padding:6px 10px;
-  background:rgba(255,255,255,.8); color:#8A6FBF;
-  box-shadow:0 2px 6px rgba(107,63,191,.14);
-}
-#btnTrocaVoz{
-  position:fixed; top:calc(8px + env(safe-area-inset-top)); right:104px; z-index:40;
-  border:none; border-radius:12px; cursor:pointer;
-  font-family:inherit; font-weight:800; font-size:12px;
-  padding:6px 10px;
-  background:rgba(255,255,255,.8); color:#8A6FBF;
-  box-shadow:0 2px 6px rgba(107,63,191,.14);
-}
-#btnTrocaVoz.escondida{ display:none; }
-#btnStatus[data-ok="sim"]{ background:#D8F7F0; color:#12786F; }
-#btnStatus[data-ok="nao"]{ background:#FFDDE6; color:#B02A4A; }
 
 #recado{
   position:fixed; left:8px; right:8px; top:calc(46px + env(safe-area-inset-top)); z-index:45;
@@ -281,8 +262,6 @@ body{
 <div class="cenario-brilho" style="left:20%; top:68%; animation-delay:3.1s">✨</div>
 <div class="cenario-brilho" style="left:72%; top:22%; animation-delay:4.4s">💖</div>
 
-<button id="btnStatus" data-ok="?">🔈 testar voz</button>
-<button id="btnTrocaVoz">trocar voz</button>
 <div id="recado" class="escondida"></div>
 
 <!-- ================= TELA INICIAL ================= -->
@@ -343,7 +322,6 @@ body{
 </div>
 
 <script src="frases.js"></script>
-<script src="voz.js"></script>
 <script src="perfil.js"></script>
 <script src="album.js"></script>
 <script>
@@ -595,7 +573,6 @@ window.addEventListener("error", (e) => {
 // os arquivos têm espaço e acento no nome, então precisam ser codificados
 function urlDoPonei(p){ return BASE + encodeURIComponent(p.arquivo); }
 
-/* voz, sons, elogios e diagnóstico: js/voz.js (compartilhado com o menu) */
 
 // --- estado ---
 let cartas = [], viradas = [], jogadas = 0, achados = 0, totalPares = 0, travado = false;
@@ -767,7 +744,8 @@ function virar(btn){
   }
 }
 
-/* se ela parar de tocar, a voz chama de volta em vez de ela ficar perdida */
+/* se ela parar de tocar, um lembrete chama de volta em vez de ela
+   ficar perdida */
 let relogioDica = null;
 function cancelaDica(){ clearTimeout(relogioDica); }
 function agendaDica(){
