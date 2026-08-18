@@ -959,7 +959,13 @@ function chegou(){
 
     setTimeout(() => {
       $("festa").classList.add("visivel");
-      const daFigurinha = (nivel % 3 === 0) && typeof premiar === "function";
+      /* ANTES: (nivel % 3 === 0). O prêmio do álbum saía só a cada
+         três labirintos, e nos outros dois o botão "Próximo" montava
+         mais um — o jogo não terminava nunca. Isso fazia sentido
+         quando o prêmio daqui era o enfeite e as 32 figurinhas
+         precisavam durar. Com o mapa de fases, uma vitória é uma
+         fase: tem que premiar sempre, senão ela fica presa. */
+      const daFigurinha = (typeof premiar === "function");
       if(daFigurinha){
         premiar(() => { if(m.completouAgora) festejaMissao(); });
       }else if(m.completouAgora){
