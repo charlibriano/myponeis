@@ -68,14 +68,40 @@ body{
   box-shadow:inset 0 2px 10px rgba(74,42,135,.14);
   cursor:pointer;
 }
-/* a coluna que ela está mirando acende: aos 4 anos o dedo precisa de
-   confirmação antes de soltar */
-#mira{
-  position:absolute; top:0; bottom:0; width:0;
-  background:linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,0));
-  pointer-events:none; opacity:0; transition:opacity .15s ease;
+/* a trilha de pontinhos: é ela que torna a diagonal jogável aos 4
+   anos. Sem ver o caminho, mirar em ângulo vira sorte; vendo, a
+   criança escolhe. Os pontinhos acompanham inclusive o rebote. */
+.ponto{
+  position:absolute; width:7px; height:7px; margin:-3.5px 0 0 -3.5px;
+  border-radius:50%; background:rgba(255,255,255,.9);
+  box-shadow:0 0 5px rgba(80,120,160,.5);
+  pointer-events:none;
 }
-#mira.on{ opacity:1; }
+.ponto.fim{
+  width:0; height:0; margin:0;
+  border-radius:0; background:none; box-shadow:none;
+  border:3px dashed rgba(255,255,255,.95);
+}
+/* o alvo: o círculo pontilhado na casa onde a bola vai grudar */
+#alvo{
+  position:absolute; border-radius:50%; pointer-events:none;
+  border:3px dashed rgba(255,255,255,.95);
+  box-shadow:0 0 10px rgba(80,120,160,.45);
+  opacity:0; transition:opacity .12s ease;
+}
+#alvo.on{ opacity:1; }
+
+/* o canhão fica dentro do campo: é de lá que a bola sai, e a mira
+   precisa começar exatamente no mesmo ponto */
+#canhao{
+  position:absolute; border-radius:50%; pointer-events:none;
+  box-shadow:inset -3px -4px 8px rgba(0,0,0,.16), inset 3px 4px 8px rgba(255,255,255,.75),
+             0 3px 8px rgba(40,60,90,.3);
+}
+#canhao::after{
+  content:""; position:absolute; left:22%; top:18%;
+  width:26%; height:22%; border-radius:50%; background:rgba(255,255,255,.85);
+}
 
 .bolha{
   position:absolute; border-radius:50%;
@@ -118,16 +144,6 @@ body{
   0%{ transform:translateY(0) scale(1); }
   40%{ transform:translateY(-10px) scale(1.08); }
   100%{ transform:translateY(0) scale(1); }
-}
-#proxima{
-  width:54px; height:54px; border-radius:50%;
-  box-shadow:inset -3px -4px 8px rgba(0,0,0,.16), inset 3px 4px 8px rgba(255,255,255,.75),
-             0 3px 8px rgba(40,60,90,.28);
-  position:relative;
-}
-#proxima::after{
-  content:""; position:absolute; left:22%; top:18%;
-  width:26%; height:22%; border-radius:50%; background:rgba(255,255,255,.85);
 }
 #quantas{ font-size:15px; font-weight:800; color:#8A6FBF; }
 
@@ -188,11 +204,10 @@ body{
 
   <div id="recado" class="escondida"></div>
 
-  <div id="campo"><div id="mira"></div></div>
+  <div id="campo"><div id="trilha"></div><div id="alvo"></div><div id="canhao"></div></div>
 
   <div id="lancador">
     <div id="poneiCaixa"><img id="foto" alt=""></div>
-    <div id="proxima"></div>
     <div id="quantas"></div>
   </div>
 </div>
@@ -210,7 +225,7 @@ body{
 
 <script>
 (function(){
-  var VERSAO = 'v2';
+  var VERSAO = 'v3';
 
   var PONEIS_BOLHAS = [
     'Rarity', 'Princesa Celestia', 'Princesa Cadance', 'Apple Bloom',
@@ -237,8 +252,8 @@ body{
   ];
   var NIVEL_CHAVE = 'poneis.bolhas.nivel';
 
-  var COLS = 7;
-  var MAX_LINHAS = 9;
+  var COLS = 9;      /* mais colunas = bolas menores */
+  var MAX_LINHAS = 11;
 
   var $ = function(id){ return document.getElementById(id); };
 
@@ -315,6 +330,7 @@ body{
       }
     }
 
+    ajeitaCanhao();
     sorteiaProxima();
     contaBolhas();
   }
@@ -329,7 +345,7 @@ body{
     var lista = Object.keys(vivas);
     if(!lista.length) lista = paleta;
     proxima = lista[Math.floor(Math.random() * lista.length)];
-    $('proxima').style.background = corDe(proxima).css;
+    $('canhao').style.background = corDe(proxima).css;
   }
 
   function contaBolhas(){
@@ -340,44 +356,142 @@ body{
     return n;
   }
 
-  /* ---------- mirar e atirar ---------- */
-  function colunaDe(ev){
-    var r = campo.getBoundingClientRect();
-    var c = Math.floor((ev.clientX - r.left) / lado);
-    return Math.max(0, Math.min(COLS - 1, c));
+  /* ---------- mirar e atirar ----------
+     A primeira versão subia reto na coluna tocada. Agora ela mira em
+     qualquer ângulo, e a trilha de pontinhos mostra o caminho inteiro,
+     rebote na parede incluído, até a casa onde a bola vai grudar.
+     É a trilha que torna a diagonal jogável nessa idade. */
+
+  var origem = { x:0, y:0 };
+
+  function ajeitaCanhao(){
+    var W = campo.clientWidth, H = campo.clientHeight;
+    origem.x = W / 2;
+    origem.y = H - lado * 0.6;
+    var c = $('canhao');
+    c.style.width = c.style.height = (lado - 4) + 'px';
+    c.style.left = (origem.x - (lado - 4) / 2) + 'px';
+    c.style.top  = (origem.y - (lado - 4) / 2) + 'px';
+    var a = $('alvo');
+    a.style.width = a.style.height = lado + 'px';
   }
 
-  campo.addEventListener('pointermove', function(ev){
-    if(terminado || atirando) return;
-    var c = colunaDe(ev);
-    var m = $('mira');
-    m.style.left = (c * lado) + 'px';
-    m.style.width = lado + 'px';
-    m.classList.add('on');
-  });
-  campo.addEventListener('pointerleave', function(){ $('mira').classList.remove('on'); });
+  /* Marcha o caminho de 2 em 2 pixels: bate na parede, inverte; entra
+     numa casa ocupada, para. A bola gruda na última casa livre pela
+     qual passou — que é como o jogo original se comporta. */
+  function tracar(px, py){
+    var W = campo.clientWidth, H = campo.clientHeight;
+    var raio = lado / 2;
+    var x = origem.x, y = origem.y;
+    var dx = px - x, dy = py - y;
+
+    if(dy > -20) dy = -20;                 // nunca mira para baixo
+    var m = Math.sqrt(dx * dx + dy * dy) || 1;
+    dx /= m; dy /= m;
+
+    var pontos = [{ x:x, y:y }];
+    var livre = null, destino = null;
+
+    for(var i = 0; i < 3000; i++){
+      x += dx * 2; y += dy * 2;
+
+      if(x < raio){ x = raio; dx = -dx; pontos.push({ x:x, y:y }); }
+      else if(x > W - raio){ x = W - raio; dx = -dx; pontos.push({ x:x, y:y }); }
+
+      var col = Math.floor(x / lado);
+      if(col < 0) col = 0; if(col > COLS - 1) col = COLS - 1;
+      var lin = Math.floor(y / lado);
+
+      if(lin < 0){                          // chegou ao teto
+        destino = grade[0][col] ? livre : { l:0, c:col };
+        break;
+      }
+      if(lin < MAX_LINHAS){
+        if(grade[lin][col]){ destino = livre; break; }
+        livre = { l:lin, c:col };
+      }
+      if(y > H + lado) break;
+    }
+    pontos.push({ x:x, y:y });
+    if(!destino) destino = livre;
+    return { pontos:pontos, destino:destino };
+  }
+
+  function mostraMira(px, py){
+    var t = tracar(px, py);
+    var trilha = $('trilha');
+    trilha.innerHTML = '';
+
+    /* um pontinho a cada ~15px do caminho: denso o bastante para ler
+       como linha, leve o bastante para não pesar no celular */
+    var andado = 0, ultimo = t.pontos[0];
+    for(var i = 1; i < t.pontos.length; i++){
+      var p = t.pontos[i];
+      var d = Math.sqrt(Math.pow(p.x - ultimo.x, 2) + Math.pow(p.y - ultimo.y, 2));
+      andado += d;
+      if(andado >= 15){
+        andado = 0;
+        var e = document.createElement('div');
+        e.className = 'ponto';
+        e.style.left = p.x + 'px';
+        e.style.top  = p.y + 'px';
+        trilha.appendChild(e);
+      }
+      ultimo = p;
+    }
+
+    var a = $('alvo');
+    if(t.destino){
+      a.classList.add('on');
+      a.style.left = (t.destino.c * lado) + 'px';
+      a.style.top  = (t.destino.l * lado) + 'px';
+    }else{
+      a.classList.remove('on');
+    }
+    return t;
+  }
+
+  function limpaMira(){
+    $('trilha').innerHTML = '';
+    $('alvo').classList.remove('on');
+  }
+
+  function ondeToquei(ev){
+    var r = campo.getBoundingClientRect();
+    return { x: ev.clientX - r.left, y: ev.clientY - r.top };
+  }
+
+  var mirando = false;
 
   campo.addEventListener('pointerdown', function(ev){
     if(terminado || atirando) return;
-    atira(colunaDe(ev));
+    mirando = true;
+    try{ campo.setPointerCapture(ev.pointerId); }catch(e){}
+    var p = ondeToquei(ev);
+    mostraMira(p.x, p.y);
   });
 
-  function atira(col){
-    /* Onde a bolha gruda: logo ABAIXO da última ocupada da coluna.
+  campo.addEventListener('pointermove', function(ev){
+    if(terminado || atirando || !mirando) return;
+    var p = ondeToquei(ev);
+    mostraMira(p.x, p.y);
+  });
 
-       A primeira versão varria de cima para baixo e parava na primeira
-       casa ocupada, pondo a bolha uma linha acima dela. Como o
-       tabuleiro começa cheio desde a linha 0, essa primeira ocupada
-       era sempre a do topo e o destino dava -1 — o toque não fazia
-       nada, em nenhuma coluna. */
-    var destino = 0;
-    for(var l = MAX_LINHAS - 1; l >= 0; l--){
-      if(grade[l][col]){ destino = l + 1; break; }
-    }
-    /* coluna cheia até embaixo: a bolha não gruda, e o tabuleiro
-       nunca cresce sem fim */
-    if(destino >= MAX_LINHAS) return;
+  /* dispara ao SOLTAR: assim ela pode arrastar até a trilha apontar
+     para onde quer, sem medo de errar no primeiro encostar */
+  ['pointerup','pointercancel'].forEach(function(n){
+    campo.addEventListener(n, function(ev){
+      if(!mirando) return;
+      mirando = false;
+      if(terminado || atirando){ limpaMira(); return; }
+      var p = ondeToquei(ev);
+      var t = tracar(p.x, p.y);
+      limpaMira();
+      if(t.destino) atira(t);
+    });
+  });
 
+  function atira(t){
     atirando = true;
     $('poneiCaixa').classList.remove('atira');
     void $('poneiCaixa').offsetWidth;
@@ -385,18 +499,46 @@ body{
     if(typeof somToque === 'function'){ try{ somToque(); }catch(e){} }
 
     var cor = proxima;
-    var el = novaBolha(cor, col, MAX_LINHAS);   // nasce embaixo do campo
-    el.classList.add('voando');
-    void el.offsetWidth;
-    el.style.top = (destino * lado + 2) + 'px';
+    var el = document.createElement('div');
+    el.className = 'bolha';
+    el.style.width = el.style.height = (lado - 4) + 'px';
+    el.style.background = corDe(cor).css;
+    el.style.transition = 'none';
+    el.style.zIndex = 6;
+    campo.appendChild(el);
 
-    setTimeout(function(){
-      el.classList.remove('voando');
-      grade[destino][col] = { cor:cor, el:el };
-      resolve(destino, col);
+    /* percorre o mesmo caminho que a trilha mostrou, na mesma ordem —
+       o que ela viu é exatamente o que acontece */
+    var pontos = t.pontos, i = 0, x = pontos[0].x, y = pontos[0].y;
+    var VEL = 13;               // px por quadro
+
+    function passo(){
+      var resta = VEL;
+      while(resta > 0 && i < pontos.length - 1){
+        var alvo = pontos[i + 1];
+        var d = Math.sqrt(Math.pow(alvo.x - x, 2) + Math.pow(alvo.y - y, 2));
+        if(d <= resta){ x = alvo.x; y = alvo.y; i++; resta -= d; }
+        else{
+          x += (alvo.x - x) / d * resta;
+          y += (alvo.y - y) / d * resta;
+          resta = 0;
+        }
+      }
+      el.style.left = (x - (lado - 4) / 2) + 'px';
+      el.style.top  = (y - (lado - 4) / 2) + 'px';
+
+      if(i < pontos.length - 1){ requestAnimationFrame(passo); return; }
+
+      /* chegou: assenta na casa e resolve */
+      el.style.left = (t.destino.c * lado + 2) + 'px';
+      el.style.top  = (t.destino.l * lado + 2) + 'px';
+      el.style.zIndex = '';
+      grade[t.destino.l][t.destino.c] = { cor:cor, el:el };
+      resolve(t.destino.l, t.destino.c);
       atirando = false;
       sorteiaProxima();
-    }, 330);
+    }
+    requestAnimationFrame(passo);
   }
 
   /* ---------- combinar ---------- */
@@ -525,6 +667,7 @@ body{
     if(terminado) return;
     var antes = lado;
     medeLado();
+    ajeitaCanhao();
     if(antes === lado) return;
     for(var l = 0; l < MAX_LINHAS; l++){
       for(var c = 0; c < COLS; c++){
