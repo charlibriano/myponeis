@@ -16,40 +16,6 @@ function avisa(txt){
 }
 el('recado').addEventListener('click', ()=>avisa(''));
 
-/* ------------------------------------------------------------------
-   DIAGNÓSTICO NA TELA
-
-   Sem isto, quando algo falha aqui dentro simplesmente não acontece
-   nada: a criança acerta, some a festa e o jogo segue. Quem testa não
-   tem como saber se o arquivo certo carregou, se uma dependência
-   faltou ou se deu erro no meio.
-
-   Nada disso aparece para ela. O aviso de erro só surge se houver erro,
-   e a confirmação de versão só com ?dev=1 no endereço.
-   ------------------------------------------------------------------ */
-const JOGO_VERSAO = 'jogo.js v3 — caminhada até o castelo';
-const MODO_TESTE  = location.search.includes('dev');
-
-addEventListener('error', e => {
-  avisa('ERRO: ' + e.message + (e.lineno ? ' (linha ' + e.lineno + ')' : '') +
-        ' — toque para fechar');
-});
-
-if(MODO_TESTE){
-  const falta = ['premiar','concluiuDesafio','festejaMissao','colecao','iniciaCaminho']
-    .filter(f => typeof window[f] !== 'function');
-  avisa(JOGO_VERSAO +
-        (falta.length ? ' · FALTANDO: ' + falta.join(', ') : ' · dependências ok') +
-        ' · passos até o castelo: ' + (typeof CAMINHO_PASSOS !== 'undefined' ? CAMINHO_PASSOS : 5));
-}
-
-/* As falas foram removidas do jogo. A função continua existindo, vazia,
-   porque é chamada em dezenas de lugares — arrancar cada chamada daria
-   mais risco de quebrar do que ganho. */
-function fala(){}
-
-function testaVoz(){}   // falas removidas do jogo
-
 /* --- sons curtinhos --- */
 let ctx = null;
 function bip(freqs, dur=.12){
@@ -88,20 +54,9 @@ const SO_COM_IMAGEM = true;
    rodada: ela começaria por trás da tela de prêmio e, ao fechar, o
    jogo já estaria no meio de outra pergunta. */
 function contaDesafio(){
-  /* UM ACERTO = UMA FASE, nos dois modos.
-
-     Antes o "Cadê o Pônei?" exigia cinco acertos, porque a caminhada
-     até o castelo media a rodada por dentro do jogo. Com o mapa de
-     Ponyville isso virou duas contagens para a mesma coisa: quem
-     mostra o avanço agora é o mapa, e a criança voltava a jogar de
-     novo em vez de andar até a próxima parada.
-
-     Então a rodada termina no primeiro acerto. O prêmio entra, o
-     album.js devolve ela ao mapa e a pônei caminha até a fase
-     seguinte — que é onde o progresso deve ser visto. */
-  const chegou = true;
-  if(!chegou) return false;
-
+  /* UM ACERTO = UMA FASE, nos dois modos. O prêmio entra, o album.js
+     devolve ela ao mapa e a pônei caminha até a parada seguinte —
+     que é onde o progresso tem de ser visto. */
   let m = null;
   if(typeof concluiuDesafio === "function") m = concluiuDesafio();
 
