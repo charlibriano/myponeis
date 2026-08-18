@@ -12,20 +12,22 @@
 /* ============================================================
    BOLHAS DA PÔNEI
 
-   Bolhas coloridas no alto, a pônei embaixo lançando. Três da mesma
-   cor encostadas e elas estouram.
+   GRADE HEXAGONAL. As fileiras são deslocadas meia bolha, como nos
+   jogos do gênero. A versão anterior era uma grade retangular, que
+   parece planilha e desperdiça a mira diagonal: em hexágono cada
+   bolha toca seis vizinhas, então ângulo importa de verdade.
 
-   SEM MIRA POR ÂNGULO. No jogo adulto você gira um canhão e calcula
-   rebote na parede; aos 4 anos isso é frustração garantida. Aqui ela
-   toca na coluna onde quer e a bolha sobe reto. A dificuldade vem de
-   escolher a coluna certa, não de acertar um ângulo.
+   A MIRA MOSTRA O CAMINHO. Ela arrasta o dedo, uma trilha de
+   pontinhos desenha o trajeto — rebote na parede incluído — até o
+   círculo pontilhado na casa exata onde a bola vai grudar. Solta o
+   dedo e a bola percorre esse mesmo caminho. É a trilha que torna
+   mirar em ângulo possível aos 4 anos.
 
-   E NÃO EXISTE PERDER. O tabuleiro só encolhe; bolha que não combina
-   fica lá esperando. Sem relógio, sem teto descendo, sem tela de
-   derrota. Ela sai quando limpar tudo.
+   NÃO EXISTE PERDER. Sem relógio, sem teto descendo, sem tela de
+   derrota. O tabuleiro só encolhe, e ela sai quando limpar tudo.
 
-   Tudo é forma de CSS: as bolhas são gradientes, não desenho. A
-   única figura é a foto da pônei lançadora, da pasta imagens/.
+   Tudo aqui é forma de CSS. A única figura é a foto da pônei, da
+   pasta imagens/.
    ============================================================ */
 :root{ --roxo:#6B3FBF; --rosa:#FF6FB0; --amarelo:#FFD34A; }
 *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
@@ -60,7 +62,6 @@ body{
 }
 #recado.escondida{ display:none; }
 
-/* ---------- o campo ---------- */
 #campo{
   position:relative; flex:1; min-height:0; margin-top:8px;
   border-radius:22px; overflow:hidden;
@@ -68,21 +69,54 @@ body{
   box-shadow:inset 0 2px 10px rgba(74,42,135,.14);
   cursor:pointer;
 }
-/* a trilha de pontinhos: é ela que torna a diagonal jogável aos 4
-   anos. Sem ver o caminho, mirar em ângulo vira sorte; vendo, a
-   criança escolhe. Os pontinhos acompanham inclusive o rebote. */
+/* a tremida curta do estouro: dá peso ao acerto sem enjoar */
+#campo.treme{ animation:tremeCampo .22s ease-in-out 2; }
+@keyframes tremeCampo{
+  0%,100%{ transform:translate(0,0); }
+  25%    { transform:translate(-3px,1px); }
+  75%    { transform:translate(3px,-1px); }
+}
+
+.bolha{
+  position:absolute; border-radius:50%;
+  box-shadow:inset -3px -4px 8px rgba(0,0,0,.16), inset 3px 4px 8px rgba(255,255,255,.75),
+             0 2px 5px rgba(40,60,90,.22);
+}
+.bolha::after{
+  content:""; position:absolute; left:22%; top:18%;
+  width:26%; height:22%; border-radius:50%;
+  background:rgba(255,255,255,.85);
+}
+.bolha.nasceu{ animation:assenta .32s cubic-bezier(.2,1.7,.4,1); }
+@keyframes assenta{
+  0%  { transform:scale(1.3); }
+  55% { transform:scale(.88); }
+  100%{ transform:scale(1); }
+}
+.bolha.estoura{ animation:puf .34s ease-out forwards; }
+@keyframes puf{
+  0%  { transform:scale(1);    opacity:1; }
+  40% { transform:scale(1.45); opacity:.95; }
+  100%{ transform:scale(.15);  opacity:0; }
+}
+
+/* respingo do estouro: gotinhas voando para fora */
+.respingo{
+  position:absolute; border-radius:50%; pointer-events:none;
+  background:rgba(255,255,255,.9);
+  animation:espirra .5s ease-out forwards;
+}
+@keyframes espirra{
+  0%  { transform:translate(0,0) scale(1);  opacity:.95; }
+  100%{ transform:translate(var(--rx), var(--ry)) scale(.2); opacity:0; }
+}
+
+/* a trilha de mira */
 .ponto{
   position:absolute; width:7px; height:7px; margin:-3.5px 0 0 -3.5px;
-  border-radius:50%; background:rgba(255,255,255,.9);
-  box-shadow:0 0 5px rgba(80,120,160,.5);
-  pointer-events:none;
+  border-radius:50%; background:rgba(255,255,255,.92);
+  box-shadow:0 0 5px rgba(80,120,160,.5); pointer-events:none;
 }
-.ponto.fim{
-  width:0; height:0; margin:0;
-  border-radius:0; background:none; box-shadow:none;
-  border:3px dashed rgba(255,255,255,.95);
-}
-/* o alvo: o círculo pontilhado na casa onde a bola vai grudar */
 #alvo{
   position:absolute; border-radius:50%; pointer-events:none;
   border:3px dashed rgba(255,255,255,.95);
@@ -91,63 +125,58 @@ body{
 }
 #alvo.on{ opacity:1; }
 
-/* o canhão fica dentro do campo: é de lá que a bola sai, e a mira
-   precisa começar exatamente no mesmo ponto */
+/* o canhão fica dentro do campo: a mira precisa começar exatamente
+   no ponto de onde a bola sai */
 #canhao{
   position:absolute; border-radius:50%; pointer-events:none;
   box-shadow:inset -3px -4px 8px rgba(0,0,0,.16), inset 3px 4px 8px rgba(255,255,255,.75),
              0 3px 8px rgba(40,60,90,.3);
+  transition:transform .12s ease;
 }
 #canhao::after{
   content:""; position:absolute; left:22%; top:18%;
   width:26%; height:22%; border-radius:50%; background:rgba(255,255,255,.85);
 }
+#canhao.recuou{ transform:scale(.8); }
 
-.bolha{
-  position:absolute; border-radius:50%;
-  box-shadow:inset -3px -4px 8px rgba(0,0,0,.16), inset 3px 4px 8px rgba(255,255,255,.75),
-             0 2px 5px rgba(40,60,90,.22);
-  transition:transform .28s cubic-bezier(.3,1.3,.5,1), top .25s ease, left .25s ease;
+/* o número da sequência, saltando do ponto do estouro */
+.combo{
+  position:absolute; pointer-events:none; z-index:9;
+  font-family:inherit; font-weight:800; color:#fff;
+  text-shadow:0 2px 0 #E3488F, 0 0 12px rgba(255,255,255,.9);
+  animation:comboSobe 1s ease-out forwards;
 }
-.bolha::after{
-  content:""; position:absolute; left:22%; top:18%;
-  width:26%; height:22%; border-radius:50%;
-  background:rgba(255,255,255,.85);
+@keyframes comboSobe{
+  0%  { transform:translate(-50%,-50%) scale(.4); opacity:0; }
+  25% { transform:translate(-50%,-50%) scale(1.25); opacity:1; }
+  100%{ transform:translate(-50%,-160%) scale(1); opacity:0; }
 }
-.bolha.estoura{ animation:puf .35s ease-out forwards; }
-@keyframes puf{
-  0%  { transform:scale(1);   opacity:1; }
-  45% { transform:scale(1.35); opacity:.9; }
-  100%{ transform:scale(.2);  opacity:0; }
-}
-.bolha.caindo{ animation:cai .6s ease-in forwards; }
-@keyframes cai{
-  0%  { transform:translateY(0)     scale(1); opacity:1; }
-  100%{ transform:translateY(260px) scale(.7); opacity:0; }
-}
-.bolha.voando{ transition:left .32s linear, top .32s linear; z-index:5; }
 
-/* ---------- a lançadora ---------- */
 #lancador{
   flex:0 0 auto; display:flex; align-items:center; justify-content:center;
-  gap:12px; margin-top:8px; min-height:96px;
+  gap:12px; margin-top:8px; min-height:88px;
 }
 #poneiCaixa{
-  width:96px; height:96px; border-radius:50%; overflow:hidden;
+  width:88px; height:88px; border-radius:50%; overflow:hidden;
   border:4px solid #fff; background:#fff;
   box-shadow:0 0 0 3px var(--rosa), 0 6px 14px rgba(62,42,92,.3);
-  transition:transform .18s ease;
 }
 #poneiCaixa img{ width:100%; height:100%; object-fit:cover; object-position:center 30%; }
 #poneiCaixa.atira{ animation:empurra .3s ease-out; }
 @keyframes empurra{
   0%{ transform:translateY(0) scale(1); }
-  40%{ transform:translateY(-10px) scale(1.08); }
+  40%{ transform:translateY(-9px) scale(1.07); }
   100%{ transform:translateY(0) scale(1); }
+}
+/* comemoração de jogada grande: a pônei entra na festa */
+#poneiCaixa.festeja{ animation:festeja .8s ease-in-out 2; }
+@keyframes festeja{
+  0%,100%{ transform:rotate(0) scale(1); }
+  25%    { transform:rotate(-11deg) scale(1.12); }
+  75%    { transform:rotate(11deg)  scale(1.12); }
 }
 #quantas{ font-size:15px; font-weight:800; color:#8A6FBF; }
 
-/* ---------- escolha de nível ---------- */
 #nivel{
   position:fixed; inset:0; z-index:150; display:flex;
   align-items:center; justify-content:center; flex-direction:column; gap:16px;
@@ -169,7 +198,6 @@ body{
 #nivel .txt{ font-size:19px; font-weight:800; color:var(--roxo); line-height:1.15; }
 #nivel .txt small{ display:block; font-size:13px; font-weight:600; color:#9A83C4; }
 
-/* ---------- fim ---------- */
 #pronto{
   position:fixed; inset:0; z-index:200; display:none;
   align-items:center; justify-content:center; flex-direction:column; gap:14px;
@@ -204,7 +232,11 @@ body{
 
   <div id="recado" class="escondida"></div>
 
-  <div id="campo"><div id="trilha"></div><div id="alvo"></div><div id="canhao"></div></div>
+  <div id="campo">
+    <div id="trilha"></div>
+    <div id="alvo"></div>
+    <div id="canhao"></div>
+  </div>
 
   <div id="lancador">
     <div id="poneiCaixa"><img id="foto" alt=""></div>
@@ -225,7 +257,7 @@ body{
 
 <script>
 (function(){
-  var VERSAO = 'v3';
+  var VERSAO = 'v4';
 
   var PONEIS_BOLHAS = [
     'Rarity', 'Princesa Celestia', 'Princesa Cadance', 'Apple Bloom',
@@ -235,25 +267,29 @@ body{
     'Big McIntosh', 'Babs Seed', 'Twist', 'Pipsqueak'
   ];
 
-  /* cores bem separadas entre si: aos 4 anos dois tons parecidos de
-     azul são a mesma cor, e o jogo vira sorte */
+  /* cores bem separadas: aos 4 anos dois tons parecidos de azul são a
+     mesma cor, e o jogo vira sorte */
   var CORES = [
-    { id:'rosa',  css:'radial-gradient(circle at 34% 30%, #FFB6D9, #F0629F)' },
-    { id:'azul',  css:'radial-gradient(circle at 34% 30%, #A8DEFF, #3F9BE0)' },
-    { id:'verde', css:'radial-gradient(circle at 34% 30%, #B6EFC0, #4FBE6B)' },
-    { id:'amarelo', css:'radial-gradient(circle at 34% 30%, #FFEBA8, #F0C03E)' },
-    { id:'roxo',  css:'radial-gradient(circle at 34% 30%, #D8BDF5, #8B5CE0)' }
+    { id:'rosa',    css:'radial-gradient(circle at 34% 30%, #FFB6D9, #F0629F)', tom:'#F0629F' },
+    { id:'azul',    css:'radial-gradient(circle at 34% 30%, #A8DEFF, #3F9BE0)', tom:'#3F9BE0' },
+    { id:'verde',   css:'radial-gradient(circle at 34% 30%, #B6EFC0, #4FBE6B)', tom:'#4FBE6B' },
+    { id:'amarelo', css:'radial-gradient(circle at 34% 30%, #FFEBA8, #F0C03E)', tom:'#F0C03E' },
+    { id:'roxo',    css:'radial-gradient(circle at 34% 30%, #D8BDF5, #8B5CE0)', tom:'#8B5CE0' }
   ];
 
   var NIVEIS = [
-    { id:'facil',   cores:3, linhas:3, nome:'Fácil'   },
-    { id:'medio',   cores:4, linhas:4, nome:'Médio'   },
-    { id:'dificil', cores:5, linhas:5, nome:'Difícil' }
+    { id:'facil',   cores:3, linhas:4, nome:'Fácil'   },
+    { id:'medio',   cores:4, linhas:5, nome:'Médio'   },
+    { id:'dificil', cores:5, linhas:6, nome:'Difícil' }
   ];
   var NIVEL_CHAVE = 'poneis.bolhas.nivel';
 
-  var COLS = 9;      /* mais colunas = bolas menores */
-  var MAX_LINHAS = 11;
+  /* Grade hexagonal: fileira par tem COLS bolhas, fileira ímpar tem
+     uma a menos e começa deslocada meia bolha. A altura de cada
+     fileira é 0,87 do diâmetro — é o encaixe que faz o hexágono. */
+  var COLS = 9;
+  var MAX_LINHAS = 13;
+  var ALTURA_FILA = 0.87;
 
   var $ = function(id){ return document.getElementById(id); };
 
@@ -270,7 +306,6 @@ body{
   $('versao').textContent = VERSAO;
   $('btnCasa').addEventListener('click', function(){ location.href = 'index.html'; });
 
-  /* ---------- a lançadora ---------- */
   var pool = PONEIS_BOLHAS;
   try{
     if(typeof colecao === 'function'){
@@ -284,14 +319,36 @@ body{
   $('foto').src = foto;
   $('foto').onerror = function(){ avisa('A imagem de ' + ponei + ' não carregou (' + foto + ').'); };
 
-  /* ---------- estado ---------- */
-  var grade = [];            // grade[linha][coluna] = {cor, el} ou null
-  var paleta = [], proxima = null, atirando = false, terminado = false;
-  var campo = $('campo'), lado = 40;
+  /* som próprio: o tom sobe a cada bolha da sequência, que é o que
+     transforma uma jogada grande em recompensa */
+  var ctxSom = null;
+  function tom(freq, dur){
+    try{
+      ctxSom = ctxSom || new (window.AudioContext || window.webkitAudioContext)();
+      var o = ctxSom.createOscillator(), g = ctxSom.createGain();
+      o.type = 'triangle'; o.frequency.value = freq;
+      var t = ctxSom.currentTime;
+      g.gain.setValueAtTime(.0001, t);
+      g.gain.exponentialRampToValueAtTime(.22, t + .015);
+      g.gain.exponentialRampToValueAtTime(.0001, t + (dur || .12));
+      o.connect(g).connect(ctxSom.destination);
+      o.start(t); o.stop(t + (dur || .12) + .02);
+    }catch(e){}
+  }
+
+  var campo = $('campo');
+  var grade = [], paleta = [], proxima = null;
+  var atirando = false, terminado = false, mirando = false;
+  var lado = 40, filaH = 35;
+  var origem = { x:0, y:0 };
+
+  function larguraDaFila(l){ return (l % 2 === 0) ? COLS : COLS - 1; }
+  function posX(l, c){ return c * lado + (l % 2 ? lado / 2 : 0) + lado / 2; }
+  function posY(l){ return l * filaH + lado / 2; }
 
   function medeLado(){
     lado = Math.floor(campo.clientWidth / COLS);
-    return lado;
+    filaH = lado * ALTURA_FILA;
   }
 
   function corDe(id){
@@ -299,20 +356,31 @@ body{
     return CORES[0];
   }
 
-  function novaBolha(cor, col, linha){
+  function criaBolha(cor, l, c, nova){
     var d = document.createElement('div');
-    d.className = 'bolha';
-    d.style.width = d.style.height = (lado - 4) + 'px';
+    d.className = 'bolha' + (nova ? ' nasceu' : '');
+    d.style.width = d.style.height = (lado - 3) + 'px';
     d.style.background = corDe(cor).css;
-    d.style.left = (col * lado + 2) + 'px';
-    d.style.top  = (linha * lado + 2) + 'px';
+    d.style.left = (posX(l, c) - (lado - 3) / 2) + 'px';
+    d.style.top  = (posY(l)    - (lado - 3) / 2) + 'px';
     campo.appendChild(d);
     return d;
   }
 
+  function ajeitaCanhao(){
+    origem.x = campo.clientWidth / 2;
+    origem.y = campo.clientHeight - lado * 0.6;
+    var c = $('canhao');
+    c.style.width = c.style.height = (lado - 3) + 'px';
+    c.style.left = (origem.x - (lado - 3) / 2) + 'px';
+    c.style.top  = (origem.y - (lado - 3) / 2) + 'px';
+    var a = $('alvo');
+    a.style.width = a.style.height = lado + 'px';
+  }
+
   function monta(nivel){
     terminado = false; atirando = false;
-    campo.querySelectorAll('.bolha').forEach(function(b){ b.remove(); });
+    campo.querySelectorAll('.bolha, .respingo, .combo').forEach(function(b){ b.remove(); });
     medeLado();
 
     paleta = CORES.slice(0, nivel.cores).map(function(c){ return c.id; });
@@ -320,13 +388,12 @@ body{
     grade = [];
     for(var l = 0; l < MAX_LINHAS; l++){
       grade.push([]);
-      for(var c = 0; c < COLS; c++) grade[l].push(null);
+      for(var c = 0; c < larguraDaFila(l); c++) grade[l].push(null);
     }
-
     for(var li = 0; li < nivel.linhas; li++){
-      for(var co = 0; co < COLS; co++){
+      for(var co = 0; co < larguraDaFila(li); co++){
         var cor = paleta[Math.floor(Math.random() * paleta.length)];
-        grade[li][co] = { cor:cor, el:novaBolha(cor, co, li) };
+        grade[li][co] = { cor:cor, el:criaBolha(cor, li, co) };
       }
     }
 
@@ -335,12 +402,12 @@ body{
     contaBolhas();
   }
 
+  /* só sorteia cor que ainda existe no tabuleiro: entregar uma cor que
+     não combina com nada é dar peça inútil na mão dela */
   function sorteiaProxima(){
-    /* só sorteia cor que ainda existe no tabuleiro: entregar uma cor
-       que não combina com nada é dar uma peça inútil na mão dela */
     var vivas = {};
     for(var l = 0; l < MAX_LINHAS; l++)
-      for(var c = 0; c < COLS; c++)
+      for(var c = 0; c < grade[l].length; c++)
         if(grade[l][c]) vivas[grade[l][c].cor] = 1;
     var lista = Object.keys(vivas);
     if(!lista.length) lista = paleta;
@@ -351,65 +418,37 @@ body{
   function contaBolhas(){
     var n = 0;
     for(var l = 0; l < MAX_LINHAS; l++)
-      for(var c = 0; c < COLS; c++) if(grade[l][c]) n++;
+      for(var c = 0; c < grade[l].length; c++) if(grade[l][c]) n++;
     $('quantas').textContent = n + ' bolhas';
     return n;
   }
 
-  /* ---------- mirar e atirar ----------
-     A primeira versão subia reto na coluna tocada. Agora ela mira em
-     qualquer ângulo, e a trilha de pontinhos mostra o caminho inteiro,
-     rebote na parede incluído, até a casa onde a bola vai grudar.
-     É a trilha que torna a diagonal jogável nessa idade. */
-
-  var origem = { x:0, y:0 };
-
-  function ajeitaCanhao(){
-    var W = campo.clientWidth, H = campo.clientHeight;
-    origem.x = W / 2;
-    origem.y = H - lado * 0.6;
-    var c = $('canhao');
-    c.style.width = c.style.height = (lado - 4) + 'px';
-    c.style.left = (origem.x - (lado - 4) / 2) + 'px';
-    c.style.top  = (origem.y - (lado - 4) / 2) + 'px';
-    var a = $('alvo');
-    a.style.width = a.style.height = lado + 'px';
-  }
+  /* ---------- mira ---------- */
 
   /* Marcha o caminho de 2 em 2 pixels: bate na parede, inverte; entra
      numa casa ocupada, para. A bola gruda na última casa livre pela
-     qual passou — que é como o jogo original se comporta. */
+     qual passou. */
   function tracar(px, py){
-    var W = campo.clientWidth, H = campo.clientHeight;
-    var raio = lado / 2;
+    var W = campo.clientWidth, H = campo.clientHeight, raio = lado / 2;
     var x = origem.x, y = origem.y;
     var dx = px - x, dy = py - y;
-
-    if(dy > -20) dy = -20;                 // nunca mira para baixo
+    if(dy > -20) dy = -20;                    // nunca mira para baixo
     var m = Math.sqrt(dx * dx + dy * dy) || 1;
     dx /= m; dy /= m;
 
-    var pontos = [{ x:x, y:y }];
-    var livre = null, destino = null;
+    var pontos = [{ x:x, y:y }], livre = null, destino = null;
 
     for(var i = 0; i < 3000; i++){
       x += dx * 2; y += dy * 2;
-
       if(x < raio){ x = raio; dx = -dx; pontos.push({ x:x, y:y }); }
       else if(x > W - raio){ x = W - raio; dx = -dx; pontos.push({ x:x, y:y }); }
 
-      var col = Math.floor(x / lado);
-      if(col < 0) col = 0; if(col > COLS - 1) col = COLS - 1;
-      var lin = Math.floor(y / lado);
+      var cel = casaEm(x, y);
+      if(!cel){ if(y > H + lado) break; continue; }
 
-      if(lin < 0){                          // chegou ao teto
-        destino = grade[0][col] ? livre : { l:0, c:col };
-        break;
-      }
-      if(lin < MAX_LINHAS){
-        if(grade[lin][col]){ destino = livre; break; }
-        livre = { l:lin, c:col };
-      }
+      if(cel.l < 0){ destino = livre; break; }
+      if(grade[cel.l][cel.c]){ destino = livre; break; }
+      livre = cel;
       if(y > H + lado) break;
     }
     pontos.push({ x:x, y:y });
@@ -417,18 +456,27 @@ body{
     return { pontos:pontos, destino:destino };
   }
 
+  /* de pixel para casa, respeitando o deslocamento das fileiras ímpares */
+  function casaEm(x, y){
+    var l = Math.floor(y / filaH);
+    if(l < 0) return { l:0, c:0 };
+    if(l >= MAX_LINHAS) return null;
+    var desl = (l % 2) ? lado / 2 : 0;
+    var c = Math.floor((x - desl) / lado);
+    if(c < 0) c = 0;
+    if(c > larguraDaFila(l) - 1) c = larguraDaFila(l) - 1;
+    return { l:l, c:c };
+  }
+
   function mostraMira(px, py){
     var t = tracar(px, py);
     var trilha = $('trilha');
     trilha.innerHTML = '';
 
-    /* um pontinho a cada ~15px do caminho: denso o bastante para ler
-       como linha, leve o bastante para não pesar no celular */
     var andado = 0, ultimo = t.pontos[0];
     for(var i = 1; i < t.pontos.length; i++){
       var p = t.pontos[i];
-      var d = Math.sqrt(Math.pow(p.x - ultimo.x, 2) + Math.pow(p.y - ultimo.y, 2));
-      andado += d;
+      andado += Math.sqrt(Math.pow(p.x - ultimo.x, 2) + Math.pow(p.y - ultimo.y, 2));
       if(andado >= 15){
         andado = 0;
         var e = document.createElement('div');
@@ -443,11 +491,9 @@ body{
     var a = $('alvo');
     if(t.destino){
       a.classList.add('on');
-      a.style.left = (t.destino.c * lado) + 'px';
-      a.style.top  = (t.destino.l * lado) + 'px';
-    }else{
-      a.classList.remove('on');
-    }
+      a.style.left = (posX(t.destino.l, t.destino.c) - lado / 2) + 'px';
+      a.style.top  = (posY(t.destino.l) - lado / 2) + 'px';
+    }else a.classList.remove('on');
     return t;
   }
 
@@ -461,8 +507,6 @@ body{
     return { x: ev.clientX - r.left, y: ev.clientY - r.top };
   }
 
-  var mirando = false;
-
   campo.addEventListener('pointerdown', function(ev){
     if(terminado || atirando) return;
     mirando = true;
@@ -470,22 +514,19 @@ body{
     var p = ondeToquei(ev);
     mostraMira(p.x, p.y);
   });
-
   campo.addEventListener('pointermove', function(ev){
     if(terminado || atirando || !mirando) return;
     var p = ondeToquei(ev);
     mostraMira(p.x, p.y);
   });
-
-  /* dispara ao SOLTAR: assim ela pode arrastar até a trilha apontar
-     para onde quer, sem medo de errar no primeiro encostar */
+  /* dispara ao SOLTAR: assim ela corrige a mira antes, e a trilha tem
+     serventia */
   ['pointerup','pointercancel'].forEach(function(n){
     campo.addEventListener(n, function(ev){
       if(!mirando) return;
       mirando = false;
       if(terminado || atirando){ limpaMira(); return; }
-      var p = ondeToquei(ev);
-      var t = tracar(p.x, p.y);
+      var t = tracar(ondeToquei(ev).x, ondeToquei(ev).y);
       limpaMira();
       if(t.destino) atira(t);
     });
@@ -496,21 +537,20 @@ body{
     $('poneiCaixa').classList.remove('atira');
     void $('poneiCaixa').offsetWidth;
     $('poneiCaixa').classList.add('atira');
-    if(typeof somToque === 'function'){ try{ somToque(); }catch(e){} }
+    $('canhao').classList.add('recuou');
+    setTimeout(function(){ $('canhao').classList.remove('recuou'); }, 140);
+    tom(340, .09);
 
     var cor = proxima;
     var el = document.createElement('div');
     el.className = 'bolha';
-    el.style.width = el.style.height = (lado - 4) + 'px';
+    el.style.width = el.style.height = (lado - 3) + 'px';
     el.style.background = corDe(cor).css;
-    el.style.transition = 'none';
     el.style.zIndex = 6;
     campo.appendChild(el);
 
-    /* percorre o mesmo caminho que a trilha mostrou, na mesma ordem —
-       o que ela viu é exatamente o que acontece */
     var pontos = t.pontos, i = 0, x = pontos[0].x, y = pontos[0].y;
-    var VEL = 13;               // px por quadro
+    var VEL = 14;
 
     function passo(){
       var resta = VEL;
@@ -518,21 +558,17 @@ body{
         var alvo = pontos[i + 1];
         var d = Math.sqrt(Math.pow(alvo.x - x, 2) + Math.pow(alvo.y - y, 2));
         if(d <= resta){ x = alvo.x; y = alvo.y; i++; resta -= d; }
-        else{
-          x += (alvo.x - x) / d * resta;
-          y += (alvo.y - y) / d * resta;
-          resta = 0;
-        }
+        else{ x += (alvo.x - x) / d * resta; y += (alvo.y - y) / d * resta; resta = 0; }
       }
-      el.style.left = (x - (lado - 4) / 2) + 'px';
-      el.style.top  = (y - (lado - 4) / 2) + 'px';
+      el.style.left = (x - (lado - 3) / 2) + 'px';
+      el.style.top  = (y - (lado - 3) / 2) + 'px';
 
       if(i < pontos.length - 1){ requestAnimationFrame(passo); return; }
 
-      /* chegou: assenta na casa e resolve */
-      el.style.left = (t.destino.c * lado + 2) + 'px';
-      el.style.top  = (t.destino.l * lado + 2) + 'px';
+      el.style.left = (posX(t.destino.l, t.destino.c) - (lado - 3) / 2) + 'px';
+      el.style.top  = (posY(t.destino.l) - (lado - 3) / 2) + 'px';
       el.style.zIndex = '';
+      el.classList.add('nasceu');
       grade[t.destino.l][t.destino.c] = { cor:cor, el:el };
       resolve(t.destino.l, t.destino.c);
       atirando = false;
@@ -541,17 +577,24 @@ body{
     requestAnimationFrame(passo);
   }
 
-  /* ---------- combinar ---------- */
+  /* ---------- vizinhança hexagonal ----------
+     Fileira par se encosta em (l±1, c-1) e (l±1, c); fileira ímpar em
+     (l±1, c) e (l±1, c+1). Mais os dois lados. Seis vizinhas. */
   function vizinhos(l, c){
-    return [[l-1,c],[l+1,c],[l,c-1],[l,c+1]].filter(function(p){
-      return p[0] >= 0 && p[0] < MAX_LINHAS && p[1] >= 0 && p[1] < COLS;
+    var par = (l % 2 === 0);
+    var lista = [[l, c - 1], [l, c + 1],
+                 [l - 1, par ? c - 1 : c], [l - 1, par ? c : c + 1],
+                 [l + 1, par ? c - 1 : c], [l + 1, par ? c : c + 1]];
+    return lista.filter(function(p){
+      return p[0] >= 0 && p[0] < MAX_LINHAS &&
+             p[1] >= 0 && p[1] < larguraDaFila(p[0]);
     });
   }
 
   function grupo(l, c){
     var cor = grade[l][c] && grade[l][c].cor;
     if(!cor) return [];
-    var visto = {}, fila = [[l,c]], saida = [];
+    var visto = {}, fila = [[l, c]], saida = [];
     visto[l + ',' + c] = 1;
     while(fila.length){
       var p = fila.pop();
@@ -559,37 +602,78 @@ body{
       vizinhos(p[0], p[1]).forEach(function(v){
         var k = v[0] + ',' + v[1];
         if(visto[k]) return;
-        if(grade[v[0]][v[1]] && grade[v[0]][v[1]].cor === cor){
-          visto[k] = 1; fila.push(v);
-        }
+        if(grade[v[0]][v[1]] && grade[v[0]][v[1]].cor === cor){ visto[k] = 1; fila.push(v); }
       });
     }
     return saida;
+  }
+
+  function respingos(el, corTom){
+    var r = el.getBoundingClientRect(), cr = campo.getBoundingClientRect();
+    for(var i = 0; i < 6; i++){
+      var s = document.createElement('div');
+      var t = 5 + Math.random() * 6;
+      s.className = 'respingo';
+      s.style.width = s.style.height = t + 'px';
+      s.style.background = corTom;
+      s.style.left = (r.left - cr.left + r.width / 2) + 'px';
+      s.style.top  = (r.top - cr.top + r.height / 2) + 'px';
+      s.style.setProperty('--rx', (Math.random() * 70 - 35).toFixed(0) + 'px');
+      s.style.setProperty('--ry', (Math.random() * 70 - 35).toFixed(0) + 'px');
+      campo.appendChild(s);
+      setTimeout((function(e){ return function(){ if(e.parentNode) e.remove(); }; })(s), 520);
+    }
+  }
+
+  function mostraCombo(el, n){
+    var r = el.getBoundingClientRect(), cr = campo.getBoundingClientRect();
+    var d = document.createElement('div');
+    d.className = 'combo';
+    d.textContent = n;
+    d.style.fontSize = Math.min(20 + n * 4, 54) + 'px';
+    d.style.left = (r.left - cr.left + r.width / 2) + 'px';
+    d.style.top  = (r.top - cr.top + r.height / 2) + 'px';
+    campo.appendChild(d);
+    setTimeout(function(){ if(d.parentNode) d.remove(); }, 1050);
   }
 
   function resolve(l, c){
     var g = grupo(l, c);
     if(g.length < 3){ contaBolhas(); return; }
 
+    mostraCombo(grade[l][c].el, g.length);
+    campo.classList.remove('treme');
+    void campo.offsetWidth;
+    campo.classList.add('treme');
+    if(g.length >= 5){
+      $('poneiCaixa').classList.remove('festeja');
+      void $('poneiCaixa').offsetWidth;
+      $('poneiCaixa').classList.add('festeja');
+    }
+
     g.forEach(function(p, i){
       var b = grade[p[0]][p[1]];
       grade[p[0]][p[1]] = null;
       if(!b) return;
       setTimeout(function(){
+        /* o tom sobe bolha a bolha: é o que faz jogada grande valer
+           mais do que três jogadas pequenas */
+        tom(520 + i * 70, .1);
+        respingos(b.el, corDe(b.cor).tom);
         b.el.classList.add('estoura');
         setTimeout(function(){ if(b.el.parentNode) b.el.remove(); }, 360);
-      }, i * 45);
+      }, i * 55);
     });
-    if(typeof somAchou === 'function'){ try{ somAchou(); }catch(e){} }
 
-    setTimeout(soltaSoltas, g.length * 45 + 120);
+    setTimeout(soltaSoltas, g.length * 55 + 130);
   }
 
-  /* bolha que perdeu a ligação com o teto cai — é o que dá a
-     sensação de desmoronar, que é metade da graça do jogo */
+  /* bolha que perdeu a ligação com o teto cai com peso, girando: é o
+     desmoronar que dá metade da graça do jogo */
   function soltaSoltas(){
     var preso = {}, fila = [];
-    for(var c = 0; c < COLS; c++) if(grade[0][c]){ fila.push([0,c]); preso['0,' + c] = 1; }
+    for(var c = 0; c < larguraDaFila(0); c++)
+      if(grade[0][c]){ fila.push([0, c]); preso['0,' + c] = 1; }
     while(fila.length){
       var p = fila.pop();
       vizinhos(p[0], p[1]).forEach(function(v){
@@ -598,18 +682,40 @@ body{
         preso[k] = 1; fila.push(v);
       });
     }
+
+    var caindo = 0;
     for(var l = 0; l < MAX_LINHAS; l++){
-      for(var co = 0; co < COLS; co++){
+      for(var co = 0; co < grade[l].length; co++){
         if(grade[l][co] && !preso[l + ',' + co]){
-          var b = grade[l][co];
+          despenca(grade[l][co].el, caindo++);
           grade[l][co] = null;
-          b.el.classList.add('caindo');
-          setTimeout((function(el){ return function(){ if(el.parentNode) el.remove(); }; })(b.el), 620);
         }
       }
     }
-    if(contaBolhas() === 0) termina();
+    if(caindo) tom(300, .2);
+
+    if(contaBolhas() === 0) setTimeout(termina, caindo ? 700 : 200);
     else sorteiaProxima();
+  }
+
+  function despenca(el, ordem){
+    var y = parseFloat(el.style.top), x = parseFloat(el.style.left);
+    var vy = -2 - Math.random() * 3, vx = (Math.random() * 4 - 2);
+    var giro = 0, dgiro = (Math.random() * 16 - 8);
+    var H = campo.clientHeight;
+    el.style.zIndex = 4;
+
+    function quadro(){
+      vy += 0.75;                       // gravidade
+      y += vy; x += vx; giro += dgiro;
+      if(x < 0 || x > campo.clientWidth - lado) vx = -vx;   // quica na parede
+      el.style.top = y + 'px';
+      el.style.left = x + 'px';
+      el.style.transform = 'rotate(' + giro + 'deg)';
+      if(y < H + 60){ requestAnimationFrame(quadro); return; }
+      if(el.parentNode) el.remove();
+    }
+    setTimeout(function(){ requestAnimationFrame(quadro); }, ordem * 30);
   }
 
   /* ---------- nível e fim ---------- */
@@ -670,18 +776,16 @@ body{
     ajeitaCanhao();
     if(antes === lado) return;
     for(var l = 0; l < MAX_LINHAS; l++){
-      for(var c = 0; c < COLS; c++){
+      for(var c = 0; c < grade[l].length; c++){
         if(!grade[l][c]) continue;
         var e = grade[l][c].el;
-        e.style.width = e.style.height = (lado - 4) + 'px';
-        e.style.left = (c * lado + 2) + 'px';
-        e.style.top  = (l * lado + 2) + 'px';
+        e.style.width = e.style.height = (lado - 3) + 'px';
+        e.style.left = (posX(l, c) - (lado - 3) / 2) + 'px';
+        e.style.top  = (posY(l)    - (lado - 3) / 2) + 'px';
       }
     }
   });
 
-  /* monta atrás e pede o nível por cima: se ela só quiser jogar,
-     toca em qualquer opção e está pronto */
   monta(nivelGuardado() || NIVEIS[0]);
   pedeNivel();
 })();
