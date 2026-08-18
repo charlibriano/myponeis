@@ -435,45 +435,49 @@ function festejaVolta(visto, aoFechar){
    e as bolhas. Agora qualquer jogo de JOGOS que não tenha cartão ganha
    um automaticamente, e acrescentar um jogo continua sendo só as duas
    linhas lá em cima. */
-function completaGrade(grade){
-  var existentes = {};
-  grade.querySelectorAll('.jogo').forEach(b => {
-    existentes[(b.getAttribute('data-pagina') || '').trim()] = true;
-  });
+function montaGrade(grade){
+  /* A grade era escrita à mão no index.html, com os cinco jogos
+     originais. Todo jogo novo entrava no mapa e sumia daqui — foi o
+     que aconteceu com o quebra-cabeça, o banho e as bolhas. Agora ela
+     é gerada de JOGOS, e acrescentar um jogo continua sendo só as duas
+     linhas lá em cima.
 
-  const cores = ['rosa','roxo','turq','verde','amarelo'];
+     Sem ouvinte de clique: o index.html escuta a grade inteira por
+     delegação, então cartão criado depois funciona igual. */
+  const cores = ['turq','roxo','rosa','verde','amarelo'];
   let i = 0;
+
+  const cartao = (pagina, nome, cor, extra) =>
+    '<button class="jogo' + (extra ? ' largo' : '') + '" data-cor="' + cor +
+      '" data-pagina="' + pagina + '">' +
+      '<span class="icone" style="display:flex;align-items:center;justify-content:center;' +
+        'font-family:inherit;font-weight:800;font-size:26px;color:#8B5CE0">' +
+        nome.charAt(0) + '</span>' +
+      '<span class="nome">' + nome + '</span>' +
+    '</button>';
+
+  let html = '';
+  /* o álbum primeiro, largo: é o que ela mais abre depois dos jogos */
+  let quantas = '';
+  try{
+    if(typeof quantasTem === 'function' && typeof totalDoAlbum === 'function'){
+      quantas = ' (' + quantasTem() + ' de ' + totalDoAlbum() + ')';
+    }
+  }catch(e){}
+  html += cartao('album.html', 'Meu Álbum' + quantas, 'turq', true);
 
   Object.keys(JOGOS).forEach(chave => {
     const j = JOGOS[chave];
-    if(existentes[j.pagina]) return;
-
-    const b = document.createElement('button');
-    b.className = 'jogo';
-    b.setAttribute('data-cor', cores[i++ % cores.length]);
-    b.setAttribute('data-pagina', j.pagina);
-    /* o ícone é a inicial dentro de um círculo: os cartões antigos usam
-       desenhos próprios, e inventar um desenho para cada jogo novo
-       ficaria pior do que uma letra limpa */
-    b.innerHTML =
-      '<span class="icone" style="display:flex;align-items:center;justify-content:center;' +
-        'font-family:inherit;font-weight:800;font-size:26px;color:#8B5CE0">' +
-        j.nome.charAt(0) +
-      '</span>' +
-      '<span class="nome">' + j.nome + '</span>';
-    b.addEventListener('click', () => {
-      if(typeof somToque === 'function') try{ somToque(); }catch(e){}
-      setTimeout(() => { location.href = j.pagina; }, 180);
-    });
-    grade.appendChild(b);
+    html += cartao(j.pagina, j.nome, cores[i++ % cores.length]);
   });
+
+  grade.innerHTML = html;
 }
 
 function ligaModoLivre(){
   const grade = document.querySelector('.jogos');
   if(!grade) return;
 
-  completaGrade(grade);
   grade.classList.add('recolhida');
 
   const b = document.createElement('button');
@@ -481,6 +485,9 @@ function ligaModoLivre(){
   b.textContent = 'Brincar à vontade';
   b.addEventListener('click', () => {
     if(typeof somToque === 'function') try{ somToque(); }catch(e){}
+    /* montada só quando ela abre: nada de gerar cartões que ninguém
+       vai ver, e nada de piscar na tela durante o carregamento */
+    if(!grade.children.length) montaGrade(grade);
     const fechada = grade.classList.toggle('recolhida');
     b.textContent = fechada ? 'Brincar à vontade' : 'Voltar ao mapa';
   });
